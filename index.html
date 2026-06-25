@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gen-Zénior</title>
+    <link rel="icon" type="image/png" href="./assets/img/icono.png">
+    <link rel="stylesheet" href="./css/main.css">
+    <link rel="stylesheet" href="./css/components.css">
+    <link rel="stylesheet" href="./css/modules.css">
+    <link rel="stylesheet" href="./css/accessibility.css">
+</head>
+<body>
+    <main class="app">
+        <section id="pantallaMenu" class="pantalla activa">
+            <div class="encabezado-menu">
+                <div class="logo">
+                    <img src="./assets/img/Logo.webp" alt="Logo Gen-Zénior">
+                </div>
+
+                <button id="btnNicoMenu" class="boton-nico" aria-label="Escuchar bienvenida de Nico">
+                    <span>🔊</span>
+                    <small>NICO</small>
+                </button>
+
+                <div id="mensajeNico" class="mensaje-nico">
+                    Hola, soy Nico. Selecciona un módulo para empezar a aprender paso a paso.
+                </div>
+            </div>
+
+            <nav id="menuPrincipal" class="menu-principal" aria-label="Módulos principales">
+                <button class="boton-menu whatsapp" data-module="whatsapp">
+                    <span class="icono"></span>
+                    <span>WhatsApp</span>
+                    <span class="flecha">→</span>
+                </button>
+
+                <button class="boton-menu facebook" data-module="facebook">
+                    <span class="icono"></span>
+                    <span>Facebook</span>
+                    <span class="flecha">→</span>
+                </button>
+
+                <button class="boton-menu youtube" data-module="youtube">
+                    <span class="icono"></span>
+                    <span>YouTube</span>
+                    <span class="flecha">→</span>
+                </button>
+
+                <button class="boton-menu contacts" data-module="contacts">
+                    <span class="icono"></span>
+                    <span>Contactos</span>
+                    <span class="flecha">→</span>
+                </button>
+            </nav>
+
+            <div class="menu-secundario">
+                <button id="btnTrofeos" class="boton-abajo">
+                    <span class="icono-abajo">🏆</span>
+                    <span>Trofeos</span>
+                </button>
+
+                <button id="btnAjustes" class="boton-abajo">
+                    <span class="icono-abajo">⚙</span>
+                    <span>Ajustes</span>
+                </button>
+            </div>
+        </section>
+    </main>
+
+    <script type="module" src="./js/app.js"></script>
+</body>
+</html>
