@@ -1,8 +1,11 @@
 #pantallaMenu {
     height: 100dvh;
     overflow: hidden;
-    display: flex;
     flex-direction: column;
+}
+
+#pantallaMenu.activa {
+    display: flex;
 }
 
 .encabezado-menu {
@@ -34,13 +37,9 @@
     transition: all 0.25s ease;
 }
 
-.boton-nico span {
-    display: block;
-    font-size: 28px;
-}
 
 .boton-nico small {
-    font-size: 12px;
+    font-size: 15px;
 }
 
 .boton-nico:hover {
@@ -106,15 +105,11 @@
     background-image: url("../assets/img/Youtube.png");
 }
 
-.contacts .icono {
+.contactos .icono {
     background-image: url("../assets/img/Contactos.png");
 }
 
-.flecha {
-    font-size: 42px;
-    font-weight: bold;
-    color: #000;
-}
+
 
 .menu-secundario {
     margin-top: 24px;
@@ -150,7 +145,7 @@
 .mensaje-nico {
     display: none;
     position: absolute;
-    top: 30px;
+    top: 15px;
     right: 80px;
     width: 220px;
     padding: 12px 14px;
@@ -194,6 +189,29 @@
     background: #f8d4d4;
 }
 
-.contacts:hover {
+.contactos:hover {
     background: #eadcc8;
+}
+
+.icono-nico {
+    width: 30px;
+    height: 30px;
+    display: block;
+    margin: 0 auto 4px;
+    object-fit: contain;
+}
+
+.icono-flecha {
+    width: 48px;
+    height: 48px;
+    justify-self: center;
+    object-fit: contain;
+}
+
+.icono-abajo-img {
+    width: 34px;
+    height: 34px;
+    display: block;
+    margin: 0 auto 6px;
+    object-fit: contain;
 }

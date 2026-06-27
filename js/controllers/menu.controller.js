@@ -1,26 +1,27 @@
 import { $ } from "../utils/dom.js";
-import { modulesData } from "../data/modules.data.js";
+import { abrirPantallaNiveles } from "./levels.controller.js";
+import { datosModulos } from "../data/modules.data.js";
 import { speak, stopSpeech } from "../services/speech.service.js";
 
-let currentModule = null;
+let moduloActual = null;
 
-export function initMenu() {
+export function inicializarMenu() {
     const btnNicoMenu = $("#btnNicoMenu");
     const menuPrincipal = $("#menuPrincipal");
     const btnTrofeos = $("#btnTrofeos");
     const btnAjustes = $("#btnAjustes");
 
-    btnNicoMenu.addEventListener("click", showNicoWelcome);
+    btnNicoMenu.addEventListener("click", mostrarBienvenidaNico);
 
-    menuPrincipal.addEventListener("click", (event) => {
-        const button = event.target.closest(".boton-menu");
+    menuPrincipal.addEventListener("click", (evento) => {
+        const boton = evento.target.closest(".boton-menu");
 
-        if (!button) {
+        if (!boton) {
             return;
         }
 
-        const moduleId = button.dataset.module;
-        openModule(moduleId);
+        const idModulo = boton.dataset.module;
+        abrirModulo(idModulo);
     });
 
     btnTrofeos.addEventListener("click", () => {
@@ -31,53 +32,52 @@ export function initMenu() {
         alert("Aquí se mostrará la pantalla de ajustes.");
     });
 
-    document.addEventListener("click", closeNicoMessage);
+    document.addEventListener("click", cerrarMensajeNico);
 }
 
-function openModule(moduleId) {
-    const module = modulesData[moduleId];
+function abrirModulo(idModulo) {
+    const modulo = datosModulos[idModulo];
 
-    if (!module) {
-        console.error("El módulo no existe:", moduleId);
+    if (!modulo) {
+        console.error("El módulo no existe:", idModulo);
         return;
     }
 
-    currentModule = moduleId;
-
-    alert(`Abriste el módulo de ${module.name}`);
+    moduloActual = idModulo;
+    abrirPantallaNiveles(idModulo);
 }
 
-function showNicoWelcome(event) {
-    event.stopPropagation();
+function mostrarBienvenidaNico(evento) {
+    evento.stopPropagation();
 
-    const bubble = $("#mensajeNico");
+    const burbuja = $("#mensajeNico");
 
-    if (bubble.classList.contains("mostrar")) {
+    if (burbuja.classList.contains("mostrar")) {
         stopSpeech();
-        bubble.classList.remove("mostrar");
+        burbuja.classList.remove("mostrar");
         return;
     }
 
-    const message = "Hola, soy Nico, tu asistente de voz. Bienvenido a Gen-Zénior. Selecciona un módulo para empezar a aprender paso a paso. Puedes escoger WhatsApp, Facebook, YouTube o Contactos.";
+    const mensaje = "Hola, soy Nico, tu asistente de voz. Bienvenido a Gen-Zénior. Selecciona un módulo para empezar a aprender paso a paso. Puedes escoger WhatsApp, Facebook, YouTube o Contactos.";
 
-    bubble.textContent = message;
-    bubble.classList.add("mostrar");
+    burbuja.textContent = mensaje;
+    burbuja.classList.add("mostrar");
 
-    speak(message);
+    speak(mensaje);
 }
 
-function closeNicoMessage(event) {
-    const bubble = $("#mensajeNico");
+function cerrarMensajeNico(evento) {
+    const burbuja = $("#mensajeNico");
     const btnNicoMenu = $("#btnNicoMenu");
 
-    if (!bubble.classList.contains("mostrar")) {
+    if (!burbuja.classList.contains("mostrar")) {
         return;
     }
 
     if (
-        !bubble.contains(event.target) &&
-        !btnNicoMenu.contains(event.target)
+        !burbuja.contains(evento.target) &&
+        !btnNicoMenu.contains(evento.target)
     ) {
-        bubble.classList.remove("mostrar");
+        burbuja.classList.remove("mostrar");
     }
 }

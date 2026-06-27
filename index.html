@@ -19,7 +19,7 @@
                 </div>
 
                 <button id="btnNicoMenu" class="boton-nico" aria-label="Escuchar bienvenida de Nico">
-                    <span>🔊</span>
+                    <img src="./assets/img/icons/voz.svg" alt="" class="icono-nico">
                     <small>NICO</small>
                 </button>
 
@@ -29,42 +29,68 @@
             </div>
 
             <nav id="menuPrincipal" class="menu-principal" aria-label="Módulos principales">
-                <button class="boton-menu whatsapp" data-module="whatsapp">
+                <button class="boton-menu whatsapp" data-module="WhatsApp">
                     <span class="icono"></span>
                     <span>WhatsApp</span>
-                    <span class="flecha">→</span>
+                    <img src="./assets/img/icons/flecha-derecha.svg" alt="" class="icono-flecha">
                 </button>
 
-                <button class="boton-menu facebook" data-module="facebook">
+                <button class="boton-menu facebook" data-module="Facebook">
                     <span class="icono"></span>
                     <span>Facebook</span>
-                    <span class="flecha">→</span>
+                    <img src="./assets/img/icons/flecha-derecha.svg" alt="" class="icono-flecha">
                 </button>
 
-                <button class="boton-menu youtube" data-module="youtube">
+                <button class="boton-menu youtube" data-module="YouTube">
                     <span class="icono"></span>
                     <span>YouTube</span>
-                    <span class="flecha">→</span>
+                    <img src="./assets/img/icons/flecha-derecha.svg" alt="" class="icono-flecha">
                 </button>
 
-                <button class="boton-menu contacts" data-module="contacts">
+                <button class="boton-menu contactos" data-module="Contactos">
                     <span class="icono"></span>
                     <span>Contactos</span>
-                    <span class="flecha">→</span>
+                    <img src="./assets/img/icons/flecha-derecha.svg" alt="" class="icono-flecha">
                 </button>
             </nav>
 
             <div class="menu-secundario">
                 <button id="btnTrofeos" class="boton-abajo">
-                    <span class="icono-abajo">🏆</span>
+                    <img src="./assets/img/icons/trofeo.svg" alt="" class="icono-abajo-img">
                     <span>Trofeos</span>
                 </button>
 
                 <button id="btnAjustes" class="boton-abajo">
-                    <span class="icono-abajo">⚙</span>
+                    <img src="./assets/img/icons/ajustes.svg" alt="" class="icono-abajo-img">
                     <span>Ajustes</span>
                 </button>
             </div>
+        </section>
+
+        <section id="pantallaNiveles" class="pantalla pantalla-niveles">
+            <header id="encabezadoModulo" class="encabezado-modulo">
+                <div>
+                    <p>Módulo de</p>
+                    <h2 id="tituloModulo">WhatsApp</h2>
+                </div>
+
+                <button id="btnVolverMenu" class="boton-volver" aria-label="Volver al menú">
+                    <img src="./assets/img/icons/flecha-izquierda.svg" alt="" class="icono-volver">
+                </button>
+            </header>
+
+            <div class="ayuda-voz">
+                <button id="btnNicoModulo" type="button" class="boton-nico-modulo" aria-label="Escuchar ayuda de Nico para seleccionar niveles">
+                    <img src="./assets/img/icons/voz.svg" alt="" class="icono-nico">
+                    <small>NICO</small>
+                </button>
+
+                <div id="mensajeNicoModulo" class="mensaje-nico-modulo">
+                    Escoge un nivel para practicar paso a paso.
+                </div>
+            </div>
+
+            <div id="listaNiveles" class="lista-niveles"></div>
         </section>
     </main>
 
