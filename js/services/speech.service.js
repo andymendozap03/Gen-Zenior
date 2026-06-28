@@ -1,89 +1,59 @@
-let selectedVoice = null;
+// ==========================================
+// CONFIGURACIÓN DE NICO
+// ==========================================
 
-function isNativeApp() {
-    return window.Capacitor && window.Capacitor.isNativePlatform();
-}
+// INTERRUPTOR: true = Usa ElevenLabs | false = Usa el navegador (WebSpeech) para depurar gratis
 
-function getTextToSpeechPlugin() {
-    if (
-        window.Capacitor &&
-        window.Capacitor.Plugins &&
-        window.Capacitor.Plugins.TextToSpeech
-    ) {
-        return window.Capacitor.Plugins.TextToSpeech;
-    }
 
-    return null;
-}
 
+
+// ==========================================
+// VARIABLES DE CONTROL GLOBAL
+// ==========================================
+let currentAudio = null;   // Controla el audio de ElevenLabs
+let selectedVoice = null;  // Controla la voz del navegador
+
+// ==========================================
+// CARGA PREVIA DE VOCES DEL NAVEGADOR (FALLBACK)
+// ==========================================
 function loadSpanishMaleVoice() {
-    if (!("speechSynthesis" in window)) {
-        return;
-    }
-
+    if (!("speechSynthesis" in window)) return;
     const voices = speechSynthesis.getVoices();
+    const maleNames = ["pablo", "jorge", "carlos", "miguel", "diego", "alvaro", "tomas"];
 
-    selectedVoice =
-        voices.find(voice =>
-            voice.lang.toLowerCase().startsWith("es") &&
-            (
-                voice.name.toLowerCase().includes("pablo") ||
-                voice.name.toLowerCase().includes("jorge") ||
-                voice.name.toLowerCase().includes("carlos") ||
-                voice.name.toLowerCase().includes("miguel") ||
-                voice.name.toLowerCase().includes("diego") ||
-                voice.name.toLowerCase().includes("male") ||
-                voice.name.toLowerCase().includes("hombre")
-            )
-        ) ||
-        voices.find(voice =>
-            voice.lang.toLowerCase().startsWith("es")
-        ) ||
-        null;
+    selectedVoice = voices.find(voice => 
+        voice.lang.toLowerCase().startsWith("es") &&
+        (voice.name.toLowerCase().includes("premium") || voice.name.toLowerCase().includes("enhanced")) &&
+        (voice.name.toLowerCase().includes("male") || voice.name.toLowerCase().includes("hombre") || maleNames.some(name => voice.name.toLowerCase().includes(name)))
+    ) || voices.find(voice =>
+        voice.lang.toLowerCase().startsWith("es") &&
+        (voice.name.toLowerCase().includes("male") || voice.name.toLowerCase().includes("hombre") || maleNames.some(name => voice.name.toLowerCase().includes(name)))
+    ) || voices.find(voice => voice.lang.toLowerCase().startsWith("es")) || null;
 }
 
-async function speakWithNativeTTS(text) {
-    const TextToSpeech = getTextToSpeechPlugin();
-
-    if (!TextToSpeech) {
-        alert(text);
-        return;
-    }
-
-    try {
-        await TextToSpeech.stop();
-
-        await TextToSpeech.speak({
-            text: text,
-            lang: "es-ES",
-            rate: 1.1,
-            pitch: 0.9,
-            volume: 1.0,
-            category: "ambient",
-            queueStrategy: 1
-        });
-    } catch (error) {
-        console.error("Error usando TextToSpeech nativo:", error);
-        alert(text);
-    }
+if ("speechSynthesis" in window) {
+    loadSpanishMaleVoice();
+    speechSynthesis.onvoiceschanged = loadSpanishMaleVoice;
 }
 
+// ==========================================
+// MOTORES DE AUDIO
+// ==========================================
+
+
+// Motor 2: WebSpeech (Navegador configurado para sonar juvenil)
 function speakWithWebSpeech(text) {
     if (!("speechSynthesis" in window)) {
         alert(text);
         return;
     }
 
-    speechSynthesis.cancel();
-
-    loadSpanishMaleVoice();
+    if (!selectedVoice) loadSpanishMaleVoice(); 
 
     const voiceMessage = new SpeechSynthesisUtterance(text);
-
-    voiceMessage.lang = "es-ES";
-    voiceMessage.rate = 0.85;
-    voiceMessage.pitch = 0.9;
-    voiceMessage.volume = 1;
+    voiceMessage.lang = "es-ES"; 
+    voiceMessage.rate = 1; // Fluido
+    voiceMessage.pitch = 1;  // Tono de 16 años suave
 
     if (selectedVoice) {
         voiceMessage.voice = selectedVoice;
@@ -93,39 +63,26 @@ function speakWithWebSpeech(text) {
     speechSynthesis.speak(voiceMessage);
 }
 
-export async function speak(text) {
-    if (isNativeApp()) {
-        await speakWithNativeTTS(text);
-        return;
-    }
+// ==========================================
+// CONTROLADORES PRINCIPALES (EXPORTABLES)
+// ==========================================
 
-    speakWithWebSpeech(text);
+export async function speak(text) {
+    await stopSpeech();
+
+    
+        speakWithWebSpeech(text);
+
 }
 
 export async function stopSpeech() {
-    if (isNativeApp()) {
-        const TextToSpeech = getTextToSpeechPlugin();
-
-        if (TextToSpeech) {
-            try {
-                await TextToSpeech.stop();
-            } catch (error) {
-                console.error("Error deteniendo TextToSpeech nativo:", error);
-            }
-        }
-
-        return;
+    if (currentAudio) {
+        currentAudio.pause();
+        currentAudio.currentTime = 0;
+        currentAudio = null;
     }
 
     if ("speechSynthesis" in window) {
         speechSynthesis.cancel();
     }
-}
-
-if ("speechSynthesis" in window) {
-    loadSpanishMaleVoice();
-
-    speechSynthesis.onvoiceschanged = function () {
-        loadSpanishMaleVoice();
-    };
 }
