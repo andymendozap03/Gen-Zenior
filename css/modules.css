@@ -2,50 +2,65 @@
     position: relative;
     padding: 0;
     overflow: hidden;
+    height: 100dvh;
 }
 
 .encabezado-modulo {
     margin: 0;
-    padding: 24px 24px 28px;
-    min-height: 120px;
+    padding: 20px 24px;
+    min-height: 110px;
     display: flex;
     align-items: center;
     justify-content: space-between;
     color: #ffffff;
     background: #5b913f;
     box-shadow: 0 5px 0 rgba(75, 46, 34, 0.15);
+    position: relative;
+    z-index: 10;
 }
+
 
 .encabezado-modulo p {
     margin: 0 0 2px;
-    font-size: 19px;
+    font-size: 18px;
     font-weight: 700;
+    opacity: 0.9;
 }
 
 .encabezado-modulo h2 {
     margin: 0;
-    font-size: 30px;
+    font-size: 28px;
+    font-weight: 800;
+    line-height: 1.1;
 }
 
 .boton-volver {
-    width: 48px;
-    height: 48px;
+    width: 44px;
+    height: 44px;
     border: 0;
     border-radius: 50%;
-    background: rgba(255, 255, 255, 0.18);
+    background: rgba(255, 255, 255, 0.22);
     display: grid;
     place-items: center;
-    transition: all 0.25s ease;
+    transition: all 0.2s ease;
+    align-self: center;
 }
 
 .boton-volver:hover {
-    background: rgba(255, 255, 255, 0.30);
+    background: rgba(255, 255, 255, 0.35);
     transform: scale(1.08);
 }
 
+.icono-volver {
+    width: 26px;
+    height: 26px;
+    object-fit: contain;
+}
+
+/* Asistente Nico flotante en el módulo */
 .ayuda-voz {
     position: absolute;
-    top: 145px;
+    top: 130px;
     right: 24px;
     z-index: 40;
     padding: 0;
@@ -53,33 +68,44 @@
 }
 
 .boton-nico-modulo {
-    width: 62px;
-    height: 62px;
+    width: 66px;
+    height: 66px;
     border: 0;
-    border-radius: 14px;
+    border-radius: 16px;
     background: #76b95d;
     color: #ffffff;
-    font-weight: 700;
-    box-shadow: 0 3px 0 #4d843d;
-    transition: all 0.25s ease;
-    display: grid;
-    place-items: center;
-    padding: 6px 0;
+    font-weight: 800;
+    box-shadow: 0 4px 0 #4d843d, 0 4px 8px rgba(0,0,0,0.15);
+    transition: all 0.2s ease;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 8px 0;
+    cursor: pointer;
 }
 
 .boton-nico-modulo:hover {
-    background: #89b84c;
-    transform: scale(1.05);
+    background: #84cc69;
+    transform: translateY(-2px);
+    box-shadow: 0 6px 0 #4d843d, 0 6px 12px rgba(0,0,0,0.18);
 }
 
-.ayuda-voz span {
-    display: block;
-    font-size: 25px;
+.boton-nico-modulo:active {
+    transform: translateY(2px);
+    box-shadow: 0 2px 0 #4d843d, 0 2px 4px rgba(0,0,0,0.1);
 }
 
-.ayuda-voz small {
-    text-transform: uppercase;
-    font-size: 15px;
+.boton-nico-modulo .icono-nico {
+    width: 28px;
+    height: 28px;
+    margin-bottom: 2px;
+}
+
+.boton-nico-modulo small {
+    font-size: 14px;
+    text-transform: none;
+    font-weight: 700;
 }
 
 .mensaje-nico-modulo {
@@ -117,11 +143,12 @@
     transform: rotate(45deg);
 }
 
+/* Lista de niveles y scroll */
 .lista-niveles {
     width: 100%;
-    height: calc(100dvh - 120px);
+    height: calc(100dvh - 110px);
     margin: 0;
-    padding: 0 24px 32px;
+    padding: 24px 20px 80px;
     position: relative;
     overflow-y: auto;
     overflow-x: hidden;
@@ -133,167 +160,137 @@
 }
 
 .lista-niveles::-webkit-scrollbar-thumb {
-    background: rgba(75, 46, 34, 0.35);
+    background: rgba(75, 46, 34, 0.25);
     border-radius: 20px;
 }
 
+/* Filas de niveles individuales */
 .nivel {
     width: 100%;
-    height: 145px;
-    display: grid;
-    grid-template-columns: 92px 1fr 92px;
-    align-items: center;
+    height: 160px;
     position: relative;
-    border: 0;
+    margin: 0;
     padding: 0;
-    background: transparent;
-    color: #4b2e22;
 }
 
-.nivel:first-child {
-    margin-top: -10px;
-}
-
+/* Círculos de niveles */
 .circulo-nivel {
-    position: relative;
+    position: absolute;
+    top: 50%;
+    transform: translate(-50%, -50%);
     width: 86px;
     height: 86px;
     display: grid;
     place-items: center;
-    border: 5px solid #8c7668;
     border-radius: 50%;
-    background: #e7d8c8;
-    color: #6b4d40;
-    font-size: 28px;
-    font-weight: 800;
     z-index: 3;
     padding: 0;
     overflow: hidden;
     cursor: pointer;
-    transition: all 0.25s ease;
+    box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+    transition: all 0.25s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    background: #ffffff;
 }
 
-.circulo-nivel:hover {
-    transform: scale(1.08);
-    box-shadow: 0 0 12px rgba(0, 0, 0, .15);
+/* Posiciones horizontales de los círculos */
+.nivel:nth-of-type(odd) .circulo-nivel { left: 14%; }
+.nivel:nth-of-type(even) .circulo-nivel { left: 86%; }
+
+.circulo-nivel:hover:not([disabled]) {
+    transform: translate(-50%, -50%) scale(1.08);
+    box-shadow: 0 6px 14px rgba(0, 0, 0, .22);
 }
 
-.imagen-nivel {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-    border-radius: 50%;
-}
-
-.numero-nivel {
-    position: absolute;
-    width: 34px;
-    height: 34px;
-    display: grid;
-    place-items: center;
-    border-radius: 50%;
-    background: rgba(75, 46, 34, 0.85);
-    color: #ffffff;
-    font-size: 18px;
-    font-weight: 800;
-    z-index: 2;
-}
-
-.nivel.completado .circulo-nivel {
-    border-color: #b39453;
+/* Estados de los círculos */
+.circulo-nivel.completed {
+    border: 5px solid #b39453;
     background: #efd57b;
     color: #4c7a3b;
 }
 
+.circulo-nivel.active {
+    border: 5px solid var(--module-color, #76b95d);
+    background: #ffffff;
+    color: var(--module-color, #76b95d);
+    animation: activePulse 2s infinite ease-in-out;
+}
+
+.circulo-nivel.locked {
+    border: 5px solid #a39992;
+    background: #dfdad6;
+    color: #776c64;
+    cursor: not-allowed;
+    box-shadow: none;
+}
+
+@keyframes activePulse {
+    0% {
+        box-shadow: 0 0 0 0 rgba(118, 185, 93, 0.4);
+    }
+    70% {
+        box-shadow: 0 0 0 12px rgba(118, 185, 93, 0);
+    }
+    100% {
+        box-shadow: 0 0 0 0 rgba(118, 185, 93, 0);
+    }
+}
+
+/* Textos de los niveles */
 .texto-nivel {
-    max-width: 190px;
-    position: relative;
-    color: #4b2e22;
-    line-height: 1.15;
+    position: absolute;
     z-index: 4;
-    align-self: center;
+    pointer-events: none;
+    color: #4b2e22;
+    line-height: 1.2;
+    display: flex;
+    flex-direction: column;
+    max-width: 175px;
+    font-family: inherit;
 }
 
 .texto-nivel strong {
-    display: block;
     font-size: 19px;
     font-weight: 800;
+    color: #3b2014;
 }
 
 .texto-nivel small {
-    display: block;
-    margin-top: 4px;
     font-size: 13px;
     font-weight: 700;
+    color: #61463a;
+    margin-top: 3px;
     line-height: 1.25;
 }
 
-.nivel:nth-child(odd) .circulo-nivel {
-    grid-column: 1;
-}
-
-.nivel:nth-child(odd) .texto-nivel {
-    grid-column: 2;
+/* Estilo y posición del texto según la fila del nivel */
+.nivel:nth-of-type(odd) .texto-nivel {
+    left: calc(14% + 60px);
+    top: 50%;
+    transform: translateY(-50%);
     text-align: left;
-    padding-left: 10px;
-    transform: translateY(15px);
 }
 
-.nivel:nth-child(even) {
-    grid-template-columns: 92px 1fr 92px;
-}
-
-.nivel:nth-child(even) .texto-nivel {
-    grid-column: 2;
-    justify-self: end;
+.nivel:nth-of-type(even) .texto-nivel {
+    right: calc(14% + 60px);
+    top: 50%;
+    transform: translateY(-50%);
     text-align: right;
-    padding-right: 10px;
-    transform: translateY(-19px);
 }
 
-.nivel:nth-child(even) .circulo-nivel {
-    grid-column: 3;
-}
-
-.linea {
-    position: absolute;
-    width: calc(100% - 86px);
-    height: 95px;
-    left: 43px;
-    bottom: -40px;
-    border-left: 4px dashed #6b4a3a;
-    border-bottom: 4px dashed #6b4a3a;
-    border-radius: 0 0 0 50px;
-    z-index: 1;
-    pointer-events: none;
-}
-
-.nivel:nth-child(even) .linea {
-    left: auto;
-    right: 43px;
-    border-left: 0;
-    border-right: 4px dashed #6b4a3a;
-    border-bottom: 4px dashed #6b4a3a;
-    border-radius: 0 0 50px 0;
-}
-
-.nivel:last-child .linea {
-    display: none;
-}
-
-.icono-volver {
-    width: 28px;
-    height: 28px;
-    object-fit: contain;
-    color: white;
-}
-
-
-.ayuda-voz .icono-nico {
-    width: 30px;
-    height: 30px;
+/* Estilos de los iconos SVG en los círculos */
+.icono-nivel-svg {
+    width: 44px;
+    height: 44px;
     display: block;
-    margin: 0 auto 4px;
     object-fit: contain;
-    color: #ffffff;
+}
+
+.icono-nivel-svg.completado {
+    width: 46px;
+    height: 46px;
+}
+
+.nivel.locked .texto-nivel strong,
+.nivel.locked .texto-nivel small {
+    opacity: 0.65;
 }
