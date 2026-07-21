@@ -1,0 +1,703 @@
+/* ==========================================================================
+   ESTILOS DEL SIMULADOR DE INTERFAZ DE WHATSAPP (MÓVIL-FIRST)
+   ========================================================================== */
+
+/* Contenedor principal de WhatsApp (sobreescribe padding de .pantalla) */
+.pantalla-whatsapp {
+    padding: 0 !important;
+    background-color: #ffffff;
+    height: 100dvh;
+    display: none;
+    flex-direction: column;
+}
+
+.pantalla-whatsapp.activa {
+    display: flex;
+}
+
+/* Vista del simulador */
+.ws-view {
+    display: none;
+    flex-direction: column;
+    width: 100%;
+    height: 100%;
+    position: relative;
+}
+
+.ws-view.activa {
+    display: flex;
+}
+
+/* --- ENCABEZADOS DE WHATSAPP --- */
+.ws-header {
+    background-color: #0b8066;
+    color: #ffffff;
+    padding: 14px 16px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    z-index: 10;
+}
+
+.ws-header-title {
+    font-size: 22px;
+    font-weight: 700;
+    letter-spacing: 0.2px;
+}
+
+.ws-header-actions {
+    display: flex;
+    gap: 18px;
+    align-items: center;
+}
+
+.ws-header-btn {
+    background: none;
+    border: none;
+    color: #ffffff;
+    cursor: pointer;
+    padding: 4px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: opacity 0.2s;
+}
+
+.ws-header-btn:hover {
+    opacity: 0.85;
+}
+
+.ws-header-icon {
+    width: 24px;
+    height: 24px;
+    fill: currentColor;
+}
+
+/* --- SECCIÓN DE ESTADOS (HISTORIAS) --- */
+.ws-status-bar {
+    display: flex;
+    gap: 14px;
+    padding: 14px 16px;
+    overflow-x: auto;
+    background-color: #ffffff;
+    border-bottom: 1px solid #f2f2f2;
+    scrollbar-width: none; /* Ocultar scrollbar Firefox */
+}
+
+.ws-status-bar::-webkit-scrollbar {
+    display: none; /* Ocultar scrollbar Chrome/Safari */
+}
+
+.ws-status-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    min-width: 66px;
+    cursor: pointer;
+}
+
+.ws-status-avatar-wrapper {
+    position: relative;
+    width: 58px;
+    height: 58px;
+    border-radius: 50%;
+    padding: 2px;
+    border: 2px solid #00a884;
+}
+
+.ws-status-item.mine .ws-status-avatar-wrapper {
+    border-color: transparent;
+}
+
+.ws-status-avatar {
+    width: 100%;
+    height: 100%;
+    border-radius: 50%;
+    object-fit: cover;
+    background-color: #e1e1e1;
+}
+
+.ws-status-add-btn {
+    position: absolute;
+    bottom: -1px;
+    right: -1px;
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    background-color: #00a884;
+    color: #ffffff;
+    border: 2px solid #ffffff;
+    display: grid;
+    place-items: center;
+    font-size: 14px;
+    font-weight: 900;
+    line-height: 1;
+}
+
+.ws-status-name {
+    margin-top: 5px;
+    font-size: 12px;
+    color: #3b3b3b;
+    text-align: center;
+    width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+/* --- BARRA DE BÚSQUEDA --- */
+.ws-search-container {
+    padding: 4px 16px 8px;
+    background-color: #ffffff;
+}
+
+.ws-search-box {
+    background-color: #f0f2f5;
+    border-radius: 24px;
+    padding: 10px 16px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    color: #667781;
+    font-size: 15px;
+    cursor: pointer;
+}
+
+.ws-search-icon {
+    width: 18px;
+    height: 18px;
+    fill: currentColor;
+}
+
+/* --- FILTROS DE CHAT --- */
+.ws-filters-bar {
+    display: flex;
+    gap: 8px;
+    padding: 8px 16px 12px;
+    background-color: #ffffff;
+    border-bottom: 1px solid #f2f2f2;
+}
+
+.ws-filter-pill {
+    background-color: #f0f2f5;
+    color: #54656f;
+    padding: 6px 14px;
+    border-radius: 20px;
+    font-size: 13.5px;
+    font-weight: 700;
+    border: none;
+    cursor: pointer;
+}
+
+.ws-filter-pill.activa {
+    background-color: #e8fae6;
+    color: #0b8066;
+}
+
+/* --- LISTA DE CHATS --- */
+.ws-chats-list {
+    flex: 1;
+    overflow-y: auto;
+    background-color: #ffffff;
+}
+
+.ws-chat-item {
+    display: flex;
+    align-items: center;
+    padding: 12px 16px;
+    gap: 14px;
+    cursor: pointer;
+    border-bottom: 1px solid #f9f9f9;
+    transition: background-color 0.15s;
+}
+
+.ws-chat-item:active {
+    background-color: #f0f2f5;
+}
+
+.ws-chat-avatar {
+    width: 52px;
+    height: 52px;
+    border-radius: 50%;
+    object-fit: cover;
+    background-color: #eaeaea;
+}
+
+.ws-chat-info {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    min-width: 0; /* Permite truncar texto adecuadamente */
+}
+
+.ws-chat-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.ws-chat-name {
+    font-size: 16px;
+    font-weight: 700;
+    color: #111b21;
+    margin: 0;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.ws-chat-time {
+    font-size: 12px;
+    color: #667781;
+    white-space: nowrap;
+}
+
+.ws-chat-preview {
+    font-size: 14px;
+    color: #667781;
+    margin: 0;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.ws-chat-preview-icon {
+    width: 16px;
+    height: 16px;
+    fill: currentColor;
+    flex-shrink: 0;
+}
+
+/* --- FLOATING ACTION BUTTON (FAB) --- */
+.ws-fab {
+    position: absolute;
+    bottom: 84px;
+    right: 18px;
+    width: 56px;
+    height: 56px;
+    border-radius: 18px;
+    background-color: #00a884;
+    color: #ffffff;
+    display: grid;
+    place-items: center;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.25);
+    border: none;
+    cursor: pointer;
+    z-index: 5;
+    transition: transform 0.2s;
+}
+
+.ws-fab:active {
+    transform: scale(0.95);
+}
+
+.ws-fab-icon {
+    width: 24px;
+    height: 24px;
+    fill: currentColor;
+}
+
+/* --- BARRA DE NAVEGACIÓN INFERIOR (ANDROID STYLE) --- */
+.ws-bottom-nav {
+    height: 68px;
+    border-top: 1px solid #f0f0f0;
+    background-color: #ffffff;
+    display: flex;
+    justify-content: space-around;
+    align-items: center;
+    z-index: 10;
+    box-shadow: 0 -1px 3px rgba(0,0,0,0.03);
+}
+
+.ws-nav-item {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+    color: #54656f;
+    font-size: 12px;
+    font-weight: 700;
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 6px 0;
+}
+
+.ws-nav-item.activa {
+    color: #111b21;
+}
+
+.ws-nav-icon-wrapper {
+    padding: 4px 16px;
+    border-radius: 16px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background-color 0.2s;
+}
+
+.ws-nav-item.activa .ws-nav-icon-wrapper {
+    background-color: #e8fae6;
+    color: #0b8066;
+}
+
+.ws-nav-icon {
+    width: 22px;
+    height: 22px;
+    fill: currentColor;
+}
+
+
+/* ==========================================================================
+   VISTA 2: CONVERSACIÓN INDIVIDUAL
+   ========================================================================== */
+
+/* Encabezado del chat */
+.ws-chat-header {
+    background-color: #0b8066;
+    color: #ffffff;
+    padding: 8px 6px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    z-index: 10;
+}
+
+.ws-chat-back-btn {
+    background: none;
+    border: none;
+    color: #ffffff;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    padding: 6px;
+    border-radius: 50%;
+    transition: background-color 0.2s;
+}
+
+.ws-chat-back-btn:active {
+    background-color: rgba(255, 255, 255, 0.15);
+}
+
+.ws-chat-back-icon {
+    width: 24px;
+    height: 24px;
+    fill: currentColor;
+}
+
+.ws-chat-contact {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex: 1;
+    min-width: 0;
+}
+
+.ws-chat-contact-avatar {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    object-fit: cover;
+    background-color: #eaeaea;
+}
+
+.ws-chat-contact-info {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+}
+
+.ws-chat-contact-name {
+    font-size: 16px;
+    font-weight: 700;
+    margin: 0;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.ws-chat-contact-status {
+    font-size: 11.5px;
+    opacity: 0.9;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.ws-chat-actions {
+    display: flex;
+    gap: 14px;
+    align-items: center;
+    padding-right: 6px;
+}
+
+.ws-chat-action-btn {
+    background: none;
+    border: none;
+    color: #ffffff;
+    cursor: pointer;
+    padding: 6px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.ws-chat-action-icon {
+    width: 22px;
+    height: 22px;
+    fill: currentColor;
+}
+
+/* Cuerpo del chat (Mensajes) */
+.ws-chat-body {
+    flex: 1;
+    overflow-y: auto;
+    padding: 14px 16px;
+    background-color: #efeae2;
+    /* Fondo doodle simulado de WhatsApp */
+    background-image: url("https://user-images.githubusercontent.com/15075759/28719144-86dc0f70-73b1-11e7-911d-60d70fcded21.png");
+    background-blend-mode: overlay;
+    background-size: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+/* Separador de fecha */
+.ws-date-separator {
+    align-self: center;
+    background-color: #ffffff;
+    color: #54656f;
+    padding: 4px 12px;
+    border-radius: 8px;
+    font-size: 11px;
+    font-weight: 700;
+    box-shadow: 0 1px 1px rgba(0,0,0,0.06);
+    margin: 6px 0;
+    text-transform: uppercase;
+}
+
+/* Burbujas de chat */
+.ws-msg-bubble {
+    position: relative;
+    max-width: 80%;
+    padding: 6px 10px 8px;
+    font-size: 15px;
+    line-height: 1.4;
+    color: #111b21;
+    box-shadow: 0 1px 1.5px rgba(0,0,0,0.13);
+    display: flex;
+    flex-direction: column;
+}
+
+.ws-msg-bubble.recibida {
+    align-self: flex-start;
+    background-color: #ffffff;
+    border-radius: 0px 10px 10px 10px;
+}
+
+.ws-msg-bubble.enviada {
+    align-self: flex-end;
+    background-color: #d9fdd3;
+    border-radius: 10px 0px 10px 10px;
+}
+
+/* Burbujas multimedia de audio */
+.ws-msg-audio-player {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 4px 0;
+    width: 220px;
+}
+
+.ws-audio-btn {
+    background: none;
+    border: none;
+    color: #667781;
+    cursor: pointer;
+    padding: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.ws-audio-btn-icon {
+    width: 32px;
+    height: 32px;
+    fill: currentColor;
+}
+
+.ws-audio-timeline-wrapper {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.ws-audio-timeline {
+    height: 4px;
+    background-color: #b6bec2;
+    border-radius: 2px;
+    position: relative;
+}
+
+.ws-audio-progress {
+    width: 30%;
+    height: 100%;
+    background-color: #53bdeb;
+    border-radius: 2px;
+}
+
+.ws-audio-pin {
+    width: 10px;
+    height: 10px;
+    background-color: #53bdeb;
+    border-radius: 50%;
+    position: absolute;
+    top: 50%;
+    left: 30%;
+    transform: translate(-50%, -50%);
+}
+
+.ws-audio-meta {
+    display: flex;
+    justify-content: space-between;
+    font-size: 11px;
+    color: #667781;
+}
+
+.ws-audio-mic-icon {
+    width: 20px;
+    height: 20px;
+    fill: #53bdeb;
+}
+
+/* Metadatos de la burbuja (Hora y Checkmark) */
+.ws-msg-meta {
+    align-self: flex-end;
+    display: flex;
+    align-items: center;
+    gap: 3px;
+    font-size: 11px;
+    color: #667781;
+    margin-top: 2px;
+    margin-left: 20px;
+}
+
+.ws-msg-checkmark {
+    width: 16px;
+    height: 16px;
+    fill: #53bdeb; /* Azul de leídos */
+    display: inline-flex;
+}
+
+.ws-msg-checkmark.gris {
+    fill: #8696a0; /* Gris de no leídos */
+}
+
+/* Área de entrada de mensajes inferior */
+.ws-chat-footer {
+    background-color: #f0f2f5;
+    padding: 8px 10px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    box-shadow: 0 -1px 3px rgba(0,0,0,0.03);
+}
+
+.ws-input-container {
+    flex: 1;
+    background-color: #ffffff;
+    border-radius: 24px;
+    padding: 6px 12px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    box-shadow: 0 1px 2px rgba(0,0,0,0.1);
+}
+
+.ws-input-btn {
+    background: none;
+    border: none;
+    color: #667781;
+    cursor: pointer;
+    padding: 4px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.ws-input-btn-icon {
+    width: 22px;
+    height: 22px;
+    fill: currentColor;
+}
+
+.ws-input-field {
+    flex: 1;
+    border: none;
+    outline: none;
+    font-size: 16px;
+    color: #111b21;
+    background: transparent;
+    padding: 2px 0;
+}
+
+.ws-input-field::placeholder {
+    color: #8696a0;
+}
+
+.ws-action-circle-btn {
+    width: 44px;
+    height: 44px;
+    border-radius: 50%;
+    background-color: #00a884;
+    color: #ffffff;
+    border: none;
+    display: grid;
+    place-items: center;
+    cursor: pointer;
+    box-shadow: 0 1px 2px rgba(0,0,0,0.15);
+    flex-shrink: 0;
+    transition: background-color 0.2s;
+}
+
+.ws-action-circle-btn:active {
+    background-color: #0b8066;
+}
+
+.ws-action-circle-icon {
+    width: 20px;
+    height: 20px;
+    fill: currentColor;
+}
+
+/* --- ESTILOS DE AVATARES PERSONALIZADOS (SIN DEPENDENCIAS DE URLS) --- */
+.ws-avatar {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #ffffff;
+    font-weight: 700;
+    text-transform: uppercase;
+    user-select: none;
+    border-radius: 50%;
+    overflow: hidden;
+}
+
+/* Colores de avatar (Material Palette) */
+.ws-avatar-color-1 { background-color: #e91e63; } /* Rosa */
+.ws-avatar-color-2 { background-color: #3f51b5; } /* Índigo */
+.ws-avatar-color-3 { background-color: #009688; } /* Teal */
+.ws-avatar-color-4 { background-color: #ff5722; } /* Naranja */
+.ws-avatar-color-5 { background-color: #9c27b0; } /* Púrpura */
+.ws-avatar-color-6 { background-color: #03a9f4; } /* Celeste */
+.ws-avatar-color-7 { background-color: #4caf50; } /* Verde */

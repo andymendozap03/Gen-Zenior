@@ -9,31 +9,31 @@ export const datosModulos = {
                 id: "enviar-mensaje",
                 titulo: "Enviar mensaje",
                 descripcion: "Aprende a escribir y enviar un mensaje.",
-                imagen: ""
+                imagen: "./assets/img/levels/mensaje.png"
             },
             {
                 id: "grabar-audio",
                 titulo: "Grabar audio",
                 descripcion: "Practica cómo enviar una nota de voz.",
-                imagen: ""
+                imagen: "./assets/img/levels/microfono.png"
             },
             {
                 id: "hacer-llamada",
                 titulo: "Hacer llamada",
                 descripcion: "Aprende a realizar una llamada.",
-                imagen: ""
+                imagen: "./assets/img/levels/llamada.png"
             },
             {
                 id: "llamada-grupal",
                 titulo: "Llamada grupal",
                 descripcion: "Practica una llamada con varias personas.",
-                imagen: ""
+                imagen: "./assets/img/levels/llamada-grupal.png"
             },
             {
                 id: "enviar-foto",
                 titulo: "Enviar foto",
                 descripcion: "Aprende a compartir una imagen.",
-                imagen: ""
+                imagen: "./assets/img/levels/foto.png"
             }
         ]
     },
@@ -48,31 +48,31 @@ export const datosModulos = {
                 id: "publicar-estado",
                 titulo: "Publicar estado",
                 descripcion: "Aprende a crear una publicación.",
-                imagen: ""
+                imagen: "./assets/img/levels/estado.png"
             },
             {
                 id: "reaccionar-foto",
                 titulo: "Reaccionar a una foto",
                 descripcion: "Practica cómo dar me gusta o reaccionar.",
-                imagen: ""
+                imagen: "./assets/img/levels/reaccionar.png"
             },
             {
                 id: "comentar-publicacion",
                 titulo: "Comentar publicación",
                 descripcion: "Aprende a escribir un comentario.",
-                imagen: ""
+                imagen: "./assets/img/levels/comentar.png"
             },
             {
                 id: "agregar-amigo",
                 titulo: "Agregar amigo",
                 descripcion: "Practica cómo enviar una solicitud.",
-                imagen: ""
+                imagen: "./assets/img/levels/agregar-amigo.png"
             },
             {
                 id: "ver-reels",
                 titulo: "Ver Reels",
                 descripcion: "Aprende a deslizar videos cortos.",
-                imagen: ""
+                imagen: "./assets/img/levels/reel.png"
             }
         ]
     },
@@ -87,31 +87,31 @@ export const datosModulos = {
                 id: "buscar-video",
                 titulo: "Buscar video",
                 descripcion: "Aprende a buscar un video.",
-                imagen: ""
+                imagen: "./assets/img/levels/buscar.png"
             },
             {
                 id: "reproducir-video",
                 titulo: "Reproducir video",
                 descripcion: "Practica cómo iniciar un video.",
-                imagen: ""
-            },
-            {
-                id: "subir-volumen",
-                titulo: "Subir volumen",
-                descripcion: "Aprende a controlar el sonido.",
-                imagen: ""
-            },
-            {
-                id: "suscribirse",
-                titulo: "Suscribirse",
-                descripcion: "Practica cómo seguir un canal.",
-                imagen: ""
+                imagen: "./assets/img/levels/reproducir.png"
             },
             {
                 id: "pausar-video",
                 titulo: "Pausar video",
                 descripcion: "Aprende a pausar un video.",
-                imagen: ""
+                imagen: "./assets/img/levels/pausa.png"
+            },
+            {
+                id: "comentar",
+                titulo: "Comentar",
+                descripcion: "Practica cómo interactuar con el creador del video.",
+                imagen: "./assets/img/levels/comentar.png"
+            },
+            {
+                id: "suscribirse",
+                titulo: "Suscribirse",
+                descripcion: "Practica cómo seguir un canal.",
+                imagen: "./assets/img/levels/suscribir.png"
             }
         ]
     },
@@ -126,31 +126,31 @@ export const datosModulos = {
                 id: "guardar-contacto",
                 titulo: "Guardar contacto",
                 descripcion: "Aprende a guardar un número.",
-                imagen: ""
+                imagen: "./assets/img/levels/guardar-contacto.png"
             },
             {
                 id: "buscar-contacto",
                 titulo: "Buscar contacto",
                 descripcion: "Practica cómo encontrar un contacto.",
-                imagen: ""
+                imagen: "./assets/img/levels/buscar-contacto.png"
             },
             {
                 id: "llamar-contacto",
                 titulo: "Llamar contacto",
                 descripcion: "Aprende a llamar a una persona.",
-                imagen: ""
+                imagen: "./assets/img/levels/llamar.png"
             },
             {
                 id: "editar-contacto",
                 titulo: "Editar contacto",
                 descripcion: "Practica cómo cambiar datos de un contacto.",
-                imagen: ""
+                imagen: "./assets/img/levels/editar.png"
             },
             {
                 id: "eliminar-contacto",
                 titulo: "Eliminar contacto",
                 descripcion: "Aprende a borrar un contacto.",
-                imagen: ""
+                imagen: "./assets/img/levels/eliminar-contacto.png"
             }
         ]
     }

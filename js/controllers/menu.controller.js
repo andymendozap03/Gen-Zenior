@@ -2,10 +2,12 @@ import { $ } from "../utils/dom.js";
 import { abrirPantallaNiveles } from "./levels.controller.js";
 import { datosModulos } from "../data/modules.data.js";
 import { speak, stopSpeech } from "../services/speech.service.js";
+import { inicializarProgreso } from "../services/progress.service.js";
 
 let moduloActual = null;
 
 export function inicializarMenu() {
+    inicializarProgreso();
     const btnNicoMenu = $("#btnNicoMenu");
     const menuPrincipal = $("#menuPrincipal");
     const btnTrofeos = $("#btnTrofeos");
