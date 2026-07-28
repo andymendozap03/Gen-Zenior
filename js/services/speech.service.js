@@ -47,9 +47,9 @@ function speakWithWebSpeech(text) {
 export async function speak(text) {
     await stopSpeech();
 
+    if (window.nicoVoiceEnabled === false) return;
 
     speakWithWebSpeech(text);
-
 }
 
 export async function stopSpeech() {

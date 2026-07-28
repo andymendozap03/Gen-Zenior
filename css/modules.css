@@ -113,7 +113,8 @@
     position: absolute;
     top: 0px;
     right: 80px;
-    width: 220px;
+    width: calc(100vw - 110px);
+    max-width: 220px;
     padding: 12px 14px;
     background: #fff7e9;
     color: #4b2e22;

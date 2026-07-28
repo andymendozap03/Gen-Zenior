@@ -147,7 +147,8 @@
     position: absolute;
     top: 15px;
     right: 80px;
-    width: 220px;
+    width: calc(100vw - 110px);
+    max-width: 220px;
     padding: 12px 14px;
     background: #fff7e9;
     color: #4b2e22;
@@ -214,4 +215,321 @@
     display: block;
     margin: 0 auto 6px;
     object-fit: contain;
+}
+
+/* ========================================================
+   PANTALLA AJUSTES Y CRÉDITOS (FULL SCREEN)
+   ======================================================== */
+.pantalla-ajustes {
+    background: #efe3c9;
+    min-height: 100dvh;
+    display: none;
+    flex-direction: column;
+    padding: 0 !important;
+}
+
+.pantalla-ajustes.activa {
+    display: flex;
+}
+
+.ajustes-content-body {
+    padding: 20px;
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+    overflow-y: auto;
+}
+
+.ajustes-content-body::-webkit-scrollbar {
+    width: 4px;
+}
+
+.ajustes-content-body::-webkit-scrollbar-thumb {
+    background: rgba(107, 74, 58, 0.2);
+    border-radius: 4px;
+}
+
+.ajustes-menu-body {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    flex: 1;
+}
+
+/* Botón gigante de créditos */
+.btn-ver-creditos-large {
+    width: 100%;
+    max-width: 380px;
+    background: linear-gradient(135deg, #ff9100, #ff3d00);
+    border: 3px solid #6b4a3a;
+    border-radius: 20px;
+    color: #ffffff;
+    font-size: 20px;
+    font-weight: 800;
+    padding: 22px 30px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    cursor: pointer;
+    box-shadow: 0 6px 18px rgba(255, 61, 0, 0.4);
+    transition: all 0.25s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+.btn-ver-creditos-large:hover {
+    transform: translateY(-4px) scale(1.03);
+    box-shadow: 0 10px 24px rgba(255, 61, 0, 0.55);
+    background: linear-gradient(135deg, #ffab40, #ff6e40);
+}
+
+.btn-ver-creditos-large:active {
+    transform: translateY(1px);
+}
+
+.btn-ver-creditos-large .star-icon {
+    font-size: 24px;
+    color: #ffd084;
+}
+
+/* Sección de créditos en pantalla completa */
+.creditos-seccion-full {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    min-height: 0;
+}
+
+.btn-back-ajustes-full {
+    background: none;
+    border: none;
+    color: #6b4a3a;
+    font-size: 16px;
+    font-weight: 800;
+    cursor: pointer;
+    padding: 6px 0;
+    align-self: flex-start;
+    margin-bottom: 16px;
+    display: flex;
+    align-items: center;
+}
+
+.btn-back-ajustes-full:hover {
+    text-decoration: underline;
+}
+
+.creditos-titulo {
+    font-size: 24px;
+    font-weight: 800;
+    color: #4b2e22;
+    text-align: center;
+    margin: 0 0 20px;
+}
+
+.creditos-cards-container {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+/* Developer Credits Card */
+.credito-card {
+    background: #ffffff;
+    border: 2px solid #e6dec9;
+    border-radius: 16px;
+    padding: 16px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    position: relative;
+    overflow: hidden;
+    transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.04);
+}
+
+.credito-card:hover {
+    transform: translateY(-4px) scale(1.02);
+    border-color: #6b4a3a;
+    box-shadow: 0 8px 20px rgba(107, 74, 58, 0.15);
+}
+
+.card-avatar {
+    width: 64px;
+    height: 64px;
+    border-radius: 50%;
+    background: #f7ede2;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+    border: 2px solid #6b4a3a;
+    margin-bottom: 8px;
+    position: relative;
+}
+
+.card-avatar::before {
+    content: "👤";
+    font-size: 28px;
+    z-index: 0;
+}
+
+.card-avatar-img {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    z-index: 2;
+    border: none;
+}
+
+
+
+.card-name {
+    font-size: 14px;
+    font-weight: 800;
+    color: #4b2e22;
+    margin-bottom: 4px;
+}
+
+.card-email {
+    font-size: 12px;
+    font-weight: 600;
+    color: #7b9f42;
+    margin-bottom: 8px;
+}
+
+.card-badge {
+    background: #fdf2e9;
+    color: #e28743;
+    font-size: 10px;
+    font-weight: 800;
+    padding: 2px 8px;
+    border-radius: 10px;
+    border: 1px solid #fad7a0;
+}
+
+/* Individual card accent highlights on hover */
+.card-edson:hover {
+    border-color: #2196f3;
+}
+
+.card-edson:hover .card-badge {
+    background: #e3f2fd;
+    color: #1e88e5;
+    border-color: #bbdefb;
+}
+
+.card-genesis:hover {
+    border-color: #9c27b0;
+}
+
+.card-genesis:hover .card-badge {
+    background: #f3e5f5;
+    color: #8e24aa;
+    border-color: #e1bee7;
+}
+
+.card-angelina:hover {
+    border-color: #e91e63;
+}
+
+.card-angelina:hover .card-badge {
+    background: #fce4ec;
+    color: #d81b60;
+    border-color: #f8bbd0;
+}
+
+.card-andy:hover {
+    border-color: #ff9800;
+}
+
+.card-andy:hover .card-badge {
+    background: #fff3e0;
+    color: #f57c00;
+    border-color: #ffe0b2;
+}
+
+/* ========================================================
+   ESTILOS DE MODO OSCURO PARA LA APLICACIÓN
+   ======================================================== */
+.app.dark-mode {
+    background: #121212 !important;
+    color: #e0e0e0 !important;
+}
+
+.app.dark-mode #pantallaMenu {
+    background: #121212 !important;
+}
+
+.app.dark-mode .encabezado-menu h2,
+.app.dark-mode .encabezado-menu p {
+    color: #e0e0e0 !important;
+}
+
+.app.dark-mode .boton-menu {
+    background: #1e1e1e !important;
+    color: #ffffff !important;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.5) !important;
+    border: 1px solid #333333;
+}
+
+.app.dark-mode .boton-menu:hover {
+    background: #2a2a2a !important;
+}
+
+.app.dark-mode .boton-abajo {
+    background: #271510 !important;
+    color: #ffffff !important;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.5) !important;
+    border: 1px solid #333333;
+}
+
+.app.dark-mode .boton-abajo:hover {
+    background: #3e241c !important;
+}
+
+.app.dark-mode .modal-ajustes-content {
+    background: #1e1e1e !important;
+    border-color: #5d4037 !important;
+    color: #e0e0e0 !important;
+}
+
+.app.dark-mode .ajustes-option {
+    color: #e0e0e0 !important;
+}
+
+.app.dark-mode .creditos-seccion {
+    background: #1e1e1e !important;
+    color: #e0e0e0 !important;
+}
+
+.app.dark-mode .btn-back-ajustes {
+    color: #ffab40 !important;
+}
+
+.app.dark-mode .credito-card {
+    background: #2b2b2b !important;
+    border-color: #444444 !important;
+}
+
+.app.dark-mode .card-name {
+    color: #ffffff !important;
+}
+
+.app.dark-mode .card-avatar {
+    background: #3a3a3a !important;
+}
+
+/* Icono del botón de créditos */
+.creditos .icono {
+    background-image: url("../assets/img/creditos.png");
+    /* Puedes cambiar este path por el icono deseado */
+}
+
+.creditos:hover {
+    background: #ffe3c9;
 }

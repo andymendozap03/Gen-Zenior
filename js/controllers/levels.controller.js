@@ -3,6 +3,9 @@ import { datosModulos } from "../data/modules.data.js";
 import { speak, stopSpeech } from "../services/speech.service.js";
 import { obtenerEstadoNivel, completarNivel } from "../services/progress.service.js";
 import { iniciarSimulador as iniciarSimuladorWhatsapp } from "../modules/whatsapp/whatsapp.simulator.js";
+import { iniciarSimulador as iniciarSimuladorFacebook } from "../modules/facebook/facebook.simulator.js";
+import { iniciarSimulador as iniciarSimuladorContactos } from "../modules/contacts/contacts.simulator.js";
+import { iniciarSimulador as iniciarSimuladorYoutube } from "../modules/youtube/youtube.simulator.js";
 
 let idModuloActual = null;
 
@@ -204,6 +207,12 @@ function abrirNivel(idNivel) {
 
     if (idModuloActual === "WhatsApp") {
         iniciarSimuladorWhatsapp(idNivel);
+    } else if (idModuloActual === "Facebook") {
+        iniciarSimuladorFacebook(idNivel);
+    } else if (idModuloActual === "Contactos") {
+        iniciarSimuladorContactos(idNivel);
+    } else if (idModuloActual === "YouTube") {
+        iniciarSimuladorYoutube(idNivel);
     } else {
         alert(`Simulando nivel: ${nivel.titulo}.\n\n¡Completaste este nivel con éxito!`);
         completarNivel(idModuloActual, idNivel);
@@ -211,29 +220,29 @@ function abrirNivel(idNivel) {
     }
 }
 
-function mostrarAyudaNicoModulo() {
-    console.log("Botón Nico del módulo presionado");
+let _nicoClickEnBoton = false;
 
+function mostrarAyudaNicoModulo() {
     const burbuja = $("#mensajeNicoModulo");
-    const modulo = datosModulos[idModuloActual];
 
     if (!burbuja) {
         console.error("No se encontró #mensajeNicoModulo");
         return;
     }
 
-    if (!modulo) {
-        console.error("No hay módulo actual seleccionado:", idModuloActual);
-        return;
-    }
-
-    const mensaje = modulo.mensajeVoz || "Selecciona un nivel tocando uno de los círculos para empezar a practicar.";
+    // Señalizar al document listener que este click fue en el botón
+    _nicoClickEnBoton = true;
 
     if (burbuja.classList.contains("mostrar")) {
         stopSpeech();
         burbuja.classList.remove("mostrar");
         return;
     }
+
+    const modulo = datosModulos[idModuloActual];
+    const mensaje = modulo
+        ? (modulo.mensajeVoz || "Selecciona un nivel tocando uno de los círculos para empezar a practicar.")
+        : "Selecciona un nivel tocando uno de los círculos para empezar a practicar.";
 
     burbuja.textContent = mensaje;
     burbuja.classList.add("mostrar");
@@ -242,15 +251,21 @@ function mostrarAyudaNicoModulo() {
 }
 
 function cerrarMensajeNicoModulo(evento) {
+    // Si el clic fue en el botón Nico, no cerrar (lo maneja mostrarAyudaNicoModulo)
+    if (_nicoClickEnBoton) {
+        _nicoClickEnBoton = false;
+        return;
+    }
+
     const burbuja = $("#mensajeNicoModulo");
-    const boton = $("#btnNicoModulo");
 
     if (!burbuja || !burbuja.classList.contains("mostrar")) {
         return;
     }
 
-    if (!burbuja.contains(evento.target) && !boton.contains(evento.target)) {
+    if (!burbuja.contains(evento.target)) {
         burbuja.classList.remove("mostrar");
+        stopSpeech();
     }
 }
 
