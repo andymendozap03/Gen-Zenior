@@ -5,7 +5,8 @@
 .pantalla-youtube {
     padding: 0 !important;
     background: #ffffff;
-    height: 100dvh;
+    height: 100vh;
+    height: 100svh;
     display: none;
     flex-direction: column;
     font-family: "Roboto", "Nunito Sans", Arial, sans-serif;

@@ -6,7 +6,8 @@
 .pantalla-whatsapp {
     padding: 0 !important;
     background-color: #ffffff;
-    height: 100dvh;
+    height: 100vh;
+    height: 100svh;
     display: none;
     flex-direction: column;
 }
@@ -307,7 +308,8 @@
 
 /* --- BARRA DE NAVEGACIÓN INFERIOR (ANDROID STYLE) --- */
 .ws-bottom-nav {
-    height: 68px;
+    height: calc(68px + env(safe-area-inset-bottom, 0px));
+    padding-bottom: env(safe-area-inset-bottom, 0px);
     border-top: 1px solid #f0f0f0;
     background-color: #ffffff;
     display: flex;
@@ -611,7 +613,7 @@
 /* Área de entrada de mensajes inferior */
 .ws-chat-footer {
     background-color: #f0f2f5;
-    padding: 8px 10px;
+    padding: 8px 10px calc(14px + env(safe-area-inset-bottom, 0px));
     display: flex;
     align-items: center;
     gap: 8px;
@@ -620,6 +622,7 @@
 
 .ws-input-container {
     flex: 1;
+    min-width: 0;
     background-color: #ffffff;
     border-radius: 24px;
     padding: 6px 12px;
@@ -648,6 +651,7 @@
 
 .ws-input-field {
     flex: 1;
+    min-width: 0;
     border: none;
     outline: none;
     font-size: 16px;
@@ -1093,7 +1097,7 @@
     }
 
     .ws-bottom-nav {
-        height: 60px;
+        height: calc(60px + env(safe-area-inset-bottom, 0px));
     }
 
     .ws-nav-item {
@@ -1125,6 +1129,25 @@
     .ws-msg-bubble {
         font-size: 14px;
         max-width: 85%;
+    }
+
+    .ws-chat-footer {
+        padding: 6px 8px calc(10px + env(safe-area-inset-bottom, 0px));
+        gap: 6px;
+    }
+
+    .ws-input-container {
+        padding: 6px 8px;
+        gap: 6px;
+    }
+
+    .ws-input-btn {
+        padding: 2px;
+    }
+
+    .ws-input-btn-icon {
+        width: 18px;
+        height: 18px;
     }
 
     .ws-input-field {

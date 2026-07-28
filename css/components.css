@@ -1,5 +1,6 @@
 #pantallaMenu {
-    min-height: 100dvh;
+    min-height: 100vh;
+    min-height: 100svh;
     flex-direction: column;
     padding-bottom: 30px;
 }
@@ -222,7 +223,8 @@
    ======================================================== */
 .pantalla-ajustes {
     background: #efe3c9;
-    min-height: 100dvh;
+    min-height: 100vh;
+    min-height: 100svh;
     display: none;
     flex-direction: column;
     padding: 0 !important;

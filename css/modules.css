@@ -2,7 +2,8 @@
     position: relative;
     padding: 0;
     overflow: hidden;
-    height: 100dvh;
+    height: 100vh;
+    height: 100svh;
 }
 
 .encabezado-modulo {
@@ -147,7 +148,8 @@
 /* Lista de niveles y scroll */
 .lista-niveles {
     width: 100%;
-    height: calc(100dvh - 110px);
+    height: calc(100vh - 110px);
+    height: calc(100svh - 110px);
     margin: 0;
     padding: 24px 20px 80px;
     position: relative;

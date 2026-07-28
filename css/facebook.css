@@ -6,7 +6,8 @@
 .pantalla-facebook {
     padding: 0 !important;
     background: #f0f2f5;
-    height: 100dvh;
+    height: 100vh;
+    height: 100svh;
     display: none;
     flex-direction: column;
     font-family: "Nunito Sans", "Helvetica Neue", Helvetica, Arial, sans-serif;
@@ -806,6 +807,7 @@
 
 .fb-comment-input {
     flex: 1;
+    min-width: 0;
     background: #f0f2f5;
     border: 1px solid #e4e6eb;
     border-radius: 20px;
