@@ -201,6 +201,7 @@
     align-items: center;
     justify-content: center;
     flex-shrink: 0;
+    overflow: hidden;
 }
 
 .fb-create-avatar svg {
@@ -293,39 +294,59 @@
 
 .fb-story-create {
     background: #ffffff;
+    display: flex;
+    flex-direction: column;
+    position: relative;
 }
 
-.fb-story-create .fb-story-bg {
-    flex-direction: column;
+.fb-story-create-img {
+    width: 100%;
+    height: 105px;
+    object-fit: cover;
+    display: block;
+}
+
+.fb-story-create-info {
+    flex: 1;
     background: #ffffff;
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
     align-items: center;
-    justify-content: flex-end;
-    padding-bottom: 10px;
-    gap: 6px;
+    padding: 0 4px;
 }
 
 .fb-story-add-btn {
-    width: 38px;
-    height: 38px;
+    position: absolute;
+    top: 0;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 32px;
+    height: 32px;
     border-radius: 50%;
     background: #1877f2;
+    border: 3px solid #ffffff;
     display: flex;
     align-items: center;
     justify-content: center;
+    box-sizing: border-box;
+    z-index: 2;
 }
 
 .fb-story-add-btn svg {
-    width: 22px;
-    height: 22px;
+    width: 16px;
+    height: 16px;
     fill: white;
 }
 
 .fb-story-create-label {
-    font-size: 12px;
+    font-size: 11px;
     font-weight: 700;
     color: #050505;
     text-align: center;
-    padding: 0 8px;
+    margin-top: 14px;
+    line-height: 1.2;
 }
 
 .fb-story-user-photo {
@@ -352,6 +373,7 @@
     color: white;
     font-weight: 800;
     background: #1877f2;
+    overflow: hidden;
 }
 
 .fb-story-name {
@@ -399,6 +421,15 @@
     font-weight: 800;
     color: white;
     flex-shrink: 0;
+    overflow: hidden;
+}
+
+.fb-avatar-img {
+    width: 100%;
+    height: 100%;
+    border-radius: 50%;
+    object-fit: cover;
+    display: block;
 }
 
 .fb-post-author-name {
@@ -470,6 +501,23 @@
     font-size: 64px;
     flex-direction: column;
     gap: 10px;
+}
+
+.fb-post-image {
+    width: 100%;
+    max-height: 380px;
+    overflow: hidden;
+    background: #000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.fb-post-img {
+    width: 100%;
+    height: auto;
+    max-height: 380px;
+    object-fit: cover;
 }
 
 .fb-post-image-label {
@@ -714,6 +762,7 @@
     font-weight: 800;
     color: white;
     flex-shrink: 0;
+    overflow: hidden;
 }
 
 .fb-comment-right {
@@ -797,6 +846,7 @@
     align-items: center;
     justify-content: center;
     flex-shrink: 0;
+    overflow: hidden;
 }
 
 .fb-comment-input-avatar svg {
@@ -840,4 +890,69 @@
     width: 16px;
     height: 16px;
     fill: white;
+}
+
+/* ---- LIGHTBOX DE IMÁGENES ---- */
+.fb-lightbox-modal {
+    position: absolute;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.95);
+    z-index: 400;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    opacity: 0;
+    transition: opacity 0.25s ease;
+}
+
+.fb-lightbox-modal.activa {
+    display: flex;
+    opacity: 1;
+}
+
+.fb-lightbox-content {
+    max-width: 90%;
+    max-height: 85%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 4px 30px rgba(0, 0, 0, 0.5);
+    animation: fbZoomIn 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+@keyframes fbZoomIn {
+    from { transform: scale(0.85); opacity: 0; }
+    to { transform: scale(1); opacity: 1; }
+}
+
+.fb-lightbox-content img {
+    max-width: 100%;
+    max-height: 100%;
+    object-fit: contain;
+    border-radius: 4px;
+}
+
+.fb-lightbox-close {
+    position: absolute;
+    top: 20px;
+    right: 20px;
+    background: rgba(255, 255, 255, 0.15);
+    border: none;
+    color: #ffffff;
+    font-size: 24px;
+    font-weight: bold;
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background 0.2s, transform 0.2s;
+    z-index: 410;
+}
+
+.fb-lightbox-close:hover {
+    background: rgba(255, 255, 255, 0.3);
+    transform: scale(1.05);
 }

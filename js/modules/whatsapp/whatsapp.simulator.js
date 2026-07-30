@@ -1156,11 +1156,9 @@ function inicializarListeners() {
         if (modalGaleria) modalGaleria.classList.remove("activa");
 
         const simulador = $("#pantallaWhatsappSimulador");
-        simulador.classList.remove("activa");
+        if (simulador) simulador.classList.remove("activa");
         
-        import("../../controllers/levels.controller.js").then(m => {
-            m.abrirPantallaNiveles("WhatsApp");
-        });
+        location.hash = "/modulo/WhatsApp";
     };
 
     // Salir del simulador

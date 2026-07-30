@@ -11,6 +11,8 @@ const POSTS_DATA = [
         id: 1,
         autor: "María Fernanda López",
         iniciales: "ML",
+        avatar: "./assets/img/facebook/maria_profile.png",
+        imagen: "./assets/img/facebook/maria_post.png",
         color: "#e91e8c",
         tiempo: "2 h",
         texto: "¡Qué hermoso amanecer tuve hoy! Nada mejor que empezar el día con agradecimiento y una taza de café ☀️☕",
@@ -31,6 +33,8 @@ const POSTS_DATA = [
         id: 2,
         autor: "Noticias del Barrio",
         iniciales: "NB",
+        avatar: "./assets/img/facebook/noticias_profile.png",
+        imagen: "./assets/img/facebook/noticias_post.jpg",
         color: "#1877f2",
         verificado: true,
         tiempo: "5 h",
@@ -53,6 +57,8 @@ const POSTS_DATA = [
         id: 3,
         autor: "Recetas de la Abuela",
         iniciales: "RA",
+        avatar: "./assets/img/facebook/recetas_profile.png",
+        imagen: "./assets/img/facebook/recetas_post.png",
         color: "#ff9800",
         tiempo: "Ayer",
         texto: "🍲 RECETA DEL DÍA: Sopa de pollo casera, la mejor para los días fríos. Con zanahoria, papa, apio y el amor de siempre. ¿Quién la prepara hoy?",
@@ -74,6 +80,8 @@ const POSTS_DATA = [
         id: 4,
         autor: "Club de Adultos Activos",
         iniciales: "CA",
+        avatar: "./assets/img/facebook/club_profile.png",
+        imagen: "./assets/img/facebook/club_post.png",
         color: "#4caf50",
         tiempo: "Ayer",
         texto: "💃🕺 ¡El próximo sábado tenemos clase de baile salsa para todos los niveles! No importa la edad, lo que importa es el entusiasmo. Inscripciones abiertas 🎶",
@@ -157,8 +165,8 @@ function asegurarTemplateHTML() {
             <!-- Historias -->
             <div class="fb-stories">
                 <div class="fb-story fb-story-create">
-                    <div style="width:100%;height:65%;background:#e4e6eb;display:flex;align-items:center;justify-content:center;font-size:36px;">👤</div>
-                    <div style="display:flex;flex-direction:column;align-items:center;gap:4px;padding:6px 4px 8px;background:#fff;">
+                    <img src="./assets/img/facebook/user_profile.png" alt="Tú" class="fb-story-create-img">
+                    <div class="fb-story-create-info">
                         <div class="fb-story-add-btn">
                             <svg viewBox="0 0 24 24"><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg>
                         </div>
@@ -166,17 +174,23 @@ function asegurarTemplateHTML() {
                     </div>
                 </div>
                 <div class="fb-story" style="background:linear-gradient(160deg,#e91e8c,#ff6b6b);">
-                    <div class="fb-story-avatar-ring" style="background:#e91e8c;">ML</div>
+                    <div class="fb-story-avatar-ring">
+                        <img src="./assets/img/facebook/maria_profile.png" alt="María" class="fb-avatar-img">
+                    </div>
                     <div class="fb-story-bg">🌸</div>
                     <span class="fb-story-name">María</span>
                 </div>
                 <div class="fb-story" style="background:linear-gradient(160deg,#1877f2,#42a5f5);">
-                    <div class="fb-story-avatar-ring" style="background:#1877f2;">CA</div>
+                    <div class="fb-story-avatar-ring">
+                        <img src="./assets/img/facebook/club_profile.png" alt="Club Activos" class="fb-avatar-img">
+                    </div>
                     <div class="fb-story-bg">💃</div>
                     <span class="fb-story-name">Club Activos</span>
                 </div>
                 <div class="fb-story" style="background:linear-gradient(160deg,#ff9800,#ffc107);">
-                    <div class="fb-story-avatar-ring" style="background:#ff9800;">RA</div>
+                    <div class="fb-story-avatar-ring">
+                        <img src="./assets/img/facebook/recetas_profile.png" alt="Recetas" class="fb-avatar-img">
+                    </div>
                     <div class="fb-story-bg">🍲</div>
                     <span class="fb-story-name">Recetas</span>
                 </div>
@@ -191,7 +205,7 @@ function asegurarTemplateHTML() {
             <div class="fb-create-post">
                 <div class="fb-create-post-row">
                     <div class="fb-create-avatar">
-                        <svg viewBox="0 0 24 24"><path d="M12 12c2.7 0 4.8-2.1 4.8-4.8S14.7 2.4 12 2.4 7.2 4.5 7.2 7.2 9.3 12 12 12zm0 2.4c-3.2 0-9.6 1.6-9.6 4.8v2.4h19.2v-2.4c0-3.2-6.4-4.8-9.6-4.8z"/></svg>
+                        <img src="./assets/img/facebook/user_profile.png" alt="Tú" class="fb-avatar-img">
                     </div>
                     <div class="fb-create-input">¿Qué estás pensando?</div>
                 </div>
@@ -228,12 +242,20 @@ function asegurarTemplateHTML() {
             <div id="fbCommentsList" class="fb-comments-list"></div>
             <div class="fb-comment-input-bar">
                 <div class="fb-comment-input-avatar">
-                    <svg viewBox="0 0 24 24"><path d="M12 12c2.7 0 4.8-2.1 4.8-4.8S14.7 2.4 12 2.4 7.2 4.5 7.2 7.2 9.3 12 12 12zm0 2.4c-3.2 0-9.6 1.6-9.6 4.8v2.4h19.2v-2.4c0-3.2-6.4-4.8-9.6-4.8z"/></svg>
+                    <img src="./assets/img/facebook/user_profile.png" alt="Tú" class="fb-avatar-img">
                 </div>
                 <input type="text" id="fbCommentInput" class="fb-comment-input" placeholder="Escribe un comentario...">
                 <button id="fbCommentSend" class="fb-comment-send-btn" aria-label="Enviar comentario">
                     <svg viewBox="0 0 24 24"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/></svg>
                 </button>
+            </div>
+        </div>
+
+        <!-- Lightbox para imágenes -->
+        <div id="fbLightboxModal" class="fb-lightbox-modal" aria-hidden="true">
+            <button id="fbLightboxClose" class="fb-lightbox-close" aria-label="Cerrar vista de imagen">✕</button>
+            <div class="fb-lightbox-content">
+                <img id="fbLightboxImg" src="" alt="Imagen ampliada">
             </div>
         </div>
     `;
@@ -257,7 +279,9 @@ function renderizarPublicaciones() {
         postEl.innerHTML = `
             <div class="fb-post-header">
                 <div class="fb-post-header-left">
-                    <div class="fb-post-avatar" style="background:${post.color};">${post.iniciales}</div>
+                    <div class="fb-post-avatar" style="background:${post.color};">
+                        ${post.avatar ? `<img src="${post.avatar}" alt="${post.autor}" class="fb-avatar-img" onerror="this.style.display='none'; this.parentElement.innerText='${post.iniciales}'">` : post.iniciales}
+                    </div>
                     <div>
                         <div class="fb-post-author-name">
                             ${post.autor}${post.verificado ? ' <span class="fb-verified">✓</span>' : ""}
@@ -272,10 +296,16 @@ function renderizarPublicaciones() {
                 </div>
             </div>
             <div class="fb-post-text">${post.texto}</div>
+            ${post.imagen ? `
+            <div class="fb-post-image">
+                <img src="${post.imagen}" alt="Imagen de la publicación" class="fb-post-img">
+            </div>
+            ` : `
             <div class="fb-post-image-placeholder" style="background:${post.emojiBg};">
                 <span style="font-size:72px;">${post.emoji}</span>
                 <span class="fb-post-image-label">${post.autor}</span>
             </div>
+            `}
             <div class="fb-post-stats">
                 <div class="fb-post-reactions-summary fb-open-comments" data-post-id="${post.id}">
                     <div class="fb-reaction-emojis">
@@ -334,7 +364,9 @@ function abrirComentarios(postId) {
         const el = document.createElement("div");
         el.className = "fb-comment";
         el.innerHTML = `
-            <div class="fb-comment-avatar" style="background:${com.color};">${com.iniciales}</div>
+            <div class="fb-comment-avatar" style="background:${com.color};">
+                ${com.avatar ? `<img src="${com.avatar}" alt="${com.autor}" class="fb-avatar-img" onerror="this.style.display='none'; this.parentElement.innerText='${com.iniciales}'">` : com.iniciales}
+            </div>
             <div class="fb-comment-right">
                 <div class="fb-comment-bubble">
                     <div class="fb-comment-author">${com.autor}</div>
@@ -399,15 +431,31 @@ function aplicarReaccion(emoji, postId) {
     renderizarPublicaciones();
 }
 
+// ---------- LIGHTBOX ----------
+function abrirLightbox(src) {
+    const modal = $("#fbLightboxModal");
+    const img = $("#fbLightboxImg");
+    if (!modal || !img) return;
+    img.src = src;
+    modal.classList.add("activa");
+    modal.setAttribute("aria-hidden", "false");
+}
+
+function cerrarLightbox() {
+    const modal = $("#fbLightboxModal");
+    if (modal) {
+        modal.classList.remove("activa");
+        modal.setAttribute("aria-hidden", "true");
+    }
+}
+
 // ---------- LISTENERS ----------
 function inicializarListeners() {
     // Salir
     const btnSalir = $("#fbSalirBtn");
     if (btnSalir) {
         btnSalir.onclick = () => {
-            stopSpeech();
-            document.querySelectorAll(".pantalla").forEach(p => p.classList.remove("activa"));
-            import("../../controllers/levels.controller.js").then(m => m.abrirPantallaNiveles("Facebook"));
+            location.hash = "/modulo/Facebook";
         };
     }
 
@@ -444,6 +492,12 @@ function inicializarListeners() {
             const likeBtn = e.target.closest(".fb-like-btn");
             if (likeBtn && !e.target.closest(".fb-reactions-popup")) {
                 manejarLike(parseInt(likeBtn.dataset.postId));
+                return;
+            }
+
+            const postImg = e.target.closest(".fb-post-img");
+            if (postImg) {
+                abrirLightbox(postImg.src);
                 return;
             }
 
@@ -486,6 +540,20 @@ function inicializarListeners() {
             }
         }
     });
+
+    // Lightbox listeners
+    const lightboxClose = $("#fbLightboxClose");
+    if (lightboxClose) {
+        lightboxClose.onclick = cerrarLightbox;
+    }
+    const lightboxModal = $("#fbLightboxModal");
+    if (lightboxModal) {
+        lightboxModal.onclick = (e) => {
+            if (e.target.id === "fbLightboxModal") {
+                cerrarLightbox();
+            }
+        };
+    }
 }
 
 function enviarComentario() {
@@ -497,7 +565,9 @@ function enviarComentario() {
         const el = document.createElement("div");
         el.className = "fb-comment";
         el.innerHTML = `
-            <div class="fb-comment-avatar" style="background:#1877f2;">TU</div>
+            <div class="fb-comment-avatar" style="background:#1877f2;">
+                <img src="./assets/img/facebook/user_profile.png" alt="Tú" class="fb-avatar-img" onerror="this.style.display='none'; this.parentElement.innerText='TU'">
+            </div>
             <div class="fb-comment-right">
                 <div class="fb-comment-bubble">
                     <div class="fb-comment-author">Tú</div>

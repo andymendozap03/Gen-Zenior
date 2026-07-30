@@ -559,10 +559,8 @@ function inicializarListeners() {
 
 // ---- SALIR AL MÓDULO ----
 function salir() {
-    stopSpeech();
     cerrarLlamada();
-    document.querySelectorAll(".pantalla").forEach(p => p.classList.remove("activa"));
-    import("../../controllers/levels.controller.js").then(m => m.abrirPantallaNiveles("Contactos"));
+    location.hash = "/modulo/Contactos";
 }
 
 // ---- PUNTO DE ENTRADA ----

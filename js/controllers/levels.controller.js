@@ -35,8 +35,7 @@ export function abrirPantallaNiveles(idModulo) {
 
 export function inicializarNiveles() {
     $("#btnVolverMenu").addEventListener("click", () => {
-        stopSpeech();
-        cambiarPantalla("pantallaMenu");
+        location.hash = "/";
     });
 
     $("#btnNicoModulo").addEventListener("click", (evento) => {
@@ -92,7 +91,7 @@ function dibujarNiveles(niveles) {
         const botonNivel = elementoNivel.querySelector(".circulo-nivel");
         if (estado !== "locked") {
             botonNivel.addEventListener("click", () => {
-                abrirNivel(nivel.id);
+                location.hash = "/modulo/" + idModuloActual + "/nivel/" + nivel.id;
             });
         }
 
@@ -195,7 +194,7 @@ function dibujarLineaConexion() {
 
 
 
-function abrirNivel(idNivel) {
+export function abrirNivel(idNivel) {
     console.log("Nivel seleccionado:", idNivel);
 
     const nivel = datosModulos[idModuloActual].niveles.find(item => item.id === idNivel);
@@ -216,7 +215,7 @@ function abrirNivel(idNivel) {
     } else {
         alert(`Simulando nivel: ${nivel.titulo}.\n\n¡Completaste este nivel con éxito!`);
         completarNivel(idModuloActual, idNivel);
-        abrirPantallaNiveles(idModuloActual);
+        location.hash = "/modulo/" + idModuloActual;
     }
 }
 

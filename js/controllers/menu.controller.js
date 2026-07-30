@@ -23,7 +23,7 @@ export function inicializarMenu() {
         }
 
         const idModulo = boton.dataset.module;
-        abrirModulo(idModulo);
+        location.hash = "/modulo/" + idModulo;
     });
 
     btnTrofeos.addEventListener("click", () => {
@@ -31,18 +31,7 @@ export function inicializarMenu() {
     });
 
     btnAjustes.addEventListener("click", () => {
-        // Ocultar todas las pantallas y activar la de Ajustes
-        document.querySelectorAll(".pantalla").forEach(p => p.classList.remove("activa"));
-        const pantallaAjustes = $("#pantallaAjustes");
-        if (pantallaAjustes) {
-            pantallaAjustes.classList.add("activa");
-            const menuBody = $("#ajustesMenuBody");
-            const creditosSec = $("#creditosSeccion");
-            const title = $("#ajustesTitle");
-            if (menuBody) menuBody.style.display = "flex";
-            if (creditosSec) creditosSec.style.display = "none";
-            if (title) title.textContent = "Ajustes";
-        }
+        location.hash = "/ajustes";
     });
 
     // Volver al menú principal o a Ajustes desde Créditos usando solo el botón de arriba
@@ -50,19 +39,10 @@ export function inicializarMenu() {
     if (btnVolverMenuAjustes) {
         btnVolverMenuAjustes.onclick = () => {
             const creditosSec = $("#creditosSeccion");
-            const menuBody = $("#ajustesMenuBody");
-            const title = $("#ajustesTitle");
-            
             if (creditosSec && creditosSec.style.display !== "none") {
-                // Si estamos viendo créditos, volver a la pantalla de Ajustes
-                if (menuBody) menuBody.style.display = "flex";
-                creditosSec.style.display = "none";
-                if (title) title.textContent = "Ajustes";
+                location.hash = "/ajustes";
             } else {
-                // Si estamos en Ajustes, volver al menú principal
-                document.querySelectorAll(".pantalla").forEach(p => p.classList.remove("activa"));
-                const pantallaMenu = $("#pantallaMenu");
-                if (pantallaMenu) pantallaMenu.classList.add("activa");
+                location.hash = "/";
             }
         };
     }
@@ -71,12 +51,7 @@ export function inicializarMenu() {
     const btnVerCreditos = $("#btnVerCreditos");
     if (btnVerCreditos) {
         btnVerCreditos.onclick = () => {
-            const menuBody = $("#ajustesMenuBody");
-            const creditosSec = $("#creditosSeccion");
-            const title = $("#ajustesTitle");
-            if (menuBody) menuBody.style.display = "none";
-            if (creditosSec) creditosSec.style.display = "flex";
-            if (title) title.textContent = "Créditos";
+            location.hash = "/ajustes/creditos";
         };
     }
 

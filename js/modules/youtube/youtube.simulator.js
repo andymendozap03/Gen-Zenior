@@ -582,10 +582,8 @@ function inicializarListeners() {
     const btnSalir = $("#ytSalirBtn");
     if (btnSalir) {
         btnSalir.onclick = () => {
-            stopSpeech();
             detenerVideo();
-            document.querySelectorAll(".pantalla").forEach(p => p.classList.remove("activa"));
-            import("../../controllers/levels.controller.js").then(m => m.abrirPantallaNiveles("YouTube"));
+            location.hash = "/modulo/YouTube";
         };
     }
 
