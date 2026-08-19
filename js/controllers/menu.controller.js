@@ -3,6 +3,7 @@ import { abrirPantallaNiveles } from "./levels.controller.js";
 import { datosModulos } from "../data/modules.data.js";
 import { speak, stopSpeech } from "../services/speech.service.js";
 import { inicializarProgreso } from "../services/progress.service.js";
+import { resaltarElemento, limpiarResaltados } from "../services/guide-highlight.service.js";
 
 let moduloActual = null;
 
@@ -22,6 +23,7 @@ export function inicializarMenu() {
             return;
         }
 
+        limpiarResaltados();
         const idModulo = boton.dataset.module;
         location.hash = "/modulo/" + idModulo;
     });
@@ -31,6 +33,7 @@ export function inicializarMenu() {
     });
 
     btnAjustes.addEventListener("click", () => {
+        limpiarResaltados();
         location.hash = "/ajustes";
     });
 
@@ -79,6 +82,7 @@ function mostrarBienvenidaNico(evento) {
 
     if (burbuja.classList.contains("mostrar")) {
         stopSpeech();
+        limpiarResaltados();
         burbuja.classList.remove("mostrar");
         return;
     }
@@ -87,6 +91,9 @@ function mostrarBienvenidaNico(evento) {
 
     burbuja.textContent = mensaje;
     burbuja.classList.add("mostrar");
+
+    // Resaltar los botones de los módulos mientras Nico explica
+    resaltarElemento("#menuPrincipal .boton-menu");
 
     speak(mensaje);
 }
@@ -104,5 +111,6 @@ function cerrarMensajeNico(evento) {
         !btnNicoMenu.contains(evento.target)
     ) {
         burbuja.classList.remove("mostrar");
+        limpiarResaltados();
     }
 }

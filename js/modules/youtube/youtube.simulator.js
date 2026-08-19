@@ -1,5 +1,6 @@
 import { $ } from "../../utils/dom.js";
-import { stopSpeech } from "../../services/speech.service.js";
+import { speak, stopSpeech } from "../../services/speech.service.js";
+import { resaltarElemento, limpiarResaltados } from "../../services/guide-highlight.service.js";
 
 let simuladorInicializado = false;
 let nivelActual = null;
@@ -131,6 +132,15 @@ function asegurarTemplateHTML() {
     if (!contenedor || contenedor.children.length > 0) return;
 
     contenedor.innerHTML = `
+        <!-- Barra de instrucciones (NICO Guía) -->
+        <div id="ytInstructionsBar" class="ws-instructions-bar">
+            <div class="ws-instructions-nico" style="cursor: pointer;" aria-label="Escuchar instrucción de Nico">
+                <img src="./assets/img/icons/voz.svg" alt="Nico" class="ws-instructions-icono-nico">
+                <small>NICO</small>
+            </div>
+            <div id="ytInstructionsText" class="ws-instructions-text">Cargando objetivo...</div>
+        </div>
+
         <!-- ======= VISTA FEED (INICIO) ======= -->
         <div id="ytViewFeed" class="yt-view activa">
             <!-- Header -->
@@ -578,10 +588,23 @@ function configurarNavTabs() {
 
 // ---- LISTENERS ----
 function inicializarListeners() {
+    // Clic en la insignia Nico para repetir instrucción
+    const nicoBtn = $("#ytInstructionsBar")?.querySelector(".ws-instructions-nico");
+    if (nicoBtn) {
+        nicoBtn.onclick = (e) => {
+            e.stopPropagation();
+            const textEl = $("#ytInstructionsText");
+            if (textEl) {
+                speak(textEl.textContent);
+            }
+        };
+    }
+
     // Salir del simulador
     const btnSalir = $("#ytSalirBtn");
     if (btnSalir) {
         btnSalir.onclick = () => {
+            limpiarResaltados();
             detenerVideo();
             location.hash = "/modulo/YouTube";
         };
@@ -679,12 +702,64 @@ function inicializarListeners() {
     }
     const input = $("#ytCommentInput");
     if (input) {
+        input.oninput = () => {
+            if (input.value.trim().length > 0) {
+                resaltarElemento("#ytCommentSendBtn");
+            } else {
+                resaltarElemento("#ytCommentInput");
+            }
+        };
         input.onkeypress = (e) => {
             if (e.key === "Enter") agregarComentario();
         };
     }
 
     configurarNavTabs();
+}
+
+const INSTRUCCIONES_YOUTUBE = {
+    "buscar-video": "Toca el icono de la lupa para buscar un video que te interese.",
+    "reproducir-video": "Toca cualquier video del listado para reproducirlo a pantalla completa.",
+    "dar-like": "Toca el botón 'Me gusta' debajo del video para apoyar al creador.",
+    "comentar-video": "Abre la sección de comentarios para dejar tu opinión en el video.",
+};
+
+function actualizarGuiaVisualYoutube(idNivel) {
+    if (!idNivel) idNivel = nivelActual;
+    const viewPlayer = $("#ytViewPlayer");
+    const enPlayer = viewPlayer && viewPlayer.classList.contains("activa");
+
+    if (idNivel === "buscar-video") {
+        resaltarElemento(".yt-header-icon[aria-label='Buscar']");
+    } else if (idNivel === "reproducir-video") {
+        if (!enPlayer) {
+            resaltarElemento("#ytFeedList .yt-video-card:first-child");
+        } else {
+            limpiarResaltados();
+        }
+    } else if (idNivel === "dar-like") {
+        if (enPlayer) {
+            resaltarElemento("#ytLikeBtn");
+        } else {
+            resaltarElemento("#ytFeedList .yt-video-card:first-child");
+        }
+    } else if (idNivel === "comentar-video") {
+        if (enPlayer) {
+            const drawer = $("#ytCommentsDrawer");
+            if (drawer && drawer.classList.contains("activa")) {
+                const inputVal = $("#ytCommentInput") ? $("#ytCommentInput").value.trim() : "";
+                if (inputVal.length > 0) {
+                    resaltarElemento("#ytCommentSendBtn");
+                } else {
+                    resaltarElemento("#ytCommentInput");
+                }
+            } else {
+                resaltarElemento("#ytCommentsPreviewBtn");
+            }
+        } else {
+            resaltarElemento("#ytFeedList .yt-video-card:first-child");
+        }
+    }
 }
 
 // ---- PUNTO DE ENTRADA ----
@@ -704,6 +779,13 @@ export function iniciarSimulador(idNivel) {
     document.querySelectorAll("#pantallaYoutubeSimulador .yt-nav-tab").forEach(t => t.classList.remove("active"));
     const principalTab = $("#ytNavPrincipal");
     if (principalTab) principalTab.classList.add("active");
+
+    const msg = INSTRUCCIONES_YOUTUBE[idNivel] || "Explora y disfruta de los videos.";
+    const textEl = $("#ytInstructionsText");
+    if (textEl) textEl.textContent = msg;
+
+    speak(msg);
+    actualizarGuiaVisualYoutube(idNivel);
 
     if (!simuladorInicializado) {
         inicializarListeners();

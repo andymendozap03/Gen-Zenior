@@ -6,6 +6,7 @@ import { iniciarSimulador as iniciarSimuladorWhatsapp } from "../modules/whatsap
 import { iniciarSimulador as iniciarSimuladorFacebook } from "../modules/facebook/facebook.simulator.js";
 import { iniciarSimulador as iniciarSimuladorContactos } from "../modules/contacts/contacts.simulator.js";
 import { iniciarSimulador as iniciarSimuladorYoutube } from "../modules/youtube/youtube.simulator.js";
+import { resaltarElemento, limpiarResaltados } from "../services/guide-highlight.service.js";
 
 let idModuloActual = null;
 
@@ -35,6 +36,7 @@ export function abrirPantallaNiveles(idModulo) {
 
 export function inicializarNiveles() {
     $("#btnVolverMenu").addEventListener("click", () => {
+        limpiarResaltados();
         location.hash = "/";
     });
 
@@ -234,6 +236,7 @@ function mostrarAyudaNicoModulo() {
 
     if (burbuja.classList.contains("mostrar")) {
         stopSpeech();
+        limpiarResaltados();
         burbuja.classList.remove("mostrar");
         return;
     }
@@ -245,6 +248,9 @@ function mostrarAyudaNicoModulo() {
 
     burbuja.textContent = mensaje;
     burbuja.classList.add("mostrar");
+
+    // Resaltar los círculos de niveles disponibles/desbloqueados
+    resaltarElemento("#listaNiveles .circulo-nivel:not(.locked)");
 
     speak(mensaje);
 }
@@ -264,6 +270,7 @@ function cerrarMensajeNicoModulo(evento) {
 
     if (!burbuja.contains(evento.target)) {
         burbuja.classList.remove("mostrar");
+        limpiarResaltados();
         stopSpeech();
     }
 }

@@ -11,6 +11,7 @@
 
 .encabezado-menu {
     position: relative;
+    z-index: 150;
     flex: 0 0 auto;
 }
 
@@ -36,6 +37,7 @@
     font-weight: bold;
     box-shadow: 0 4px 8px rgba(0, 0, 0, .2);
     transition: all 0.25s ease;
+    z-index: 310;
 }
 
 
@@ -159,7 +161,7 @@
     font-weight: 700;
     line-height: 1.3;
     box-shadow: 0 4px 8px rgba(0, 0, 0, .18);
-    z-index: 20;
+    z-index: 300;
 }
 
 .mensaje-nico.mostrar {
@@ -206,8 +208,61 @@
 .icono-flecha {
     width: 48px;
     height: 48px;
-    justify-self: center;
+    margin-left: auto;
     object-fit: contain;
+    filter: drop-shadow(0 2px 4px rgba(0, 0, 0, .15));
+}
+
+/* ==========================================================================
+   BARRA DE INSTRUCCIONES DE NICO (GLOBAL PARA TODOS LOS SIMULADORES)
+   ========================================================================== */
+.ws-instructions-bar {
+    background-color: #fff7e9;
+    border-bottom: 2px solid #6b4a3a;
+    padding: 8px 12px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    font-size: 14px;
+    color: #4b2e22;
+    z-index: 15;
+    flex-shrink: 0;
+}
+
+.ws-instructions-nico {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    background-color: #7b9f42;
+    color: white;
+    padding: 4px 8px;
+    border-radius: 8px;
+    font-weight: bold;
+    font-size: 11px;
+    user-select: none;
+    cursor: pointer;
+    transition: transform 0.2s ease, background-color 0.2s ease;
+    flex-shrink: 0;
+}
+
+.ws-instructions-nico:hover {
+    background-color: #88b049;
+    transform: scale(1.05);
+}
+
+.ws-instructions-nico:active {
+    transform: scale(0.96);
+}
+
+.ws-instructions-icono-nico {
+    width: 20px;
+    height: 20px;
+    filter: brightness(0) invert(1);
+}
+
+.ws-instructions-text {
+    font-weight: 700;
+    line-height: 1.25;
 }
 
 .icono-abajo-img {

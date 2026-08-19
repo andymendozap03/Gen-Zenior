@@ -1,5 +1,6 @@
 import { $ } from "../../utils/dom.js";
-import { stopSpeech } from "../../services/speech.service.js";
+import { speak, stopSpeech } from "../../services/speech.service.js";
+import { resaltarElemento, limpiarResaltados } from "../../services/guide-highlight.service.js";
 
 let simuladorInicializado = false;
 let nivelActual = null;
@@ -115,6 +116,15 @@ function asegurarTemplateHTML() {
     if (!contenedor || contenedor.children.length > 0) return;
 
     contenedor.innerHTML = `
+        <!-- Barra de instrucciones (NICO Guía) -->
+        <div id="fbInstructionsBar" class="ws-instructions-bar">
+            <div class="ws-instructions-nico" style="cursor: pointer;" aria-label="Escuchar instrucción de Nico">
+                <img src="./assets/img/icons/voz.svg" alt="Nico" class="ws-instructions-icono-nico">
+                <small>NICO</small>
+            </div>
+            <div id="fbInstructionsText" class="ws-instructions-text">Cargando objetivo...</div>
+        </div>
+
         <!-- Header -->
         <header class="fb-header">
             <button id="fbSalirBtn" class="fb-salir-btn" aria-label="Salir de Facebook">
@@ -449,19 +459,61 @@ function cerrarLightbox() {
     }
 }
 
+// ---------- GUÍA VISUAL ----------
+function actualizarGuiaVisualFacebook(idNivel) {
+    if (!idNivel) idNivel = nivelActual;
+    if (idNivel === "publicar-estado") {
+        resaltarElemento(".fb-create-post");
+    } else if (idNivel === "reaccionar-foto") {
+        resaltarElemento("#fbFeed .fb-post:first-child .fb-like-btn");
+    } else if (idNivel === "comentar-publicacion") {
+        const modal = $("#fbCommentsModal");
+        if (modal && modal.classList.contains("activa")) {
+            const inputVal = $("#fbCommentInput") ? $("#fbCommentInput").value.trim() : "";
+            if (inputVal.length > 0) {
+                resaltarElemento("#fbCommentSend");
+            } else {
+                resaltarElemento("#fbCommentInput");
+            }
+        } else {
+            resaltarElemento("#fbFeed .fb-post:first-child .fb-open-comments");
+        }
+    } else if (idNivel === "agregar-amigo") {
+        resaltarElemento(".fb-stories");
+    } else {
+        resaltarElemento("#fbFeed .fb-post:first-child");
+    }
+}
+
 // ---------- LISTENERS ----------
 function inicializarListeners() {
+    // Clic en la insignia Nico para repetir instrucción
+    const nicoBtn = $("#fbInstructionsBar")?.querySelector(".ws-instructions-nico");
+    if (nicoBtn) {
+        nicoBtn.onclick = (e) => {
+            e.stopPropagation();
+            const textEl = $("#fbInstructionsText");
+            if (textEl) {
+                speak(textEl.textContent);
+            }
+        };
+    }
+
     // Salir
     const btnSalir = $("#fbSalirBtn");
     if (btnSalir) {
         btnSalir.onclick = () => {
+            limpiarResaltados();
             location.hash = "/modulo/Facebook";
         };
     }
 
 
     // Cerrar modal comentarios
-    $("#fbCommentsClose").onclick = cerrarComentarios;
+    $("#fbCommentsClose").onclick = () => {
+        cerrarComentarios();
+        actualizarGuiaVisualFacebook(nivelActual);
+    };
 
     // Enviar comentario
     const sendBtn = $("#fbCommentSend");
@@ -470,6 +522,13 @@ function inicializarListeners() {
     }
     const input = $("#fbCommentInput");
     if (input) {
+        input.oninput = () => {
+            if (input.value.trim().length > 0) {
+                resaltarElemento("#fbCommentSend");
+            } else {
+                resaltarElemento("#fbCommentInput");
+            }
+        };
         input.onkeypress = (e) => { if (e.key === "Enter") enviarComentario(); };
     }
 
@@ -600,10 +659,12 @@ export function iniciarSimulador(idNivel) {
     renderizarPublicaciones();
 
     const textEl = $("#fbInstructionsText");
+    const msg = INSTRUCCIONES[idNivel] || "Explora el feed de Facebook. Puedes reaccionar y ver comentarios.";
     if (textEl) {
-        const msg = INSTRUCCIONES[idNivel] || "Explora el feed de Facebook. Puedes reaccionar y ver comentarios.";
         textEl.textContent = msg;
     }
+    speak(msg);
+    actualizarGuiaVisualFacebook(idNivel);
 
     if (!simuladorInicializado) {
         inicializarListeners();

@@ -1,5 +1,6 @@
 import { $ } from "../../utils/dom.js";
-import { stopSpeech } from "../../services/speech.service.js";
+import { speak, stopSpeech } from "../../services/speech.service.js";
+import { resaltarElemento, limpiarResaltados } from "../../services/guide-highlight.service.js";
 
 let simuladorInicializado = false;
 let nivelActual = null;
@@ -105,6 +106,15 @@ function asegurarTemplateHTML() {
     if (!contenedor || contenedor.children.length > 0) return;
 
     contenedor.innerHTML = `
+        <!-- Barra de instrucciones (NICO Guía) -->
+        <div id="ctInstructionsBar" class="ws-instructions-bar">
+            <div class="ws-instructions-nico" style="cursor: pointer;" aria-label="Escuchar instrucción de Nico">
+                <img src="./assets/img/icons/voz.svg" alt="Nico" class="ws-instructions-icono-nico">
+                <small>NICO</small>
+            </div>
+            <div id="ctInstructionsText" class="ws-instructions-text">Cargando objetivo...</div>
+        </div>
+
         <!-- ======= VISTA RECIENTES ======= -->
         <div id="ctViewRecientes" class="ct-view activa">
             <div class="ct-recent-header">
@@ -426,6 +436,18 @@ function actualizarDialpad() {
 
 // ---- LISTENERS ----
 function inicializarListeners() {
+    // Clic en la insignia Nico para repetir instrucción
+    const nicoBtn = $("#ctInstructionsBar")?.querySelector(".ws-instructions-nico");
+    if (nicoBtn) {
+        nicoBtn.onclick = (e) => {
+            e.stopPropagation();
+            const textEl = $("#ctInstructionsText");
+            if (textEl) {
+                speak(textEl.textContent);
+            }
+        };
+    }
+
     // Salir del simulador
     const btnSalir = $("#ctSalirBtn");
     if (btnSalir) {
@@ -559,8 +581,29 @@ function inicializarListeners() {
 
 // ---- SALIR AL MÓDULO ----
 function salir() {
+    limpiarResaltados();
     cerrarLlamada();
     location.hash = "/modulo/Contactos";
+}
+
+const INSTRUCCIONES_CONTACTOS = {
+    "buscar-contacto": "Usa la barra de búsqueda para encontrar un contacto.",
+    "marcar-numero": "Toca la pestaña de Teclado y marca un número de teléfono.",
+    "crear-contacto": "Toca la pestaña de Contactos y luego en Crear contacto.",
+    "llamar-favorito": "Toca a uno de tus contactos favoritos para llamarlo.",
+};
+
+function actualizarGuiaVisualContactos(idNivel) {
+    if (!idNivel) idNivel = nivelActual;
+    if (idNivel === "buscar-contacto") {
+        resaltarElemento("#ctSearchBarRecientes");
+    } else if (idNivel === "marcar-numero") {
+        resaltarElemento("#ctNavTeclado");
+    } else if (idNivel === "crear-contacto") {
+        resaltarElemento("#ctNavContactos");
+    } else if (idNivel === "llamar-favorito") {
+        resaltarElemento("#ctFavoritesRow");
+    }
 }
 
 // ---- PUNTO DE ENTRADA ----
@@ -578,6 +621,13 @@ export function iniciarSimulador(idNivel) {
     // Resetear a vista inicial
     cambiarVista("ctViewRecientes");
     renderizarLlamadas();
+
+    const msg = INSTRUCCIONES_CONTACTOS[idNivel] || "Explora tus contactos y llamadas.";
+    const textEl = $("#ctInstructionsText");
+    if (textEl) textEl.textContent = msg;
+
+    speak(msg);
+    actualizarGuiaVisualContactos(idNivel);
 
     if (!simuladorInicializado) {
         inicializarListeners();

@@ -2,6 +2,7 @@ import { $ } from "../../utils/dom.js";
 import { cargar, guardar } from "../../services/storage.service.js";
 import { completarNivel } from "../../services/progress.service.js";
 import { speak, stopSpeech } from "../../services/speech.service.js";
+import { resaltarElemento, limpiarResaltados } from "../../services/guide-highlight.service.js";
 
 let simuladorInicializado = false;
 let nivelActual = null;
@@ -720,6 +721,138 @@ function actualizarBarraInstrucciones(autoSpeak = true) {
         ultimaInstruccionHablada = instruccion;
         speak(instruccionLimpia);
     }
+
+    // Actualizar la guía visual animada para el elemento objetivo
+    actualizarGuiaVisualWhatsApp();
+}
+
+/**
+ * Resalta de forma animada el elemento correspondiente a la instrucción activa
+ */
+function actualizarGuiaVisualWhatsApp() {
+    const estaEnChat = $("#wsChatConversation") && $("#wsChatConversation").classList.contains("activa");
+    const inputVal = $("#wsInputMensaje") ? $("#wsInputMensaje").value.trim() : "";
+
+    if (estaGrabandoAudio) {
+        resaltarElemento("#wsEnviarMensajeBtn");
+        return;
+    }
+
+    if (nivelActual === "enviar-mensaje") {
+        if (subPasoNivel1 === 1) {
+            if (!estaEnChat) {
+                resaltarElemento("[data-chat-id='juan-nieto']");
+            } else {
+                if (inputVal.length > 0) {
+                    resaltarElemento("#wsEnviarMensajeBtn");
+                } else {
+                    resaltarElemento("#wsInputMensaje");
+                }
+            }
+        } else if (subPasoNivel1 === 2) {
+            limpiarResaltados();
+        } else if (subPasoNivel1 === 3) {
+            if (inputVal.length > 0) {
+                resaltarElemento("#wsEnviarMensajeBtn");
+            } else {
+                resaltarElemento("#wsInputMensaje");
+            }
+        } else if (subPasoNivel1 === 4) {
+            resaltarElemento("#wsVolverChats");
+        } else if (subPasoNivel1 === 4.5) {
+            limpiarResaltados();
+        } else if (subPasoNivel1 >= 5) {
+            if (estaEnChat && chatSeleccionado && chatSeleccionado.id !== "familia-mendoza") {
+                resaltarElemento("#wsVolverChats");
+            } else {
+                if (subPasoNivel1 === 5) {
+                    resaltarElemento("[data-chat-id='familia-mendoza']");
+                } else if (subPasoNivel1 === 6) {
+                    if (inputVal.length > 0) {
+                        resaltarElemento("#wsEnviarMensajeBtn");
+                    } else {
+                        resaltarElemento("#wsInputMensaje");
+                    }
+                }
+            }
+        }
+    } else if (nivelActual === "grabar-audio") {
+        if (subPasoNivel2 < 7.5) {
+            if (estaEnChat && chatSeleccionado && chatSeleccionado.id !== "juan-nieto") {
+                resaltarElemento("#wsVolverChats");
+            } else {
+                if (subPasoNivel2 === 1) {
+                    if (!estaEnChat) {
+                        resaltarElemento("[data-chat-id='juan-nieto']");
+                    } else {
+                        resaltarElemento("#wsEnviarMensajeBtn");
+                    }
+                } else if (subPasoNivel2 === 3) {
+                    const playBtn = document.querySelector("#wsChatBody .ws-msg-bubble.enviada .ws-audio-btn");
+                    if (playBtn) resaltarElemento(playBtn);
+                } else if (subPasoNivel2 === 4) {
+                    limpiarResaltados();
+                } else if (subPasoNivel2 === 5) {
+                    const playBtns = document.querySelectorAll("#wsChatBody .ws-msg-bubble.recibida .ws-audio-btn");
+                    const lastPlayBtn = playBtns[playBtns.length - 1];
+                    if (lastPlayBtn) resaltarElemento(lastPlayBtn);
+                } else if (subPasoNivel2 === 6) {
+                    resaltarElemento("#wsEnviarMensajeBtn");
+                } else if (subPasoNivel2 === 7) {
+                    resaltarElemento("#wsVolverChats");
+                }
+            }
+        } else {
+            if (estaEnChat && chatSeleccionado && chatSeleccionado.id !== "dr-martinez") {
+                resaltarElemento("#wsVolverChats");
+            } else {
+                if (subPasoNivel2 === 7.5) {
+                    limpiarResaltados();
+                } else if (subPasoNivel2 === 8) {
+                    resaltarElemento("[data-chat-id='dr-martinez']");
+                } else if (subPasoNivel2 === 9) {
+                    const playBtns = document.querySelectorAll("#wsChatBody .ws-msg-bubble.recibida .ws-audio-btn");
+                    const lastPlayBtn = playBtns[playBtns.length - 1];
+                    if (lastPlayBtn) resaltarElemento(lastPlayBtn);
+                } else if (subPasoNivel2 === 10) {
+                    resaltarElemento("#wsEnviarMensajeBtn");
+                }
+            }
+        }
+    } else if (nivelActual === "hacer-llamada") {
+        if (!estaEnChat) {
+            resaltarElemento("[data-chat-id='juan-nieto']");
+        } else {
+            const modalLlamada = $("#wsModalLlamada");
+            if (modalLlamada && modalLlamada.classList.contains("activa")) {
+                resaltarElemento("#wsCallBtnColgar", { variant: "amber" });
+            } else {
+                resaltarElemento("#wsBtnLlamada");
+            }
+        }
+    } else if (nivelActual === "llamada-grupal") {
+        if (!estaEnChat) {
+            resaltarElemento("[data-chat-id='familia-mendoza']");
+        } else {
+            const modalLlamada = $("#wsModalLlamada");
+            if (modalLlamada && modalLlamada.classList.contains("activa")) {
+                resaltarElemento("#wsCallBtnColgar", { variant: "amber" });
+            } else {
+                resaltarElemento("#wsBtnLlamada");
+            }
+        }
+    } else if (nivelActual === "enviar-foto") {
+        if (!estaEnChat) {
+            resaltarElemento("[data-chat-id='juan-nieto']");
+        } else {
+            const modalGaleria = $("#wsModalGaleria");
+            if (modalGaleria && modalGaleria.classList.contains("activa")) {
+                resaltarElemento(".ws-galeria-item");
+            } else {
+                resaltarElemento("#wsBtnAdjuntar");
+            }
+        }
+    }
 }
 
 /**
@@ -1158,6 +1291,7 @@ function inicializarListeners() {
         const simulador = $("#pantallaWhatsappSimulador");
         if (simulador) simulador.classList.remove("activa");
         
+        limpiarResaltados();
         location.hash = "/modulo/WhatsApp";
     };
 
@@ -1393,6 +1527,7 @@ function inicializarListeners() {
                 if (micIcon) micIcon.style.display = "block";
                 if (sendIcon) sendIcon.style.display = "none";
             }
+            actualizarGuiaVisualWhatsApp();
         };
 
         // Enviar mensaje con Enter
@@ -1456,6 +1591,7 @@ function inicializarListeners() {
             ultimaInstruccionHablada = texto;
             speak(texto);
         }
+        resaltarElemento(".ws-galeria-item");
     };
 
     const btnAdjuntar = $("#wsBtnAdjuntar");

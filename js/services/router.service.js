@@ -1,6 +1,7 @@
 import { $ } from "../utils/dom.js";
 import { abrirPantallaNiveles, abrirNivel } from "../controllers/levels.controller.js";
 import { stopSpeech } from "./speech.service.js";
+import { limpiarResaltados } from "./guide-highlight.service.js";
 
 export function inicializarRouter() {
     window.addEventListener("hashchange", () => {
@@ -23,8 +24,9 @@ function cambiarPantalla(idPantalla) {
 }
 
 function procesarRuta(hash) {
-    // Detener cualquier guía de voz activa al cambiar de pantalla
+    // Detener cualquier guía de voz activa y limpiar resaltados al cambiar de pantalla
     stopSpeech();
+    limpiarResaltados();
 
     // Limpiar hash de prefijos
     const ruta = hash.replace(/^#\/?/, "");
