@@ -10,17 +10,17 @@ let llamadaTimer = null;
 
 // ---- DATOS ----
 const FAVORITOS = [
-    { nombre: "Sofía Castro",   iniciales: "S", color: "#9c27b0" },
-    { nombre: "Pedro Pérez",   iniciales: "P", color: "#f4511e" },
+    { nombre: "Génesis Gutiérrez", iniciales: "G", color: "#9c27b0" },
+    { nombre: "Pedro Pérez", iniciales: "P", color: "#f4511e" },
 ];
 
 const LLAMADAS_RECIENTES = [
     {
-        id: 1, nombre: "Erick Delgado", iniciales: "E", color: "#f9ab00",
+        id: 1, nombre: "Erick Delgado", iniciales: "E", color: "#f97800f8",
         tipo: "perdida", metaTexto: "Celular · Lun 18:07", carrier: "Claro", grupo: "Ayer"
     },
     {
-        id: 2, nombre: "Sofía Castro", iniciales: "S", color: "#9c27b0",
+        id: 2, nombre: "Génesis Gutiérrez", iniciales: "G", color: "#9c27b0",
         tipo: "saliente", metaTexto: "Celular · Sáb 18:24", carrier: "Tuenti", grupo: "Anterior"
     },
     {
@@ -44,59 +44,59 @@ const LLAMADAS_RECIENTES = [
 
 const CONTACTOS = [
     // Favoritos
-    { nombre: "Sofía Castro",    iniciales: "S", color: "#9c27b0",  telefono: "+593 993 907 785", fav: true },
-    { nombre: "Pedro Pérez",    iniciales: "P", color: "#f4511e",  telefono: "+593 982 578 390", fav: true },
+    { nombre: "Génesis Gutiérrez", iniciales: "G", color: "#9c27b0", telefono: "+593 993 907 785", fav: true },
+    { nombre: "Pedro Pérez", iniciales: "P", color: "#f4511e", telefono: "+593 982 578 390", fav: true },
     // A
-    { nombre: "Abigail López",    iniciales: "A", color: "#1e88e5",  telefono: "+593 97 904 6870" },
-    { nombre: "Alberto Valenzuela",iniciales: "A", color: "#43a047",  telefono: "+593 980 909 090" },
-    { nombre: "Adrián Aguilar",  iniciales: "A", color: "#00897b",  telefono: "+593 99 123 4567" },
-    { nombre: "Adrián Cordero",   iniciales: "A", color: "#e57373",  telefono: "+593 98 765 4321" },
-    { nombre: "Adriana Alarcón",         iniciales: "A", color: "#f48fb1",  telefono: "+593 99 876 5432" },
-    { nombre: "Alonso Álvarez",       iniciales: "A", color: "#ce93d8",  telefono: "+593 98 234 5678" },
-    { nombre: "Alejandro Cárdenas",iniciales: "A", color: "#80cbc4",  telefono: "+593 99 345 6789" },
+    { nombre: "Abigail López", iniciales: "A", color: "#1e88e5", telefono: "+593 97 904 6870" },
+    { nombre: "Alberto Valenzuela", iniciales: "A", color: "#43a047", telefono: "+593 980 909 090" },
+    { nombre: "Adrián Aguilar", iniciales: "A", color: "#00897b", telefono: "+593 99 123 4567" },
+    { nombre: "Adrián Cordero", iniciales: "A", color: "#e57373", telefono: "+593 98 765 4321" },
+    { nombre: "Adriana Alarcón", iniciales: "A", color: "#f48fb1", telefono: "+593 99 876 5432" },
+    { nombre: "Alonso Álvarez", iniciales: "A", color: "#ce93d8", telefono: "+593 98 234 5678" },
+    { nombre: "Alejandro Cárdenas", iniciales: "A", color: "#80cbc4", telefono: "+593 99 345 6789" },
     // C
-    { nombre: "Carmen Rojas",     iniciales: "C", color: "#ff7043",  telefono: "+593 98 456 7890" },
-    { nombre: "Carlos Miranda",   iniciales: "C", color: "#5c6bc0",  telefono: "+593 99 567 8901" },
+    { nombre: "Carmen Rojas", iniciales: "C", color: "#ff7043", telefono: "+593 98 456 7890" },
+    { nombre: "Carlos Miranda", iniciales: "C", color: "#5c6bc0", telefono: "+593 99 567 8901" },
     // D
-    { nombre: "Dolores Palacios",   iniciales: "D", color: "#8bc34a",  telefono: "+593 98 678 9012" },
+    { nombre: "Dolores Palacios", iniciales: "D", color: "#8bc34a", telefono: "+593 98 678 9012" },
     // E
-    { nombre: "Elena Vallejo",    iniciales: "E", color: "#7e57c2",  telefono: "+593 99 789 0123" },
-    { nombre: "Ernesto Cabrera",  iniciales: "E", color: "#26a69a",  telefono: "+593 98 890 1234" },
+    { nombre: "Elena Vallejo", iniciales: "E", color: "#7e57c2", telefono: "+593 99 789 0123" },
+    { nombre: "Ernesto Cabrera", iniciales: "E", color: "#26a69a", telefono: "+593 98 890 1234" },
     // G
-    { nombre: "Gloria Calderón",   iniciales: "G", color: "#ab47bc",  telefono: "+593 99 901 2345" },
+    { nombre: "Gloria Calderón", iniciales: "G", color: "#ab47bc", telefono: "+593 99 901 2345" },
     // J
-    { nombre: "José Maldonado",   iniciales: "J", color: "#2196f3",  telefono: "+593 98 012 3456" },
+    { nombre: "José Maldonado", iniciales: "J", color: "#2196f3", telefono: "+593 98 012 3456" },
     // L
-    { nombre: "Luis Guzmán",     iniciales: "L", color: "#ff9800",  telefono: "+593 99 123 4560" },
+    { nombre: "Luis Guzmán", iniciales: "L", color: "#ff9800", telefono: "+593 99 123 4560" },
     // M
-    { nombre: "Miguel Toledo",   iniciales: "M", color: "#f44336",  telefono: "+593 98 234 5670" },
+    { nombre: "Miguel Toledo", iniciales: "M", color: "#f44336", telefono: "+593 98 234 5670" },
     // N
-    { nombre: "Erick Delgado",      iniciales: "E", color: "#f9ab00",  telefono: "+593 99 345 6780" },
+    { nombre: "Erick Delgado", iniciales: "E", color: "#f9ab00", telefono: "+593 99 345 6780" },
     // P
-    { nombre: "Patricia Muñoz",   iniciales: "P", color: "#ff9800",  telefono: "+593 98 456 7891" },
-    { nombre: "Pedro Segura",   iniciales: "P", color: "#4caf50",  telefono: "+593 99 567 8902" },
+    { nombre: "Patricia Muñoz", iniciales: "P", color: "#ff9800", telefono: "+593 98 456 7891" },
+    { nombre: "Pedro Segura", iniciales: "P", color: "#4caf50", telefono: "+593 99 567 8902" },
     // R
-    { nombre: "Ramón Fuentes",    iniciales: "R", color: "#00bcd4",  telefono: "+593 98 678 9013" },
-    { nombre: "Roberto Suárez",   iniciales: "R", color: "#607d8b",  telefono: "+593 99 789 0124" },
-    { nombre: "Rosa Espinoza",    iniciales: "R", color: "#e91e63",  telefono: "+593 98 890 1235" },
+    { nombre: "Ramón Fuentes", iniciales: "R", color: "#00bcd4", telefono: "+593 98 678 9013" },
+    { nombre: "Roberto Suárez", iniciales: "R", color: "#607d8b", telefono: "+593 99 789 0124" },
+    { nombre: "Rosa Espinoza", iniciales: "R", color: "#e91e63", telefono: "+593 98 890 1235" },
     // S
-    { nombre: "Samuel Medina",   iniciales: "S", color: "#1a73e8",  telefono: "+593 99 901 2346" },
-    { nombre: "Sandra Luna",    iniciales: "S", color: "#ff5722",  telefono: "+593 98 012 3467" },
+    { nombre: "Samuel Medina", iniciales: "S", color: "#1a73e8", telefono: "+593 99 901 2346" },
+    { nombre: "Sandra Luna", iniciales: "S", color: "#ff5722", telefono: "+593 98 012 3467" },
     // T
-    { nombre: "Tomás Hidalgo",   iniciales: "T", color: "#795548",  telefono: "+593 99 123 4568" },
+    { nombre: "Tomás Hidalgo", iniciales: "T", color: "#795548", telefono: "+593 99 123 4568" },
 ];
 
 // ---- ICONOS SVG DE LLAMADA ----
 const SVG_PHONE = `<svg viewBox="0 0 24 24"><path d="M6.6 10.8c1.4 2.8 3.8 5.1 6.6 6.6l2.2-2.2c.3-.3.7-.4 1-.2 1.1.4 2.3.6 3.6.6.6 0 1 .4 1 1V20c0 .6-.4 1-1 1-9.4 0-17-7.6-17-17 0-.6.4-1 1-1h3.5c.6 0 1 .4 1 1 0 1.3.2 2.5.6 3.6.1.3 0 .7-.2 1L6.6 10.8z"/></svg>`;
 const SVG_ARROW_OUT = `<svg viewBox="0 0 24 24"><path d="M7 7h8.59L5 17.59 6.41 19 17 8.41V17h2V5H7v2z"/></svg>`;
-const SVG_ARROW_IN  = `<svg viewBox="0 0 24 24"><path d="M19 7h-8.59L21 17.59 19.59 19 9 8.41V17H7V5h12v2z"/></svg>`;
-const SVG_MISSED    = `<svg viewBox="0 0 24 24"><path d="M7 7h8.59L5 17.59 6.41 19 17 8.41V17h2V5H7v2z"/></svg>`;
-const SVG_BLOCKED   = `<svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 14H9V8h2v8zm4 0h-2V8h2v8z"/></svg>`;
+const SVG_ARROW_IN = `<svg viewBox="0 0 24 24"><path d="M19 7h-8.59L21 17.59 19.59 19 9 8.41V17H7V5h12v2z"/></svg>`;
+const SVG_MISSED = `<svg viewBox="0 0 24 24"><path d="M7 7h8.59L5 17.59 6.41 19 17 8.41V17h2V5H7v2z"/></svg>`;
+const SVG_BLOCKED = `<svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 14H9V8h2v8zm4 0h-2V8h2v8z"/></svg>`;
 
 function iconoLlamada(tipo) {
-    if (tipo === "perdida")   return `<span style="color:#d93025">${SVG_MISSED}</span>`;
+    if (tipo === "perdida") return `<span style="color:#d93025">${SVG_MISSED}</span>`;
     if (tipo === "bloqueada") return `<span style="color:#5f6368">${SVG_BLOCKED}</span>`;
-    if (tipo === "entrante")  return `<span style="color:#5f6368">${SVG_ARROW_IN}</span>`;
+    if (tipo === "entrante") return `<span style="color:#5f6368">${SVG_ARROW_IN}</span>`;
     return `<span style="color:#5f6368">${SVG_ARROW_OUT}</span>`;
 }
 
@@ -180,11 +180,11 @@ function asegurarTemplateHTML() {
 
             <div class="ct-dialpad-grid">
                 ${[
-                    ["1","∞"], ["2","ABC"], ["3","DEF"],
-                    ["4","GHI"], ["5","JKL"], ["6","MNO"],
-                    ["7","PQRS"], ["8","TUV"], ["9","WXYZ"],
-                    ["*",""], ["0","+"], ["#",""]
-                ].map(([d,l]) => `
+            ["1", "∞"], ["2", "ABC"], ["3", "DEF"],
+            ["4", "GHI"], ["5", "JKL"], ["6", "MNO"],
+            ["7", "PQRS"], ["8", "TUV"], ["9", "WXYZ"],
+            ["*", ""], ["0", "+"], ["#", ""]
+        ].map(([d, l]) => `
                     <button class="ct-dialpad-key" data-digit="${d}">
                         <span class="ct-dialpad-digit">${d}</span>
                         <span class="ct-dialpad-letters">${l}</span>
