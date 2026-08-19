@@ -45,8 +45,8 @@ export const datosModulos = {
         mensajeVoz: "Estás en el módulo de Facebook. Escoge una actividad para practicar.",
         niveles: [
             {
-                id: "publicar-estado",
-                titulo: "Publicar estado",
+                id: "realizar-publicacion",
+                titulo: "Realizar publicación",
                 descripcion: "Aprende a crear una publicación.",
                 imagen: "./assets/img/levels/estado.png"
             },

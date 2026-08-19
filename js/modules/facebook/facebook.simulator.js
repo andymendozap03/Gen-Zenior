@@ -103,7 +103,7 @@ const POSTS_DATA = [
 
 // ---------- INSTRUCCIONES POR NIVEL ----------
 const INSTRUCCIONES = {
-    "publicar-estado": "Toca el campo '¿Qué estás pensando?' para escribir una publicación.",
+    "realizar-publicacion": "Toca el campo '¿Qué estás pensando?' para escribir una publicación.",
     "reaccionar-foto": "Mantén presionado el botón 'Me gusta' en una publicación para ver las reacciones y seleccionar una.",
     "comentar-publicacion": "Toca el botón 'Comentar' en una publicación para ver y escribir comentarios.",
     "agregar-amigo": "Explora el feed y toca 'Agregar amigo' en el perfil de alguien.",
@@ -462,7 +462,7 @@ function cerrarLightbox() {
 // ---------- GUÍA VISUAL ----------
 function actualizarGuiaVisualFacebook(idNivel) {
     if (!idNivel) idNivel = nivelActual;
-    if (idNivel === "publicar-estado") {
+    if (idNivel === "realizar-publicacion") {
         resaltarElemento(".fb-create-post");
     } else if (idNivel === "reaccionar-foto") {
         resaltarElemento("#fbFeed .fb-post:first-child .fb-like-btn");
