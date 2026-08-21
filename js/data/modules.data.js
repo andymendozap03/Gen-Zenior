@@ -85,33 +85,33 @@ export const datosModulos = {
         niveles: [
             {
                 id: "buscar-video",
-                titulo: "Buscar video",
-                descripcion: "Aprende a buscar un video.",
+                titulo: "Buscar y ver un video",
+                descripcion: "Busca lo que quieres ver, ponlo y pásalo a pausa.",
                 imagen: "./assets/img/levels/buscar.png"
             },
             {
-                id: "reproducir-video",
-                titulo: "Reproducir video",
-                descripcion: "Practica cómo iniciar un video.",
-                imagen: "./assets/img/levels/reproducir.png"
+                id: "reaccionar-suscribir",
+                titulo: "Me gusta y suscribirse",
+                descripcion: "Apoya al creador y sigue su canal.",
+                imagen: "./assets/img/levels/suscribir.png"
             },
             {
-                id: "pausar-video",
-                titulo: "Pausar video",
-                descripcion: "Aprende a pausar un video.",
-                imagen: "./assets/img/levels/pausa.png"
-            },
-            {
-                id: "comentar",
-                titulo: "Comentar",
-                descripcion: "Practica cómo interactuar con el creador del video.",
+                id: "comentar-video",
+                titulo: "Comentar un video",
+                descripcion: "Reacciona a otros, escribe y borra tu comentario.",
                 imagen: "./assets/img/levels/comentar.png"
             },
             {
-                id: "suscribirse",
-                titulo: "Suscribirse",
-                descripcion: "Practica cómo seguir un canal.",
-                imagen: "./assets/img/levels/suscribir.png"
+                id: "compartir-video",
+                titulo: "Compartir un video",
+                descripcion: "Envíale un video a alguien de tu familia.",
+                imagen: "./assets/img/levels/compartir-video.svg"
+            },
+            {
+                id: "guardar-video",
+                titulo: "Guardar para después",
+                descripcion: "Guarda un video y vuelve a encontrarlo.",
+                imagen: "./assets/img/levels/guardar-video.svg"
             }
         ]
     },

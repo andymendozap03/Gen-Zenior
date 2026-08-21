@@ -1,149 +1,253 @@
 import { $ } from "../../utils/dom.js";
+import { completarNivel } from "../../services/progress.service.js";
 import { speak, stopSpeech } from "../../services/speech.service.js";
 import { resaltarElemento, limpiarResaltados } from "../../services/guide-highlight.service.js";
 
+/* ======================================================================
+   SIMULADOR DE YOUTUBE
+   Niveles:
+     1. buscar-video          -> Buscar un video
+     2. reproducir-pausar     -> Reproducir, pausar y subir volumen
+     3. reaccionar-suscribir  -> Me gusta, suscribirse y campana
+     4. comentar-video        -> Abrir comentarios, escribir y enviar
+     5. guardar-video         -> Guardar y encontrarlo en "Ver más tarde"
+   ====================================================================== */
+
 let simuladorInicializado = false;
 let nivelActual = null;
-let comentariosAbierto = false;
-let yaLikedVideo = false;
-let yaSubscribed = false;
+let subPaso = 1;
+let ultimaInstruccionHablada = "";
 
-// ---- DATOS DE VIDEOS ----
+// Estado del reproductor simulado
+let videoActual = null;
+let reproduciendo = false;
+let progresoSegundos = 0;
+let progresoInterval = null;
+let volumenActual = 2; // 0 a 5
+
+// true cuando el archivo de video cargó bien; si es false el reproductor
+// funciona en modo animación (fondo de color con emoji)
+let usandoVideoReal = false;
+
+// Estado de interacción del video abierto
+let yaLiked = false;
+let yaSubscrito = false;
+let campanaActiva = false;
+
+// Estado persistente dentro del nivel
+let videosGuardados = [];
+let comentarios = [];
+
+// Timers
+let respuestaCanalTimeout = null;
+let toastTimeout = null;
+
+// App elegida en la hoja de compartir (WhatsApp, Mensajes...)
+let appCompartir = "WhatsApp";
+
+// ---------------------------------------------------------------------
+// DATOS (100% locales, sin internet)
+// ---------------------------------------------------------------------
 const VIDEOS_DATA = [
     {
         id: 1,
-        titulo: "Desde Tamales hasta Wagyu | Probando la comida de Costco | La Capital",
-        canal: "La Capital",
-        avatarLetter: "LC",
-        avatarBg: "#ff9800",
-        vistas: "20 M de vistas",
-        tiempo: "hace 4 años",
-        duracion: "28:08",
-        likes: "154 K",
-        thumbnailImg: "https://images.unsplash.com/photo-1578916171728-46686eac8d58?w=500&auto=format&fit=crop&q=60",
-        videoUrl: "https://youtu.be/qFvDaNl1D3o?si=dPooFO9wTEXBI-q4"
-    },
-    {
-        id: 2,
-        titulo: "EN ESTA SELVA DE MEXICO SE FILMÓ LA PELÍCULA DE DEPREDADOR | Motoviajeros",
-        canal: "@PabloImhoff",
-        avatarLetter: "PI",
-        avatarBg: "#4caf50",
-        vistas: "1.1 M de vistas",
+        titulo: "Sopa de pollo casera como la hacía la abuela",
+        canal: "Cocina de Rosa",
+        avatarLetter: "R",
+        avatarBg: "#ff7043",
+        vistas: "1.2 M de vistas",
         tiempo: "hace 2 años",
-        duracion: "18:45",
-        likes: "41 K",
-        thumbnailImg: "https://images.unsplash.com/photo-1544620347-c4fd4a3d5957?w=500&auto=format&fit=crop&q=60",
-        videoUrl: "https://youtu.be/P-9zDJxatWw?si=S5qjGXIXoZJS0Gt0"
+        duracionSeg: 25,
+        archivo: "./assets/video/sopa.mp4",
+        miniatura: "./assets/img/youtube/sopa.jpg",
+        likes: 48000,
+        suscriptores: "820 mil suscriptores",
+        emoji: "🍲",
+        gradiente: "linear-gradient(135deg, #ff9a44, #d84315)",
+        etiquetas: ["receta", "recetas", "sopa", "pollo", "cocina", "comida", "caldo"]
+    },
+    {
+        id: 2,
+        titulo: "Boleros y música del recuerdo",
+        canal: "Música del Recuerdo",
+        avatarLetter: "M",
+        avatarBg: "#7e57c2",
+        vistas: "5.4 M de vistas",
+        tiempo: "hace 3 años",
+        duracionSeg: 25,
+        archivo: "./assets/video/musica.mp4",
+        miniatura: "./assets/img/youtube/musica.jpg",
+        likes: 132000,
+        suscriptores: "2.1 M de suscriptores",
+        emoji: "🎵",
+        gradiente: "linear-gradient(135deg, #9575cd, #4527a0)",
+        etiquetas: ["musica", "música", "boleros", "canciones", "recuerdo", "70"]
     },
     {
         id: 3,
-        titulo: "La Receta Secreta del Auténtico Pastel de Tres Leches | Postres Caseros",
-        canal: "Dulce Hogar",
-        avatarLetter: "DH",
-        avatarBg: "#e91e63",
-        vistas: "3.5 M de vistas",
-        tiempo: "hace 1 año",
-        duracion: "12:15",
-        likes: "98 K",
-        thumbnailImg: "https://images.unsplash.com/photo-1578985545062-69928b1d9587?w=500&auto=format&fit=crop&q=60",
-        videoUrl: "https://youtu.be/P2HurCz7Dxg?si=gEmfMwfwKZZmlgRO"
-    },
-    {
-        id: 4,
-        titulo: "Viajando solo por los glaciares de la Patagonia | Aventura Extrema",
-        canal: "Senderos del Mundo",
-        avatarLetter: "SM",
-        avatarBg: "#00bcd4",
-        vistas: "920 K de vistas",
+        titulo: "Ejercicios suaves para hacer sentado en casa",
+        canal: "Vida Activa 60+",
+        avatarLetter: "V",
+        avatarBg: "#43a047",
+        vistas: "890 mil vistas",
         tiempo: "hace 8 meses",
-        duracion: "24:30",
-        likes: "37 K",
-        thumbnailImg: "https://images.unsplash.com/photo-1528164344705-47542687000d?w=500&auto=format&fit=crop&q=60",
-        videoUrl: "https://youtu.be/NFKUR2JchKY?si=bm7BHWCNAsxt4NNI"
-    }
-];
-
-
-
-const COMENTARIOS_DATA = [
-    {
-        id: 1,
-        autor: "@ezequielorrico90",
-        avatarLetter: "E",
-        avatarBg: "#9c27b0",
-        texto: "A quien más le pasa? Sentir que arranca el domingo recién cuando empezamos a mirar tu vídeo Pablito.. sos crack 👏 saludos desde Buenos Aires🇦🇷",
-        tiempo: "hace 2 a",
-        likes: 572,
-        corazonPropietario: true
-    },
-    {
-        id: 2,
-        autor: "@Gabrik_Gab",
-        avatarLetter: "G",
-        avatarBg: "#00bcd4",
-        texto: "Hola Pablito!! Después de 9 meses vuelvo a ver tus videos que veía con mi mamá... Yo esperaba que se recuperara de una fractura de cadera pero en todo este tiempo no pudo sobrellevar...",
-        tiempo: "hace 1 a",
-        likes: 31,
-        corazonPropietario: false
-    },
-    {
-        id: 3,
-        autor: "@luisa_mendez",
-        avatarLetter: "L",
-        avatarBg: "#e91e63",
-        texto: "¡Qué gran video y qué paisajes tan hermosos! Sigue así motivándonos a viajar.",
-        tiempo: "hace 6 meses",
-        likes: 12,
-        corazonPropietario: true
-    }
-];
-
-const SHORTS_DATA = [
-    {
-        id: 1,
-        titulo: "Ustedes que piensan de esto?🤔👀 Comentario viral de la semana",
-        vistas: "4.2 M de vistas",
-        thumbnailImg: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=300&auto=format&fit=crop&q=60"
-    },
-    {
-        id: 2,
-        titulo: "El Mejor Almuerzo del Mundo: Carne al Horno sin hacer nada",
-        vistas: "850 K de vistas",
-        thumbnailImg: "https://images.unsplash.com/photo-1544025162-d76694265947?w=300&auto=format&fit=crop&q=60"
-    },
-    {
-        id: 3,
-        titulo: "Mi setup de simulación de conducción extrema Lamborghini 🏎️",
-        vistas: "1.5 M de vistas",
-        thumbnailImg: "https://images.unsplash.com/photo-1600706432502-75a0e2751982?w=300&auto=format&fit=crop&q=60"
+        duracionSeg: 25,
+        archivo: "./assets/video/ejercicio.mp4",
+        miniatura: "./assets/img/youtube/ejercicio.jpg",
+        likes: 27000,
+        suscriptores: "410 mil suscriptores",
+        emoji: "🧘",
+        gradiente: "linear-gradient(135deg, #66bb6a, #1b5e20)",
+        etiquetas: ["ejercicio", "ejercicios", "salud", "gimnasia", "casa", "caminar"]
     },
     {
         id: 4,
-        titulo: "El fracaso de Luisito Comunica en los negocios gastronómicos",
-        vistas: "2.1 M de vistas",
-        thumbnailImg: "https://images.unsplash.com/photo-1550547660-d9450f859349?w=300&auto=format&fit=crop&q=60"
+        titulo: "Cómo cuidar tus plantas en casa | Consejos fáciles",
+        canal: "Jardín en Casa",
+        avatarLetter: "J",
+        avatarBg: "#8d6e63",
+        vistas: "640 mil vistas",
+        tiempo: "hace 1 año",
+        duracionSeg: 25,
+        archivo: "./assets/video/plantas.mp4",
+        miniatura: "./assets/img/youtube/plantas.jpg",
+        likes: 19000,
+        suscriptores: "230 mil suscriptores",
+        emoji: "🌱",
+        gradiente: "linear-gradient(135deg, #9ccc65, #33691e)",
+        etiquetas: ["plantas", "jardin", "jardín", "flores", "sembrar", "maceta"]
+    },
+    {
+        id: 5,
+        titulo: "Los paisajes más bonitos del Ecuador desde el aire",
+        canal: "Ecuador Natural",
+        avatarLetter: "E",
+        avatarBg: "#039be5",
+        vistas: "2.3 M de vistas",
+        tiempo: "hace 5 meses",
+        duracionSeg: 25,
+        archivo: "./assets/video/paisajes.mp4",
+        miniatura: "./assets/img/youtube/paisajes.jpg",
+        likes: 76000,
+        suscriptores: "1.3 M de suscriptores",
+        emoji: "🏔️",
+        gradiente: "linear-gradient(135deg, #4fc3f7, #01579b)",
+        etiquetas: ["ecuador", "paisajes", "viajes", "naturaleza", "montaña", "documental"]
+    },
+    {
+        id: 6,
+        titulo: "Pan casero fácil, sin amasadora y con pocos ingredientes",
+        canal: "Cocina de Rosa",
+        avatarLetter: "R",
+        avatarBg: "#ff7043",
+        vistas: "3.1 M de vistas",
+        tiempo: "hace 1 año",
+        duracionSeg: 25,
+        archivo: "./assets/video/pan.mp4",
+        miniatura: "./assets/img/youtube/pan.jpg",
+        likes: 91000,
+        suscriptores: "820 mil suscriptores",
+        emoji: "🍞",
+        gradiente: "linear-gradient(135deg, #ffca28, #ef6c00)",
+        etiquetas: ["receta", "recetas", "pan", "cocina", "comida", "horno"]
     }
 ];
 
-// ---- PLANTILLA HTML ----
+const COMENTARIOS_BASE = [
+    {
+        id: 1,
+        autor: "Carmen Villacís",
+        avatarLetter: "C",
+        avatarBg: "#ec407a",
+        texto: "Muchas gracias por explicar tan despacio, así sí puedo seguir los pasos. ¡Bendiciones!",
+        tiempo: "hace 2 semanas",
+        likes: 342,
+        corazonCanal: true
+    },
+    {
+        id: 2,
+        autor: "Jorge Andrade",
+        avatarLetter: "J",
+        avatarBg: "#26a69a",
+        texto: "Lo vi con mi esposa y nos encantó. Saludos desde Quevedo.",
+        tiempo: "hace 1 mes",
+        likes: 118,
+        corazonCanal: false
+    },
+    {
+        id: 3,
+        autor: "Marta Cedeño",
+        avatarLetter: "M",
+        avatarBg: "#5c6bc0",
+        texto: "Qué bonito video, me trajo muchos recuerdos de mi juventud.",
+        tiempo: "hace 3 meses",
+        likes: 54,
+        corazonCanal: false
+    }
+];
+
+const SUGERENCIAS_BUSQUEDA = ["recetas de sopa", "música del recuerdo", "ejercicios en casa"];
+
+// Personas a las que se le puede enviar un video en el nivel de compartir
+const CONTACTOS_COMPARTIR = [
+    { id: "juan", nombre: "Juan (Nieto)", inicial: "J", color: "#3f51b5" },
+    { id: "familia", nombre: "Familia Mendoza", inicial: "F", color: "#e91e63" },
+    { id: "rosa", nombre: "Rosa (Vecina)", inicial: "R", color: "#009688" }
+];
+
+// ---------------------------------------------------------------------
+// UTILIDADES
+// ---------------------------------------------------------------------
+function formatearTiempo(segundos) {
+    const m = Math.floor(segundos / 60);
+    const s = Math.floor(segundos % 60).toString().padStart(2, "0");
+    return `${m}:${s}`;
+}
+
+function formatearNumero(n) {
+    if (n >= 1000000) return `${(n / 1000000).toFixed(1)} M`;
+    if (n >= 1000) return `${Math.round(n / 1000)} K`;
+    return `${n}`;
+}
+
+function limpiarEmojis(texto) {
+    return texto.replace(/[\u{1F300}-\u{1FAFF}\u{2600}-\u{27BF}\u{FE0F}]/gu, "").trim();
+}
+
+function enVista(idVista) {
+    const v = $(`#${idVista}`);
+    return !!(v && v.classList.contains("activa"));
+}
+
+function textoComentario() {
+    const i = $("#ytCommentInput");
+    return i ? i.value.trim() : "";
+}
+
+function textoBusqueda() {
+    const i = $("#ytSearchInput");
+    return i ? i.value.trim() : "";
+}
+
+// ---------------------------------------------------------------------
+// PLANTILLA HTML
+// ---------------------------------------------------------------------
 function asegurarTemplateHTML() {
     const contenedor = $("#pantallaYoutubeSimulador");
     if (!contenedor || contenedor.children.length > 0) return;
 
     contenedor.innerHTML = `
         <!-- Barra de instrucciones (NICO Guía) -->
-        <div id="ytInstructionsBar" class="ws-instructions-bar">
-            <div class="ws-instructions-nico" style="cursor: pointer;" aria-label="Escuchar instrucción de Nico">
-                <img src="./assets/img/icons/voz.svg" alt="Nico" class="ws-instructions-icono-nico">
+        <div id="ytInstructionsBar" class="yt-instructions-bar">
+            <button type="button" id="ytNicoBtn" class="yt-instructions-nico" aria-label="Repetir instrucción de Nico">
+                <img src="./assets/img/icons/voz.svg" alt="" class="yt-instructions-icono-nico">
                 <small>NICO</small>
-            </div>
-            <div id="ytInstructionsText" class="ws-instructions-text">Cargando objetivo...</div>
+            </button>
+            <div id="ytInstructionsText" class="yt-instructions-text">Cargando objetivo...</div>
         </div>
 
-        <!-- ======= VISTA FEED (INICIO) ======= -->
+        <!-- ======= VISTA INICIO ======= -->
         <div id="ytViewFeed" class="yt-view activa">
-            <!-- Header -->
             <header class="yt-header">
                 <div class="yt-header-left">
                     <button id="ytSalirBtn" class="yt-back-btn" aria-label="Volver al menú de niveles">
@@ -155,135 +259,237 @@ function asegurarTemplateHTML() {
                     </div>
                 </div>
                 <div class="yt-header-right">
-                    <button class="yt-header-icon" aria-label="Notificaciones">
-                        <svg viewBox="0 0 24 24"><path d="M12 22c1.1 0 2-.9 2-2h-4c0 1.1.9 2 2 2zm6-6v-5c0-3.07-1.63-5.64-4.5-6.32V4c0-.83-.67-1.5-1.5-1.5s-1.5.67-1.5 1.5v.68C7.64 5.36 6 7.92 6 11v5l-2 2v1h16v-1l-2-2z"/></svg>
-                        <span class="yt-bell-badge">9+</span>
-                    </button>
-                    <button class="yt-header-icon" aria-label="Buscar">
+                    <button class="yt-header-icon" id="ytBuscarBtn" aria-label="Buscar">
                         <svg viewBox="0 0 24 24"><path d="M15.5 14h-.79l-.28-.27C15.41 12.59 16 11.11 16 9.5 16 5.91 13.09 3 9.5 3S3 5.91 3 9.5 5.91 16 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/></svg>
                     </button>
                 </div>
             </header>
 
-            <!-- Categorias (pills) -->
             <div class="yt-categories-container">
-                <button class="yt-explore-btn" aria-label="Explorar">
-                    <svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15.93V14h-2v3.93c-3.03-.45-5.48-2.9-5.93-5.93H9v-2H5.07c.45-3.03 2.9-5.48 5.93-5.93V7h2v-3.07c3.03.45 5.48 2.9 5.93 5.93H15v2h3.93c-.45 3.03-2.9 5.48-5.93 5.93z"/></svg>
-                </button>
                 <button class="yt-pill active">Todos</button>
-                <button class="yt-pill">Maletas</button>
-                <button class="yt-pill">Videojuegos</button>
-                <button class="yt-pill">Parrillas</button>
+                <button class="yt-pill">Cocina</button>
                 <button class="yt-pill">Música</button>
+                <button class="yt-pill">Salud</button>
+                <button class="yt-pill">Naturaleza</button>
             </div>
 
-            <!-- Feed Principal -->
             <div id="ytFeedList" class="yt-feed"></div>
         </div>
 
-        <!-- ======= VISTA VIDEO PLAYER (PLAYING) ======= -->
+        <!-- ======= VISTA BUSCAR ======= -->
+        <div id="ytViewBuscar" class="yt-view">
+            <header class="yt-search-header">
+                <button id="ytSearchVolverBtn" class="yt-back-btn" aria-label="Volver al inicio">
+                    <svg viewBox="0 0 24 24"><path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z"/></svg>
+                </button>
+                <input type="text" id="ytSearchInput" class="yt-search-input" placeholder="Buscar en YouTube" autocomplete="off">
+                <button id="ytSearchGoBtn" class="yt-search-go-btn" aria-label="Buscar">
+                    <svg viewBox="0 0 24 24"><path d="M15.5 14h-.79l-.28-.27C15.41 12.59 16 11.11 16 9.5 16 5.91 13.09 3 9.5 3S3 5.91 3 9.5 5.91 16 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/></svg>
+                </button>
+            </header>
+
+            <div id="ytSearchChips" class="yt-search-chips">
+                <p class="yt-search-chips-title">Sugerencias para ti</p>
+                ${SUGERENCIAS_BUSQUEDA.map(s => `
+                    <button class="yt-search-chip" data-sugerencia="${s}">
+                        <svg viewBox="0 0 24 24"><path d="M15.5 14h-.79l-.28-.27C15.41 12.59 16 11.11 16 9.5 16 5.91 13.09 3 9.5 3S3 5.91 3 9.5 5.91 16 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/></svg>
+                        <span>${s}</span>
+                    </button>
+                `).join("")}
+            </div>
+
+            <div id="ytSearchResults" class="yt-feed"></div>
+        </div>
+
+        <!-- ======= VISTA REPRODUCTOR ======= -->
         <div id="ytViewPlayer" class="yt-view yt-player-view">
-            <!-- Reproductor arriba -->
-            <div class="yt-video-player-container">
-                <div class="yt-video-player-frame">
-                    <video id="ytPlayerVideo" style="width:100%; height:100%; object-fit:cover;" controls autoplay playsinline loop></video>
+            <div class="yt-player-screen" id="ytPlayerScreen">
+                <span class="yt-player-emoji" id="ytPlayerEmoji">🎬</span>
+
+                <video id="ytPlayerVideo" class="yt-player-video" playsinline loop preload="metadata"></video>
+
+                <button class="yt-big-play-btn" id="ytBigPlayBtn" aria-label="Reproducir video">
+                    <svg id="ytBigPlayIcon" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
+                </button>
+
+                <div class="yt-player-bar">
+                    <button class="yt-ctrl-btn" id="ytPlayPauseBtn" aria-label="Reproducir o pausar">
+                        <svg id="ytPlayPauseIcon" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
+                    </button>
+                    <span class="yt-time-label" id="ytTimeLabel">0:00 / 0:00</span>
+                    <div class="yt-progress-track"><div class="yt-progress-fill" id="ytProgressFill"></div></div>
+                    <button class="yt-ctrl-btn" id="ytVolDownBtn" aria-label="Bajar volumen">
+                        <svg viewBox="0 0 24 24"><path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02z"/></svg>
+                    </button>
+                    <div class="yt-vol-bars" id="ytVolBars"></div>
+                    <button class="yt-ctrl-btn" id="ytVolUpBtn" aria-label="Subir volumen">
+                        <svg viewBox="0 0 24 24"><path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02zM14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77s-2.99-7.86-7-8.77z"/></svg>
+                    </button>
                 </div>
             </div>
 
-            <!-- Seccion detalles del video -->
             <div class="yt-player-info-section">
-                <!-- Boton volver -->
-                <button id="ytPlayerVolverBtn" class="yt-action-pill" style="margin-bottom:12px; padding: 4px 10px 4px 6px;">
-                    <svg viewBox="0 0 24 24" style="width:16px;height:16px;"><path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z"/></svg>
+                <button id="ytPlayerVolverBtn" class="yt-action-pill yt-volver-pill">
+                    <svg viewBox="0 0 24 24"><path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z"/></svg>
                     <span>Volver al inicio</span>
                 </button>
 
                 <h1 class="yt-player-title" id="ytPlayerTitleText">—</h1>
                 <p class="yt-player-metadata" id="ytPlayerMetaText">—</p>
 
-                <!-- Canal y Suscribir -->
                 <div class="yt-channel-row">
                     <div class="yt-channel-left">
-                        <div class="yt-channel-avatar" id="ytPlayerChannelAvatar" style="background:#4caf50;">—</div>
+                        <div class="yt-channel-avatar" id="ytPlayerChannelAvatar">—</div>
                         <div>
                             <div class="yt-comment-author" id="ytPlayerChannelName">—</div>
-                            <div class="yt-channel-subs-count">1.4 M de suscriptores</div>
+                            <div class="yt-channel-subs-count" id="ytPlayerChannelSubs">—</div>
                         </div>
                     </div>
-                    <button class="yt-subscribe-btn" id="ytSubscribeBtn">Suscribirse</button>
-                </div>
-
-                <!-- Botones de Accion -->
-                <div class="yt-actions-row">
-                    <div class="yt-action-pill-split">
-                        <button id="ytLikeBtn" aria-label="Me gusta">
-                            <svg viewBox="0 0 24 24" id="ytLikeIcon"><path d="M1 21h4V9H1v12zm22-11c0-1.1-.9-2-2-2h-6.31l.95-4.57.03-.32c0-.41-.17-.79-.44-1.06L14.17 1 7.59 7.59C7.22 7.95 7 8.45 7 9v10c0 1.1.9 2 2 2h9c.83 0 1.54-.5 1.84-1.22l3.02-7.05c.09-.23.14-.47.14-.73v-2z"/></svg>
-                            <span id="ytLikeLabel">—</span>
-                        </button>
-                        <span class="divider"></span>
-                        <button id="ytDislikeBtn" aria-label="No me gusta">
-                            <svg viewBox="0 0 24 24"><path d="M15 3H6c-.83 0-1.54.5-1.84 1.22l-3.02 7.05c-.09.23-.14.47-.14.73v2c0 1.1.9 2 2 2h6.31l-.95 4.57-.03.32c0 .41.17.79.44 1.06L9.83 23l6.59-6.59c.36-.36.58-.86.58-1.41V5c0-1.1-.9-2-2-2zm4 0v12h4V3h-4z"/></svg>
+                    <div class="yt-channel-actions">
+                        <button class="yt-subscribe-btn" id="ytSubscribeBtn">Suscribirse</button>
+                        <button class="yt-bell-btn" id="ytBellBtn" aria-label="Activar notificaciones" style="display:none;">
+                            <svg id="ytBellIcon" viewBox="0 0 24 24"><path d="M12 22c1.1 0 2-.9 2-2h-4c0 1.1.9 2 2 2zm6-6v-5c0-3.07-1.63-5.64-4.5-6.32V4c0-.83-.67-1.5-1.5-1.5s-1.5.67-1.5 1.5v.68C7.64 5.36 6 7.92 6 11v5l-2 2v1h16v-1l-2-2z"/></svg>
                         </button>
                     </div>
+                </div>
 
-                    <button class="yt-action-pill" aria-label="Compartir">
+                <div class="yt-actions-row">
+                    <button class="yt-action-pill" id="ytLikeBtn" aria-label="Me gusta">
+                        <svg viewBox="0 0 24 24" id="ytLikeIcon"><path d="M1 21h4V9H1v12zm22-11c0-1.1-.9-2-2-2h-6.31l.95-4.57.03-.32c0-.41-.17-.79-.44-1.06L14.17 1 7.59 7.59C7.22 7.95 7 8.45 7 9v10c0 1.1.9 2 2 2h9c.83 0 1.54-.5 1.84-1.22l3.02-7.05c.09-.23.14-.47.14-.73v-2z"/></svg>
+                        <span id="ytLikeLabel">—</span>
+                    </button>
+
+                    <button class="yt-action-pill" id="ytDislikeBtn" aria-label="No me gusta">
+                        <svg viewBox="0 0 24 24"><path d="M15 3H6c-.83 0-1.54.5-1.84 1.22l-3.02 7.05c-.09.23-.14.47-.14.73v2c0 1.1.9 2 2 2h6.31l-.95 4.57-.03.32c0 .41.17.79.44 1.06L9.83 23l6.59-6.59c.36-.36.58-.86.58-1.41V5c0-1.1-.9-2-2-2zm4 0v12h4V3h-4z"/></svg>
+                    </button>
+
+                    <button class="yt-action-pill" id="ytShareBtn" aria-label="Compartir">
                         <svg viewBox="0 0 24 24"><path d="M18 16.08c-.76 0-1.44.3-1.96.77L8.91 12.7c.05-.23.09-.46.09-.7s-.04-.47-.09-.7l7.05-4.11c.54.5 1.25.81 2.04.81 1.66 0 3-1.34 3-3s-1.34-3-3-3-3 1.34-3 3c0 .24.04.47.09.7L8.04 9.81C7.5 9.31 6.79 9 6 9c-1.66 0-3 1.34-3 3s1.34 3 3 3c.79 0 1.5-.31 2.04-.81l7.12 4.16c-.05.21-.08.43-.08.65 0 1.61 1.31 2.92 2.92 2.92s2.92-1.31 2.92-2.92c0-1.61-1.31-2.92-2.92-2.92z"/></svg>
                         <span>Compartir</span>
                     </button>
 
-                    <button class="yt-action-pill" aria-label="Remix">
-                        <svg viewBox="0 0 24 24"><path d="M12 10.9c-.61 0-1.1.49-1.1 1.1s.49 1.1 1.1 1.1 1.1-.49 1.1-1.1-.49-1.1-1.1-1.1zm8.3-2.9c-.61 0-1.1.49-1.1 1.1s.49 1.1 1.1 1.1 1.1-.49 1.1-1.1-.49-1.1-1.1-1.1zm-16.6 0c-.61 0-1.1.49-1.1 1.1s.49 1.1 1.1 1.1 1.1-.49 1.1-1.1-.49-1.1-1.1-1.1zM12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 17.93V19c0-.55-.45-1-1-1s-1 .45-1 1v.93c-3.95-.49-7-3.85-7.44-7.93H7c.55 0 1-.45 1-1s-.45-1-1-1H3.56c.44-4.08 3.5-7.44 7.44-7.93V5c0 .55.45 1 1 1s1-.45 1-1v-.93c3.95.49 7 3.85 7.44 7.93H17c-.55 0-1 .45-1 1s.45 1 1 1h3.44c-.44 4.08-3.5 7.44-7.44 7.93z"/></svg>
-                        <span>Remix</span>
+                    <button class="yt-action-pill" id="ytSaveBtn" aria-label="Guardar video">
+                        <svg viewBox="0 0 24 24" id="ytSaveIcon"><path d="M17 3H7c-1.1 0-2 .9-2 2v16l7-3 7 3V5c0-1.1-.9-2-2-2z"/></svg>
+                        <span id="ytSaveLabel">Guardar</span>
                     </button>
                 </div>
 
-                <!-- Caja de Vista Previa de Comentarios -->
                 <div class="yt-comments-preview-box" id="ytCommentsPreviewBox">
                     <div class="yt-comments-preview-header">
                         <div>
                             <span class="yt-comments-preview-title">Comentarios</span>
-                            <span class="yt-comments-preview-count">1.7 K</span>
+                            <span class="yt-comments-preview-count" id="ytCommentsCount">0</span>
                         </div>
                         <span class="yt-comments-preview-arrow">∧</span>
                     </div>
                     <div class="yt-comments-preview-body">
-                        <div class="yt-comments-preview-avatar">E</div>
+                        <div class="yt-comments-preview-avatar" id="ytCommentsPreviewAvatar">C</div>
                         <div class="yt-comments-preview-text" id="ytCommentsPreviewText">—</div>
                     </div>
                 </div>
             </div>
         </div>
 
-        <!-- ======= PANEL INFERIOR DESLIZABLE (COMENTARIOS) ======= -->
+        <!-- ======= VISTA "TÚ" (BIBLIOTECA) ======= -->
+        <div id="ytViewBiblioteca" class="yt-view">
+            <header class="yt-header">
+                <div class="yt-header-left">
+                    <div class="yt-lib-user">
+                        <div class="yt-lib-avatar">A</div>
+                        <div>
+                            <div class="yt-lib-name">Mi cuenta</div>
+                            <div class="yt-lib-mail">Ver tu canal</div>
+                        </div>
+                    </div>
+                </div>
+            </header>
+
+            <div class="yt-lib-body">
+                <button class="yt-lib-option" id="ytLibVerMasTarde">
+                    <svg viewBox="0 0 24 24"><path d="M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10 10-4.5 10-10S17.5 2 12 2zm4.2 14.2L11 13V7h1.5v5.2l4.5 2.7-.8 1.3z"/></svg>
+                    <div class="yt-lib-option-text">
+                        <strong>Ver más tarde</strong>
+                        <small id="ytLibVerMasTardeCount">0 videos guardados</small>
+                    </div>
+                    <span class="yt-lib-arrow">›</span>
+                </button>
+
+                <button class="yt-lib-option" id="ytLibHistorial">
+                    <svg viewBox="0 0 24 24"><path d="M13 3a9 9 0 0 0-9 9H1l3.9 3.9.1.2L9 12H6a7 7 0 1 1 7 7c-1.9 0-3.6-.8-4.8-2l-1.4 1.4A9 9 0 1 0 13 3zm-1 5v5l4.3 2.5.7-1.2-3.5-2.1V8H12z"/></svg>
+                    <div class="yt-lib-option-text">
+                        <strong>Historial</strong>
+                        <small>Videos que ya viste</small>
+                    </div>
+                    <span class="yt-lib-arrow">›</span>
+                </button>
+
+                <div id="ytLibSavedSection" class="yt-lib-saved-section" style="display:none;">
+                    <h3 class="yt-lib-saved-title">Ver más tarde</h3>
+                    <div id="ytLibSavedList" class="yt-feed"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ======= CAJÓN DE COMENTARIOS ======= -->
         <div id="ytCommentsDrawer" class="yt-comments-drawer">
-            <!-- Header -->
             <div class="yt-drawer-header">
                 <span class="yt-drawer-title">Comentarios</span>
-                <button class="yt-drawer-close-btn" id="ytDrawerCloseBtn">✕</button>
+                <button class="yt-drawer-close-btn" id="ytDrawerCloseBtn" aria-label="Cerrar comentarios">✕</button>
             </div>
 
-            <!-- Filtros principales -->
-            <div class="yt-drawer-filters">
-                <button class="yt-drawer-filter-pill active">Principales</button>
-                <button class="yt-drawer-filter-pill">Temas</button>
-                <button class="yt-drawer-filter-pill">Más recientes</button>
-            </div>
-
-            <!-- Banner de Lineamientos -->
             <div class="yt-comments-warning-banner">
-                Recuerda realizar comentarios respetuosos siguiendo los <a href="#" onclick="return false;">Lineamientos de la Comunidad de YouTube</a>. <a href="#" onclick="return false;">Más información</a>
+                Recuerda escribir comentarios respetuosos.
             </div>
 
-            <!-- Lista de comentarios -->
             <div class="yt-comments-list" id="ytCommentsList"></div>
 
-            <!-- Caja de entrada para comentar -->
             <div class="yt-comment-input-bar">
-                <div class="yt-comment-input-avatar">U</div>
-                <input type="text" class="yt-comment-input-field" id="ytCommentInput" placeholder="Añade un comentario...">
+                <div class="yt-comment-input-avatar">A</div>
+                <input type="text" class="yt-comment-input-field" id="ytCommentInput" placeholder="Añade un comentario..." autocomplete="off">
                 <button class="yt-comment-send-btn" id="ytCommentSendBtn" aria-label="Enviar comentario">
                     <svg viewBox="0 0 24 24"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/></svg>
                 </button>
+            </div>
+        </div>
+
+        <!-- ======= MENÚ DE UN COMENTARIO PROPIO ======= -->
+        <div id="ytCommentMenu" class="yt-comment-menu">
+            <div class="yt-comment-menu-panel">
+                <button class="yt-comment-menu-opcion" id="ytCommentMenuEliminar">
+                    <svg viewBox="0 0 24 24"><path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/></svg>
+                    <span>Eliminar</span>
+                </button>
+                <button class="yt-comment-menu-opcion" id="ytCommentMenuCancelar">
+                    <svg viewBox="0 0 24 24"><path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+                    <span>Cancelar</span>
+                </button>
+            </div>
+        </div>
+
+        <!-- ======= HOJA DE COMPARTIR ======= -->
+        <div id="ytShareSheet" class="yt-share-sheet">
+            <div class="yt-share-panel">
+                <div class="yt-share-header">
+                    <span class="yt-share-title" id="ytShareTitulo">Compartir</span>
+                    <button class="yt-drawer-close-btn" id="ytShareCloseBtn" aria-label="Cerrar">✕</button>
+                </div>
+
+                <div id="ytShareApps" class="yt-share-apps">
+                    <button class="yt-share-app" id="ytShareAppWhatsapp">
+                        <span class="yt-share-app-icono" style="background:#25d366;">💬</span>
+                        <span>WhatsApp</span>
+                    </button>
+                    <button class="yt-share-app" id="ytShareAppMensajes">
+                        <span class="yt-share-app-icono" style="background:#1e88e5;">✉️</span>
+                        <span>Mensajes</span>
+                    </button>
+                    <button class="yt-share-app" id="ytShareAppCopiar">
+                        <span class="yt-share-app-icono" style="background:#616161;">🔗</span>
+                        <span>Copiar enlace</span>
+                    </button>
+                </div>
+
+                <div id="ytShareContactos" class="yt-share-contactos" style="display:none;"></div>
             </div>
         </div>
 
@@ -297,131 +503,320 @@ function asegurarTemplateHTML() {
                 <svg viewBox="0 0 24 24"><path d="M17.97 10.97l-3.78-1.89 3.78-1.89c1.09-.54 1.84-1.63 1.84-2.91 0-1.87-1.52-3.39-3.39-3.39-.77 0-1.48.26-2.07.69L5.34 6.84c-1.09.54-1.84 1.63-1.84 2.91 0 1.87 1.52 3.39 3.39 3.39.77 0 1.48-.26 2.07-.69l3.78 1.89-3.78 1.89c-1.09.54-1.84 1.63-1.84 2.91 0 1.87 1.52 3.39 3.39 3.39.77 0 1.48-.26 2.07-.69l9.01-5.26c1.09-.54 1.84-1.63 1.84-2.91 0-1.87-1.52-3.39-3.39-3.39-.77 0-1.48.26-2.07.69z"/></svg>
                 <span>Shorts</span>
             </button>
-            <button class="yt-nav-tab" aria-label="Crear">
-                <div class="yt-nav-plus">
-                    <svg viewBox="0 0 24 24"><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg>
-                </div>
-            </button>
             <button class="yt-nav-tab" id="ytNavSuscripciones">
                 <svg viewBox="0 0 24 24"><path d="M4 6H2v14c0 1.1.9 2 2 2h14v-2H4V6zm16-4H8c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm0 14H8V4h12v12z"/></svg>
                 <span>Suscripciones</span>
             </button>
-            <button class="yt-nav-tab" id="ytNavTu">
-                <div style="width: 22px; height: 22px; border-radius: 50%; background: #673ab7; color: white; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 700;">A</div>
+            <button class="yt-nav-tab" id="ytNavTu" data-view="ytViewBiblioteca">
+                <div class="yt-nav-avatar">A</div>
                 <span>Tú</span>
             </button>
         </nav>
+
+        <!-- ======= AVISO FLOTANTE ======= -->
+        <div id="ytToast" class="yt-toast"></div>
+
+        <!-- ======= MODAL DE ÉXITO ======= -->
+        <div id="ytModalExito" class="yt-modal-exito">
+            <div class="yt-success-container">
+                <img src="./assets/img/icons/trofeo.svg" alt="Trofeo" class="yt-success-trophy">
+                <h2>¡Nivel Completado!</h2>
+                <p id="ytSuccessMessage">¡Has realizado la acción con éxito!</p>
+                <button id="ytSuccessBtnContinuar" class="yt-success-btn-continuar">Continuar</button>
+            </div>
+        </div>
     `;
 }
 
-// ---- RENDERIZAR FEED DINÁMICO ----
-function renderizarFeed() {
-    const feed = $("#ytFeedList");
-    if (!feed) return;
-
-    let html = "";
-    VIDEOS_DATA.forEach((video, index) => {
-        html += `
-            <div class="yt-video-card" data-video-id="${video.id}" style="${index > 0 ? 'margin-top:16px;' : ''}">
-                <div class="yt-video-thumbnail-container">
-                    <img src="${video.thumbnailImg}" class="yt-video-thumbnail" alt="video thumbnail">
-                    <span class="yt-video-duration">${video.duracion}</span>
-                </div>
-                <div class="yt-video-details">
-                    <div class="yt-channel-avatar" style="background:${video.avatarBg};">
-                        ${video.avatarLetter}
-                    </div>
-                    <div class="yt-video-info">
-                        <h3 class="yt-video-title">${video.titulo}</h3>
-                        <p class="yt-video-meta">${video.canal} · ${video.vistas} · ${video.tiempo}</p>
-                    </div>
-                    <button class="yt-video-more-btn">
-                        <svg viewBox="0 0 24 24"><path d="M12 8c1.1 0 2-.9 2-2s-.9-2-2-2-2 .9-2 2 .9 2 2 2zm0 2c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2zm0 6c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2z"/></svg>
-                    </button>
-                </div>
-            </div>
-        `;
-
-        // Insertar ad después de la primera
-        if (index === 0) {
-            html += `
-                <div class="yt-ad-card" style="margin-top:16px;">
-                    <div class="yt-ad-banner" style="background: linear-gradient(135deg, #6200ee, #3700b3);">
-                        <div style="text-align: center; padding: 20px;">
-                            <div style="font-size: 26px; font-weight: 800; margin-bottom: 8px;">Envía dinero al exterior</div>
-                            <div style="font-size: 13px; font-weight: 500; opacity: 0.9;">Envía dólares o euros desde la app sin complicaciones</div>
-                        </div>
-                    </div>
-                    <div class="yt-ad-details">
-                        <div class="yt-channel-avatar" style="background:#6200ee;">T</div>
-                        <div class="yt-ad-info">
-                            <h4 class="yt-ad-title">Takenos</h4>
-                            <p class="yt-ad-desc">Recibe y maneja tu dinero desde tu celular cuando lo necesites.</p>
-                            <div class="yt-ad-badge-row">
-                                <span class="yt-ad-badge">Patrocinado</span>
-                            </div>
-                        </div>
-                        <button class="yt-video-more-btn">
-                            <svg viewBox="0 0 24 24"><path d="M12 8c1.1 0 2-.9 2-2s-.9-2-2-2-2 .9-2 2 .9 2 2 2zm0 2c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2zm0 6c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2z"/></svg>
-                        </button>
-                    </div>
-                    <div class="yt-ad-action-row">
-                        <button class="yt-ad-btn">Abrir aplicación</button>
-                    </div>
-                </div>
-            `;
+// ---------------------------------------------------------------------
+// GUION DE PASOS POR NIVEL
+// Cada paso: { texto, objetivo, requierePlayer }
+// "objetivo" es el selector del elemento que Nico resalta en pantalla.
+// ---------------------------------------------------------------------
+const PASOS = {
+    "buscar-video": {
+        1: {
+            texto: "Toca la lupa, arriba a la derecha, para buscar un video.",
+            objetivo: "#ytBuscarBtn"
+        },
+        2: {
+            texto: "Escribe lo que quieres ver, o toca una de las sugerencias.",
+            objetivo: "#ytSearchInput, .yt-search-chip"
+        },
+        3: {
+            texto: "Muy bien. Ahora toca el botón azul de la lupa para buscar.",
+            objetivo: "#ytSearchGoBtn"
+        },
+        4: {
+            texto: "Estos son los resultados. Toca el primer video para verlo.",
+            objetivo: "#ytSearchResults .yt-video-card:first-child"
+        },
+        5: {
+            texto: "Toca el botón grande del centro para empezar a ver el video.",
+            objetivo: "#ytBigPlayBtn",
+            requierePlayer: true
+        },
+        6: {
+            texto: "El video está andando. Tócalo otra vez para pausarlo.",
+            objetivo: "#ytBigPlayBtn",
+            requierePlayer: true
+        },
+        7: {
+            texto: "El video está en pausa. Tócalo de nuevo para seguir viéndolo.",
+            objetivo: "#ytBigPlayBtn",
+            requierePlayer: true
+        },
+        8: {
+            texto: "Por último, sube el volumen tocando el botón de la bocina grande.",
+            objetivo: "#ytVolUpBtn",
+            requierePlayer: true
         }
+    },
 
-        // Insertar Shorts después de la segunda
-        if (index === 1) {
-            html += `
-                <div class="yt-shorts-grid-section" style="margin-top:16px;">
-                    <div class="yt-shorts-header">
-                        <div class="yt-shorts-title-row">
-                            <svg viewBox="0 0 24 24"><path d="M17.97 10.97l-3.78-1.89 3.78-1.89c1.09-.54 1.84-1.63 1.84-2.91 0-1.87-1.52-3.39-3.39-3.39-.77 0-1.48.26-2.07.69L5.34 6.84c-1.09.54-1.84 1.63-1.84 2.91 0 1.87 1.52 3.39 3.39 3.39.77 0 1.48-.26 2.07-.69l3.78 1.89-3.78 1.89c-1.09.54-1.84 1.63-1.84 2.91 0 1.87 1.52 3.39 3.39 3.39.77 0 1.48-.26 2.07-.69l9.01-5.26c1.09-.54 1.84-1.63 1.84-2.91 0-1.87-1.52-3.39-3.39-3.39-.77 0-1.48.26-2.07.69z"/></svg>
-                            <span>Shorts</span>
-                        </div>
-                        <button class="yt-video-more-btn">
-                            <svg viewBox="0 0 24 24"><path d="M12 8c1.1 0 2-.9 2-2s-.9-2-2-2-2 .9-2 2 .9 2 2 2zm0 2c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2zm0 6c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2z"/></svg>
-                        </button>
-                    </div>
-                    <div class="yt-shorts-grid">
-                        ${SHORTS_DATA.map(s => `
-                            <div class="yt-short-card" data-short-id="${s.id}">
-                                <img src="${s.thumbnailImg}" class="yt-short-thumbnail" alt="Short thumbnail">
-                                <div class="yt-short-overlay">
-                                    <div class="yt-short-card-title">${s.titulo}</div>
-                                    <div class="yt-short-card-views">${s.vistas}</div>
-                                </div>
-                                <button class="yt-short-options-btn">
-                                    <svg viewBox="0 0 24 24"><path d="M12 8c1.1 0 2-.9 2-2s-.9-2-2-2-2 .9-2 2 .9 2 2 2zm0 2c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2zm0 6c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2z"/></svg>
-                                </button>
-                            </div>
-                        `).join("")}
-                    </div>
-                </div>
-            `;
+    "reaccionar-suscribir": {
+        1: {
+            texto: "Toca el primer video de la lista para abrirlo.",
+            objetivo: "#ytFeedList .yt-video-card:first-child"
+        },
+        2: {
+            texto: "¿Te gustó el video? Toca el pulgar hacia arriba que dice Me gusta.",
+            objetivo: "#ytLikeBtn",
+            requierePlayer: true
+        },
+        3: {
+            texto: "Ahora toca el botón negro Suscribirse para seguir a este canal.",
+            objetivo: "#ytSubscribeBtn",
+            requierePlayer: true
+        },
+        4: {
+            texto: "Toca la campanita para que te avisen cuando suban un video nuevo.",
+            objetivo: "#ytBellBtn",
+            requierePlayer: true
         }
-    });
+    },
 
-    feed.innerHTML = html;
+    "comentar-video": {
+        1: {
+            texto: "Toca el primer video de la lista para abrirlo.",
+            objetivo: "#ytFeedList .yt-video-card:first-child"
+        },
+        2: {
+            texto: "Toca la caja gris que dice Comentarios para abrirlos.",
+            objetivo: "#ytCommentsPreviewBox",
+            requierePlayer: true
+        },
+        3: {
+            texto: "Aquí están los comentarios de otras personas. Dale Me gusta al primero con el pulgar hacia arriba.",
+            objetivo: "#ytCommentsList .yt-comment-item:first-child .yt-comment-like-btn",
+            requierePlayer: true
+        },
+        4: {
+            texto: "Si un comentario no te gusta, puedes tocar el pulgar hacia abajo. Pruébalo en ese mismo comentario.",
+            objetivo: "#ytCommentsList .yt-comment-item:first-child .yt-comment-dislike-btn",
+            requierePlayer: true
+        },
+        5: {
+            texto: "Ahora escribe tu comentario abajo, donde dice Añade un comentario.",
+            objetivo: "#ytCommentInput",
+            requierePlayer: true
+        },
+        6: {
+            texto: "Ya lo escribiste. Toca la flecha azul para enviar tu comentario.",
+            objetivo: "#ytCommentSendBtn",
+            requierePlayer: true
+        },
+        7: {
+            texto: "Espera un momento, el canal está leyendo tu comentario.",
+            objetivo: null,
+            requierePlayer: true
+        },
+        8: {
+            texto: "¿Te arrepentiste de lo que escribiste? Toca los tres puntitos de tu comentario.",
+            objetivo: ".yt-comment-item-mio .yt-comment-menu-btn",
+            requierePlayer: true
+        },
+        9: {
+            texto: "Toca Eliminar para borrar tu comentario.",
+            objetivo: "#ytCommentMenuEliminar",
+            requierePlayer: true
+        }
+    },
+
+    "compartir-video": {
+        1: {
+            texto: "Toca el primer video de la lista para abrirlo.",
+            objetivo: "#ytFeedList .yt-video-card:first-child"
+        },
+        2: {
+            texto: "¿Le quieres mandar este video a alguien? Toca el botón Compartir.",
+            objetivo: "#ytShareBtn",
+            requierePlayer: true
+        },
+        3: {
+            texto: "Elige por dónde se lo vas a mandar. Toca WhatsApp.",
+            objetivo: "#ytShareAppWhatsapp",
+            requierePlayer: true
+        },
+        4: {
+            texto: "Ahora toca a la persona a la que se lo quieres enviar.",
+            objetivo: "#ytShareContactos .yt-share-contacto:first-child",
+            requierePlayer: true
+        }
+    },
+
+    "guardar-video": {
+        1: {
+            texto: "Toca el primer video de la lista para abrirlo.",
+            objetivo: "#ytFeedList .yt-video-card:first-child"
+        },
+        2: {
+            texto: "Toca el botón Guardar para dejar este video anotado y verlo después.",
+            objetivo: "#ytSaveBtn",
+            requierePlayer: true
+        },
+        3: {
+            texto: "Guardado. Ahora toca Volver al inicio.",
+            objetivo: "#ytPlayerVolverBtn",
+            requierePlayer: true
+        },
+        4: {
+            texto: "Abajo a la derecha, toca la pestaña que dice Tú.",
+            objetivo: "#ytNavTu"
+        },
+        5: {
+            texto: "Toca Ver más tarde para encontrar el video que guardaste.",
+            objetivo: "#ytLibVerMasTarde"
+        }
+    }
+};
+
+// ---------------------------------------------------------------------
+// BARRA DE INSTRUCCIONES + GUÍA VISUAL
+// ---------------------------------------------------------------------
+function actualizarBarraInstrucciones(autoSpeak = true) {
+    const textEl = $("#ytInstructionsText");
+    if (!textEl) return;
+
+    const pasos = PASOS[nivelActual];
+    const paso = pasos ? pasos[subPaso] : null;
+
+    let texto;
+    let objetivo;
+
+    if (!paso) {
+        texto = "Practica libremente en el simulador de YouTube.";
+        objetivo = null;
+    } else if (paso.requierePlayer && !enVista("ytViewPlayer")) {
+        // El usuario salió del video antes de terminar el paso: lo guiamos de vuelta
+        // al sitio donde estaba ese video (resultados de búsqueda o pantalla de inicio).
+        const resultados = $("#ytSearchResults");
+        const hayResultados = enVista("ytViewBuscar") && resultados && resultados.children.length > 0;
+
+        texto = "Vuelve a abrir el video: toca el primero de la lista.";
+        objetivo = hayResultados
+            ? "#ytSearchResults .yt-video-card:first-child"
+            : "#ytFeedList .yt-video-card:first-child";
+    } else {
+        texto = paso.texto;
+        objetivo = paso.objetivo;
+    }
+
+    textEl.textContent = texto;
+
+    if (autoSpeak && texto !== ultimaInstruccionHablada) {
+        ultimaInstruccionHablada = texto;
+        speak(limpiarEmojis(texto));
+    }
+
+    if (objetivo) {
+        resaltarElemento(objetivo);
+    } else {
+        limpiarResaltados();
+    }
 }
 
-// ---- RENDERIZAR COMENTARIOS EN EL CAJÓN ----
+/**
+ * Avanza al sub-paso indicado y actualiza la guía de Nico.
+ */
+function irAPaso(numeroPaso) {
+    subPaso = numeroPaso;
+    actualizarBarraInstrucciones(true);
+}
+
+/**
+ * Comprueba si estamos en un nivel y sub-paso concretos.
+ */
+function esPaso(nivel, numeroPaso) {
+    return nivelActual === nivel && subPaso === numeroPaso;
+}
+
+// ---------------------------------------------------------------------
+// RENDERIZADO
+// ---------------------------------------------------------------------
+function tarjetaVideoHTML(video) {
+    return `
+        <div class="yt-video-card" data-video-id="${video.id}">
+            <div class="yt-video-thumbnail-container" style="background:${video.gradiente};">
+                <span class="yt-video-thumb-emoji">${video.emoji}</span>
+                ${video.miniatura
+                    ? `<img src="${video.miniatura}" class="yt-video-thumb-img" alt="" onerror="this.style.display='none'">`
+                    : ""}
+                <span class="yt-video-duration">${formatearTiempo(video.duracionSeg)}</span>
+            </div>
+            <div class="yt-video-details">
+                <div class="yt-channel-avatar" style="background:${video.avatarBg};">${video.avatarLetter}</div>
+                <div class="yt-video-info">
+                    <h3 class="yt-video-title">${video.titulo}</h3>
+                    <p class="yt-video-meta">${video.canal} · ${video.vistas} · ${video.tiempo}</p>
+                </div>
+            </div>
+        </div>
+    `;
+}
+
+function renderizarFeed() {
+    const feed = $("#ytFeedList");
+    if (feed) feed.innerHTML = VIDEOS_DATA.map(tarjetaVideoHTML).join("");
+}
+
+function buscarVideos(termino) {
+    const t = termino.toLowerCase().trim();
+    if (!t) return VIDEOS_DATA;
+
+    const palabras = t.split(/\s+/).filter(p => p.length > 2);
+    const encontrados = VIDEOS_DATA.filter(v => {
+        const texto = `${v.titulo} ${v.canal} ${v.etiquetas.join(" ")}`.toLowerCase();
+        return palabras.some(p => texto.includes(p));
+    });
+
+    // Nunca dejamos la pantalla vacía: el objetivo del nivel es aprender a buscar
+    return encontrados.length > 0 ? encontrados : VIDEOS_DATA;
+}
+
+function renderizarResultados(termino) {
+    const cont = $("#ytSearchResults");
+    if (!cont) return;
+    cont.innerHTML = buscarVideos(termino).map(tarjetaVideoHTML).join("");
+}
+
 function renderizarComentarios() {
     const list = $("#ytCommentsList");
     if (!list) return;
 
-    list.innerHTML = COMENTARIOS_DATA.map(c => {
-        const heartHtml = c.corazonPropietario
-            ? `<div class="yt-comment-heart-badge">
-                 <img src="${VIDEOS_DATA[1].thumbnailImg}" alt="propietario">
-                 <span class="yt-comment-heart-icon">❤️</span>
-               </div>`
+    list.innerHTML = comentarios.map(c => {
+        const corazon = c.corazonCanal ? `<span class="yt-comment-heart">❤️</span>` : "";
+        const claseMio = c.esMio ? " yt-comment-item-mio" : "";
+
+        // Los tres puntitos solo aparecen en tus propios comentarios,
+        // porque solo los tuyos puedes borrar.
+        const menu = c.esMio
+            ? `<button class="yt-comment-menu-btn" data-id="${c.id}" aria-label="Opciones de tu comentario">
+                   <svg viewBox="0 0 24 24"><path d="M12 8c1.1 0 2-.9 2-2s-.9-2-2-2-2 .9-2 2 .9 2 2 2zm0 2c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2zm0 6c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2z"/></svg>
+               </button>`
             : "";
 
         return `
-            <div class="yt-comment-item">
+            <div class="yt-comment-item${claseMio}" data-id="${c.id}">
                 <div class="yt-comment-avatar" style="background:${c.avatarBg};">${c.avatarLetter}</div>
                 <div class="yt-comment-content">
                     <div class="yt-comment-header">
@@ -430,365 +825,1112 @@ function renderizarComentarios() {
                     </div>
                     <p class="yt-comment-text">${c.texto}</p>
                     <div class="yt-comment-actions">
-                        <button class="yt-comment-action-btn" aria-label="Me gusta">
+                        <button class="yt-comment-action-btn yt-comment-like-btn${c.liked ? " activo" : ""}" data-id="${c.id}" aria-label="Me gusta este comentario">
                             <svg viewBox="0 0 24 24"><path d="M1 21h4V9H1v12zm22-11c0-1.1-.9-2-2-2h-6.31l.95-4.57.03-.32c0-.41-.17-.79-.44-1.06L14.17 1 7.59 7.59C7.22 7.95 7 8.45 7 9v10c0 1.1.9 2 2 2h9c.83 0 1.54-.5 1.84-1.22l3.02-7.05c.09-.23.14-.47.14-.73v-2z"/></svg>
                             <span>${c.likes}</span>
                         </button>
-                        <button class="yt-comment-action-btn" aria-label="No me gusta">
+                        <button class="yt-comment-action-btn yt-comment-dislike-btn${c.disliked ? " activo" : ""}" data-id="${c.id}" aria-label="No me gusta este comentario">
                             <svg viewBox="0 0 24 24"><path d="M15 3H6c-.83 0-1.54.5-1.84 1.22l-3.02 7.05c-.09.23-.14.47-.14.73v2c0 1.1.9 2 2 2h6.31l-.95 4.57-.03.32c0 .41.17.79.44 1.06L9.83 23l6.59-6.59c.36-.36.58-.86.58-1.41V5c0-1.1-.9-2-2-2zm4 0v12h4V3h-4z"/></svg>
                         </button>
-                        <button class="yt-comment-action-btn" aria-label="Responder">
-                            <svg viewBox="0 0 24 24"><path d="M20 2H4c-1.1 0-1.99.9-1.99 2L2 22l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2z"/></svg>
-                        </button>
-                        ${heartHtml}
+                        ${corazon}
                     </div>
-                    ${c.id === 1 ? `<div class="yt-comment-replies-link">35 respuestas ▾</div>` : ""}
                 </div>
+                ${menu}
             </div>
         `;
     }).join("");
+
+    const count = $("#ytCommentsCount");
+    if (count) count.textContent = comentarios.length;
+
+    const previewText = $("#ytCommentsPreviewText");
+    const previewAvatar = $("#ytCommentsPreviewAvatar");
+    if (previewText && comentarios[0]) previewText.textContent = comentarios[0].texto;
+    if (previewAvatar && comentarios[0]) {
+        previewAvatar.textContent = comentarios[0].avatarLetter;
+        previewAvatar.style.background = comentarios[0].avatarBg;
+    }
 }
 
-// ---- NAVEGAR ENTRE VISTAS ----
+function renderizarBiblioteca() {
+    const contador = $("#ytLibVerMasTardeCount");
+    if (contador) {
+        const n = videosGuardados.length;
+        contador.textContent = n === 1 ? "1 video guardado" : `${n} videos guardados`;
+    }
+
+    const lista = $("#ytLibSavedList");
+    if (lista) {
+        const guardados = VIDEOS_DATA.filter(v => videosGuardados.includes(v.id));
+        lista.innerHTML = guardados.length > 0
+            ? guardados.map(tarjetaVideoHTML).join("")
+            : `<p class="yt-lib-vacio">Todavía no has guardado ningún video.</p>`;
+    }
+}
+
+// ---------------------------------------------------------------------
+// NAVEGACIÓN ENTRE VISTAS
+// ---------------------------------------------------------------------
 function cambiarVista(viewId) {
     document.querySelectorAll("#pantallaYoutubeSimulador .yt-view").forEach(v => v.classList.remove("activa"));
     const view = $(`#${viewId}`);
     if (view) view.classList.add("activa");
 }
 
-// Helper para obtener el ID de YouTube
-function obtenerYoutubeId(url) {
-    if (!url) return null;
-    const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|\&v=)([^#\&\?]*).*/;
-    const match = url.match(regExp);
-    return (match && match[2].length === 11) ? match[2] : null;
+function marcarTab(idTab) {
+    document.querySelectorAll("#pantallaYoutubeSimulador .yt-nav-tab").forEach(t => t.classList.remove("active"));
+    const tab = $(`#${idTab}`);
+    if (tab) tab.classList.add("active");
 }
 
-// ---- ABRIR VIDEO EN EL PLAYER ----
-function reproducirVideo(videoId) {
+function mostrarToast(texto) {
+    const toast = $("#ytToast");
+    if (!toast) return;
+
+    toast.textContent = texto;
+    toast.classList.add("visible");
+
+    if (toastTimeout) clearTimeout(toastTimeout);
+    toastTimeout = setTimeout(() => toast.classList.remove("visible"), 2600);
+}
+
+// ---------------------------------------------------------------------
+// REPRODUCTOR SIMULADO
+// ---------------------------------------------------------------------
+function abrirVideo(videoId) {
     const video = VIDEOS_DATA.find(v => v.id === videoId);
     if (!video) return;
 
-    // Resetear estados del video
-    yaLikedVideo = false;
-    yaSubscribed = false;
+    videoActual = video;
+    yaLiked = false;
+    yaSubscrito = false;
+    campanaActiva = false;
 
-    // Cargar datos en el reproductor de video (iframe o video HTML5)
-    const playerFrame = $(".yt-video-player-frame");
-    const titleEl = $("#ytPlayerTitleText");
-    const metaEl = $("#ytPlayerMetaText");
-    const nameEl = $("#ytPlayerChannelName");
-    const avEl = $("#ytPlayerChannelAvatar");
-    const subBtn = $("#ytSubscribeBtn");
+    detenerReproduccion();
+    progresoSegundos = 0;
+
+    $("#ytPlayerEmoji").textContent = video.emoji;
+    $("#ytPlayerScreen").style.background = video.gradiente;
+
+    // Cargar el archivo de video. Mientras no termine de cargar (o si no
+    // existe) se ve el fondo de color con el emoji.
+    desactivarVideoReal();
+    const elVideo = $("#ytPlayerVideo");
+    if (elVideo) {
+        elVideo.pause();
+
+        // La portada evita el rectángulo negro: un <video> no pinta ningún
+        // fotograma hasta que se reproduce.
+        if (video.miniatura) {
+            elVideo.poster = video.miniatura;
+        } else {
+            elVideo.removeAttribute("poster");
+        }
+
+        if (video.archivo) {
+            elVideo.src = video.archivo;
+            elVideo.volume = volumenActual / 5;
+            elVideo.muted = volumenActual === 0;
+            elVideo.load();
+
+            // Mostramos el elemento desde ya: la portada hace de imagen
+            // mientras el video no se reproduce. Solo se oculta si da error.
+            const pantalla = $("#ytPlayerScreen");
+            if (pantalla) pantalla.classList.add("con-video");
+        } else {
+            elVideo.removeAttribute("src");
+            elVideo.load();
+        }
+    }
+    $("#ytPlayerTitleText").textContent = video.titulo;
+    $("#ytPlayerMetaText").textContent = `${video.vistas} · ${video.tiempo}`;
+    $("#ytPlayerChannelName").textContent = video.canal;
+    $("#ytPlayerChannelSubs").textContent = video.suscriptores;
+
+    const avatar = $("#ytPlayerChannelAvatar");
+    avatar.textContent = video.avatarLetter;
+    avatar.style.background = video.avatarBg;
+
+    // Me gusta
     const likeIcon = $("#ytLikeIcon");
     const likeLabel = $("#ytLikeLabel");
+    if (likeIcon) likeIcon.style.fill = "#0f0f0f";
+    if (likeLabel) likeLabel.textContent = formatearNumero(video.likes);
+    $("#ytLikeBtn").classList.remove("activo");
 
-    if (playerFrame) {
-        const ytId = obtenerYoutubeId(video.videoUrl);
-        if (ytId) {
-            playerFrame.innerHTML = `
-                <iframe id="ytPlayerIframe" 
-                    src="https://www.youtube.com/embed/${ytId}?autoplay=1" 
-                    style="width:100%; height:100%; border:none;" 
-                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" 
-                    allowfullscreen>
-                </iframe>
-            `;
+    // Suscripción
+    const subBtn = $("#ytSubscribeBtn");
+    subBtn.textContent = "Suscribirse";
+    subBtn.classList.remove("subscribed");
+    const bell = $("#ytBellBtn");
+    bell.style.display = "none";
+    bell.classList.remove("activa");
+
+    // Guardar
+    actualizarBotonGuardar();
+
+    actualizarProgresoUI();
+    actualizarVolumenUI();
+    renderizarComentarios();
+
+    cambiarVista("ytViewPlayer");
+    marcarTab("ytNavPrincipal");
+}
+
+function actualizarBotonGuardar() {
+    const guardado = videoActual && videosGuardados.includes(videoActual.id);
+    const btn = $("#ytSaveBtn");
+    const label = $("#ytSaveLabel");
+    const icon = $("#ytSaveIcon");
+    if (!btn) return;
+
+    btn.classList.toggle("activo", !!guardado);
+    if (label) label.textContent = guardado ? "Guardado" : "Guardar";
+    if (icon) icon.style.fill = guardado ? "#065fd4" : "#0f0f0f";
+}
+
+/**
+ * Duración a mostrar: la real del archivo si se cargó, o la del catálogo
+ * cuando estamos en modo animación (sin archivo de video).
+ */
+function duracionActual() {
+    const el = $("#ytPlayerVideo");
+    if (usandoVideoReal && el && isFinite(el.duration) && el.duration > 0) {
+        return el.duration;
+    }
+    return videoActual ? videoActual.duracionSeg : 0;
+}
+
+/**
+ * Deja de usar el archivo de video y vuelve al fondo de color con emoji.
+ * Se llama si el archivo falta o si el navegador bloquea la reproducción.
+ */
+function desactivarVideoReal() {
+    usandoVideoReal = false;
+    const pantalla = $("#ytPlayerScreen");
+    if (pantalla) pantalla.classList.remove("con-video");
+}
+
+function actualizarProgresoUI() {
+    if (!videoActual) return;
+
+    const fill = $("#ytProgressFill");
+    const label = $("#ytTimeLabel");
+    const total = duracionActual();
+    const porcentaje = total > 0 ? Math.min(100, (progresoSegundos / total) * 100) : 0;
+
+    if (fill) fill.style.width = `${porcentaje}%`;
+    if (label) label.textContent = `${formatearTiempo(progresoSegundos)} / ${formatearTiempo(total)}`;
+}
+
+function actualizarIconosReproduccion() {
+    const rutaPlay = "M8 5v14l11-7z";
+    const rutaPausa = "M6 19h4V5H6v14zm8-14v14h4V5h-4z";
+    const ruta = reproduciendo ? rutaPausa : rutaPlay;
+
+    const bigIcon = $("#ytBigPlayIcon");
+    const smallIcon = $("#ytPlayPauseIcon");
+    if (bigIcon) bigIcon.innerHTML = `<path d="${ruta}"/>`;
+    if (smallIcon) smallIcon.innerHTML = `<path d="${ruta}"/>`;
+
+    const bigBtn = $("#ytBigPlayBtn");
+    if (bigBtn) {
+        bigBtn.setAttribute("aria-label", reproduciendo ? "Pausar video" : "Reproducir video");
+    }
+
+    const pantalla = $("#ytPlayerScreen");
+    if (pantalla) pantalla.classList.toggle("reproduciendo", reproduciendo);
+}
+
+function iniciarReproduccion() {
+    if (!videoActual || reproduciendo) return;
+
+    reproduciendo = true;
+    actualizarIconosReproduccion();
+
+    const el = $("#ytPlayerVideo");
+
+    // Intentamos reproducir siempre que haya archivo, sin esperar a que
+    // termine de cargar: si el usuario toca play enseguida, el video debe
+    // arrancar igual.
+    if (el && videoActual.archivo && !el.error) {
+        const promesa = el.play();
+
+        if (promesa && typeof promesa.then === "function") {
+            promesa
+                .then(() => {
+                    usandoVideoReal = true;
+                })
+                .catch(() => {
+                    // El navegador no dejó reproducir el archivo: seguimos con
+                    // la animación para que el nivel se pueda terminar igual.
+                    desactivarVideoReal();
+                    if (reproduciendo) arrancarTemporizadorSimulado();
+                });
         } else {
-            playerFrame.innerHTML = `
-                <video id="ytPlayerVideo" style="width:100%; height:100%; object-fit:cover;" controls autoplay playsinline loop>
-                    <source src="${video.videoUrl}" type="video/mp4">
-                </video>
-            `;
+            usandoVideoReal = true;
+        }
+        return;
+    }
+
+    arrancarTemporizadorSimulado();
+}
+
+/**
+ * Avance de la barra cuando no hay archivo de video que reproducir.
+ */
+function arrancarTemporizadorSimulado() {
+    if (progresoInterval) return;
+
+    progresoInterval = setInterval(() => {
+        // Si el usuario salió del simulador (por ejemplo con el botón atrás del
+        // navegador), detenemos el avance para no dejar el timer corriendo.
+        const sim = $("#pantallaYoutubeSimulador");
+        if (!sim || !sim.classList.contains("activa")) {
+            detenerReproduccion();
+            return;
+        }
+
+        progresoSegundos += 1;
+        if (progresoSegundos >= duracionActual()) {
+            progresoSegundos = 0;
+        }
+        actualizarProgresoUI();
+    }, 400);
+}
+
+function detenerReproduccion() {
+    reproduciendo = false;
+
+    const el = $("#ytPlayerVideo");
+    if (el && !el.paused) el.pause();
+
+    if (progresoInterval) {
+        clearInterval(progresoInterval);
+        progresoInterval = null;
+    }
+    actualizarIconosReproduccion();
+}
+
+function alternarReproduccion() {
+    if (reproduciendo) {
+        detenerReproduccion();
+        if (esPaso("buscar-video", 6)) {
+            irAPaso(7); // acaba de pausar
+        }
+    } else {
+        iniciarReproduccion();
+        if (esPaso("buscar-video", 5)) {
+            irAPaso(6); // primera reproducción
+        } else if (esPaso("buscar-video", 7)) {
+            irAPaso(8); // reanudó tras la pausa
+        }
+    }
+}
+
+function actualizarVolumenUI() {
+    const cont = $("#ytVolBars");
+    if (!cont) return;
+
+    cont.innerHTML = Array.from({ length: 5 }, (_, i) =>
+        `<span class="yt-vol-bar${i < volumenActual ? " activa" : ""}"></span>`
+    ).join("");
+}
+
+function cambiarVolumen(delta) {
+    volumenActual = Math.max(0, Math.min(5, volumenActual + delta));
+    actualizarVolumenUI();
+
+    // Volumen real del archivo: las 5 barritas equivalen a 0 % - 100 %
+    const el = $("#ytPlayerVideo");
+    if (el) {
+        el.volume = volumenActual / 5;
+        el.muted = volumenActual === 0;
+    }
+
+    if (delta > 0 && esPaso("buscar-video", 8) && volumenActual >= 3) {
+        completarNivelActual("¡Muy bien! Buscaste un video, lo pusiste, lo pausaste y le subiste el volumen.");
+    }
+}
+
+// ---------------------------------------------------------------------
+// COMENTARIOS
+// ---------------------------------------------------------------------
+function abrirComentarios() {
+    renderizarComentarios();
+    const drawer = $("#ytCommentsDrawer");
+    if (drawer) drawer.classList.add("activa");
+
+    if (nivelActual === "comentar-video" && subPaso <= 3) {
+        // Si ya había escrito su comentario y solo cerró el cajón, lo llevamos
+        // directo al paso de borrarlo en vez de hacerle repetir todo.
+        irAPaso(comentarios.some(c => c.esMio) ? 8 : 3);
+    }
+}
+
+function cerrarComentarios() {
+    const drawer = $("#ytCommentsDrawer");
+    if (drawer) drawer.classList.remove("activa");
+    cerrarMenuComentario();
+
+    // Si estaba a mitad del nivel y cerró el cajón, lo devolvemos al paso de abrirlo
+    if (nivelActual === "comentar-video" && subPaso >= 3 && subPaso <= 9) {
+        irAPaso(2);
+    }
+}
+
+/**
+ * Marca o desmarca "me gusta" / "no me gusta" en un comentario ajeno.
+ * Igual que en YouTube, las dos reacciones no pueden estar activas a la vez.
+ */
+function reaccionarComentario(idComentario, tipo) {
+    const comentario = comentarios.find(c => String(c.id) === String(idComentario));
+    if (!comentario) return;
+
+    if (tipo === "like") {
+        if (comentario.liked) {
+            comentario.liked = false;
+            comentario.likes = Math.max(0, comentario.likes - 1);
+        } else {
+            comentario.liked = true;
+            comentario.likes += 1;
+            if (comentario.disliked) comentario.disliked = false;
+        }
+    } else {
+        if (comentario.disliked) {
+            comentario.disliked = false;
+        } else {
+            comentario.disliked = true;
+            if (comentario.liked) {
+                comentario.liked = false;
+                comentario.likes = Math.max(0, comentario.likes - 1);
+            }
         }
     }
 
-    if (titleEl) titleEl.textContent = video.titulo;
-    if (metaEl) metaEl.textContent = `${video.vistas} · ${video.tiempo}`;
-    if (nameEl) nameEl.textContent = video.canal;
-    if (avEl) {
-        avEl.textContent = video.avatarLetter;
-        avEl.style.background = video.avatarBg;
-    }
+    renderizarComentarios();
 
-    // Configurar me gusta
-    if (likeLabel) likeLabel.textContent = video.likes || "15 K";
-    if (likeIcon) likeIcon.style.fill = "#0f0f0f";
-
-    // Configurar suscripción
-    if (subBtn) {
-        subBtn.textContent = "Suscribirse";
-        subBtn.classList.remove("subscribed");
-        subBtn.style.background = "#0f0f0f";
-        subBtn.style.color = "#ffffff";
-    }
-
-    // Comentarios preview
-    const previewText = $("#ytCommentsPreviewText");
-    if (previewText) {
-        previewText.textContent = COMENTARIOS_DATA[0].texto;
-    }
-
-    cambiarVista("ytViewPlayer");
-}
-
-function detenerVideo() {
-    const playerFrame = $(".yt-video-player-frame");
-    if (playerFrame) {
-        playerFrame.innerHTML = "";
+    if (tipo === "like" && comentario.liked && esPaso("comentar-video", 3)) {
+        irAPaso(4);
+    } else if (tipo === "dislike" && comentario.disliked && esPaso("comentar-video", 4)) {
+        irAPaso(5);
+    } else {
+        // Volvemos a pintar el resaltado, que se perdió al re-renderizar la lista
+        actualizarBarraInstrucciones(false);
     }
 }
 
+function abrirMenuComentario(idComentario) {
+    const menu = $("#ytCommentMenu");
+    if (!menu) return;
 
-// ---- COMENTAR ----
-function agregarComentario() {
+    menu.dataset.comentarioId = idComentario;
+    menu.classList.add("activa");
+
+    if (esPaso("comentar-video", 8)) {
+        irAPaso(9);
+    }
+}
+
+function cerrarMenuComentario() {
+    const menu = $("#ytCommentMenu");
+    if (menu) menu.classList.remove("activa");
+}
+
+function eliminarComentario() {
+    const menu = $("#ytCommentMenu");
+    if (!menu) return;
+
+    const id = menu.dataset.comentarioId;
+    comentarios = comentarios.filter(c => String(c.id) !== String(id));
+
+    cerrarMenuComentario();
+    renderizarComentarios();
+    mostrarToast("Comentario eliminado");
+
+    if (esPaso("comentar-video", 9)) {
+        completarNivelActual("¡Completo! Reaccionaste a un comentario, escribiste el tuyo y aprendiste a borrarlo.");
+    } else {
+        actualizarBarraInstrucciones(false);
+    }
+}
+
+// ---------------------------------------------------------------------
+// COMPARTIR UN VIDEO
+// ---------------------------------------------------------------------
+function abrirHojaCompartir() {
+    const hoja = $("#ytShareSheet");
+    if (!hoja) return;
+
+    // Siempre empieza por elegir la aplicación
+    const apps = $("#ytShareApps");
+    const contactos = $("#ytShareContactos");
+    const titulo = $("#ytShareTitulo");
+    if (apps) apps.style.display = "flex";
+    if (contactos) contactos.style.display = "none";
+    if (titulo) titulo.textContent = "Compartir";
+
+    hoja.classList.add("activa");
+
+    if (esPaso("compartir-video", 2)) {
+        irAPaso(3);
+    }
+}
+
+function cerrarHojaCompartir() {
+    const hoja = $("#ytShareSheet");
+    if (hoja) hoja.classList.remove("activa");
+
+    // Si abandonó a mitad, lo devolvemos al paso de abrir la hoja
+    if (nivelActual === "compartir-video" && (subPaso === 3 || subPaso === 4)) {
+        irAPaso(2);
+    }
+}
+
+function mostrarContactosCompartir(nombreApp) {
+    const apps = $("#ytShareApps");
+    const contactos = $("#ytShareContactos");
+    const titulo = $("#ytShareTitulo");
+
+    appCompartir = nombreApp;
+
+    if (apps) apps.style.display = "none";
+    if (titulo) titulo.textContent = `Enviar por ${nombreApp} a...`;
+
+    if (contactos) {
+        contactos.innerHTML = CONTACTOS_COMPARTIR.map(c => `
+            <button class="yt-share-contacto" data-contacto="${c.id}">
+                <span class="yt-share-contacto-avatar" style="background:${c.color};">${c.inicial}</span>
+                <span class="yt-share-contacto-nombre">${c.nombre}</span>
+                <span class="yt-share-contacto-enviar">Enviar</span>
+            </button>
+        `).join("");
+        contactos.style.display = "block";
+    }
+
+    if (esPaso("compartir-video", 3)) {
+        irAPaso(4);
+    }
+}
+
+function enviarACompartir(idContacto) {
+    const contacto = CONTACTOS_COMPARTIR.find(c => c.id === idContacto);
+    const nombre = contacto ? contacto.nombre : "tu contacto";
+
+    // Cerramos sin pasar por cerrarHojaCompartir(): aquí el envío sí se completó
+    const hoja = $("#ytShareSheet");
+    if (hoja) hoja.classList.remove("activa");
+
+    mostrarToast(`Video enviado a ${nombre}`);
+
+    if (esPaso("compartir-video", 4)) {
+        completarNivelActual(`¡Muy bien! Le enviaste el video a ${nombre} por ${appCompartir}.`);
+    }
+}
+
+function cerrarComentariosSilencioso() {
+    const drawer = $("#ytCommentsDrawer");
+    if (drawer) drawer.classList.remove("activa");
+}
+
+function enviarComentario() {
     const input = $("#ytCommentInput");
     if (!input) return;
 
     const texto = input.value.trim();
     if (!texto) return;
 
-    const nuevo = {
+    comentarios.unshift({
         id: Date.now(),
-        autor: "@Tú",
-        avatarLetter: "U",
-        avatarBg: "#6200ee",
+        autor: "Tú",
+        avatarLetter: "A",
+        avatarBg: "#673ab7",
         texto: texto,
         tiempo: "Ahora",
         likes: 0,
-        corazonPropietario: false
-    };
-
-    COMENTARIOS_DATA.unshift(nuevo);
-    renderizarComentarios();
-
-    // Actualizar preview en la vista player
-    const previewText = $("#ytCommentsPreviewText");
-    if (previewText) previewText.textContent = texto;
+        liked: false,
+        disliked: false,
+        corazonCanal: false,
+        esMio: true
+    });
 
     input.value = "";
-}
+    renderizarComentarios();
 
-// ---- ENTRADAS DE MENÚ INFERIOR ----
-function configurarNavTabs() {
-    document.querySelectorAll("#pantallaYoutubeSimulador .yt-nav-tab").forEach(tab => {
-        tab.addEventListener("click", () => {
-            const viewId = tab.dataset.view;
-            detenerVideo();
-            if (viewId) {
-                document.querySelectorAll("#pantallaYoutubeSimulador .yt-nav-tab").forEach(t => t.classList.remove("active"));
-                tab.classList.add("active");
-                cambiarVista(viewId);
-            } else {
-                alert("Esta pestaña no tiene contenido simulado. Navega en 'Principal'.");
+    if (esPaso("comentar-video", 5) || esPaso("comentar-video", 6)) {
+        irAPaso(7);
+
+        // El canal reacciona a tu comentario, igual que en la vida real
+        respuestaCanalTimeout = setTimeout(() => {
+            if (nivelActual !== "comentar-video") return;
+
+            const mio = comentarios.find(c => c.esMio);
+            if (mio) {
+                mio.corazonCanal = true;
+                mio.likes = 3;
+                renderizarComentarios();
             }
-        });
-    });
+            mostrarToast("Al canal le gustó tu comentario ❤️");
+            irAPaso(8);
+        }, 2800);
+    }
 }
 
-// ---- LISTENERS ----
+// ---------------------------------------------------------------------
+// BÚSQUEDA
+// ---------------------------------------------------------------------
+function ejecutarBusqueda() {
+    const termino = textoBusqueda();
+    if (termino.length < 3) {
+        mostrarToast("Escribe al menos una palabra para buscar.");
+        return;
+    }
+
+    const chips = $("#ytSearchChips");
+    if (chips) chips.style.display = "none";
+    renderizarResultados(termino);
+
+    if (esPaso("buscar-video", 3)) {
+        irAPaso(4);
+    }
+}
+
+// ---------------------------------------------------------------------
+// LISTENERS
+// ---------------------------------------------------------------------
 function inicializarListeners() {
-    // Clic en la insignia Nico para repetir instrucción
-    const nicoBtn = $("#ytInstructionsBar")?.querySelector(".ws-instructions-nico");
+    // Nico repite la instrucción
+    const nicoBtn = $("#ytNicoBtn");
     if (nicoBtn) {
         nicoBtn.onclick = (e) => {
             e.stopPropagation();
             const textEl = $("#ytInstructionsText");
-            if (textEl) {
-                speak(textEl.textContent);
-            }
+            if (textEl) speak(limpiarEmojis(textEl.textContent));
         };
     }
 
     // Salir del simulador
     const btnSalir = $("#ytSalirBtn");
-    if (btnSalir) {
-        btnSalir.onclick = () => {
-            limpiarResaltados();
-            detenerVideo();
-            location.hash = "/modulo/YouTube";
-        };
-    }
+    if (btnSalir) btnSalir.onclick = salirDelSimulador;
 
-    // Logo vuelve al home feed
+    // Logo -> inicio
     const logoHome = $("#ytLogoHome");
     if (logoHome) {
         logoHome.onclick = () => {
-            detenerVideo();
+            detenerReproduccion();
             cambiarVista("ytViewFeed");
-            document.querySelectorAll("#pantallaYoutubeSimulador .yt-nav-tab").forEach(t => t.classList.remove("active"));
-            const principalTab = $("#ytNavPrincipal");
-            if (principalTab) principalTab.classList.add("active");
+            marcarTab("ytNavPrincipal");
+            actualizarBarraInstrucciones(false);
         };
     }
 
-    // Click en videos de la lista
-    const feed = $("#ytFeedList");
-    if (feed) {
-        feed.addEventListener("click", e => {
+    // ---- BUSCADOR ----
+    const buscarBtn = $("#ytBuscarBtn");
+    if (buscarBtn) {
+        buscarBtn.onclick = () => {
+            cambiarVista("ytViewBuscar");
+
+            const input = $("#ytSearchInput");
+            const chips = $("#ytSearchChips");
+            const results = $("#ytSearchResults");
+            if (input) input.value = "";
+            if (chips) chips.style.display = "block";
+            if (results) results.innerHTML = "";
+
+            if (esPaso("buscar-video", 1)) {
+                irAPaso(2);
+            } else {
+                actualizarBarraInstrucciones(false);
+            }
+        };
+    }
+
+    const searchVolverBtn = $("#ytSearchVolverBtn");
+    if (searchVolverBtn) {
+        searchVolverBtn.onclick = () => {
+            cambiarVista("ytViewFeed");
+
+            // Solo reiniciamos si todavía estaba buscando; si ya encontró el
+            // video no le hacemos repetir la búsqueda.
+            if (nivelActual === "buscar-video" && subPaso <= 4) {
+                irAPaso(1);
+            } else {
+                actualizarBarraInstrucciones(false);
+            }
+        };
+    }
+
+    const searchInput = $("#ytSearchInput");
+    if (searchInput) {
+        searchInput.oninput = () => {
+            if (esPaso("buscar-video", 2) && textoBusqueda().length >= 3) {
+                irAPaso(3);
+            } else if (esPaso("buscar-video", 3) && textoBusqueda().length < 3) {
+                irAPaso(2);
+            }
+        };
+        searchInput.onkeypress = (e) => {
+            if (e.key === "Enter") ejecutarBusqueda();
+        };
+    }
+
+    const searchGoBtn = $("#ytSearchGoBtn");
+    if (searchGoBtn) searchGoBtn.onclick = ejecutarBusqueda;
+
+    const chipsCont = $("#ytSearchChips");
+    if (chipsCont) {
+        chipsCont.addEventListener("click", (e) => {
+            const chip = e.target.closest(".yt-search-chip");
+            if (!chip) return;
+
+            const input = $("#ytSearchInput");
+            if (input) input.value = chip.dataset.sugerencia;
+
+            if (esPaso("buscar-video", 2)) irAPaso(3);
+        });
+    }
+
+    // ---- LISTAS DE VIDEOS (inicio, resultados y guardados) ----
+    ["#ytFeedList", "#ytSearchResults", "#ytLibSavedList"].forEach(selector => {
+        const cont = $(selector);
+        if (!cont) return;
+
+        cont.addEventListener("click", (e) => {
             const card = e.target.closest(".yt-video-card");
-            if (card) {
-                const videoId = parseInt(card.dataset.videoId);
-                reproducirVideo(videoId);
+            if (!card) return;
+
+            const desdeResultados = selector === "#ytSearchResults";
+
+            // Mientras se practica la búsqueda no dejamos abrir un video desde el
+            // inicio: el objetivo es aprender a buscarlo, no toparse con él.
+            if (nivelActual === "buscar-video" && selector === "#ytFeedList" && subPaso <= 3) {
+                mostrarToast("Primero vamos a practicar la búsqueda.");
+                actualizarBarraInstrucciones(true);
+                return;
+            }
+
+            abrirVideo(parseInt(card.dataset.videoId, 10));
+
+            // Encontró el video buscando: ahora toca aprender a controlarlo
+            if (desdeResultados && esPaso("buscar-video", 4)) {
+                irAPaso(5);
+                return;
+            }
+
+            // En el resto de niveles, abrir el video es el paso 1
+            if (subPaso === 1 && PASOS[nivelActual] && PASOS[nivelActual][2]) {
+                irAPaso(2);
+            } else {
+                actualizarBarraInstrucciones(false);
+            }
+        });
+    });
+
+    // ---- REPRODUCTOR ----
+    const bigPlay = $("#ytBigPlayBtn");
+    if (bigPlay) bigPlay.onclick = alternarReproduccion;
+
+    const playPause = $("#ytPlayPauseBtn");
+    if (playPause) playPause.onclick = alternarReproduccion;
+
+    // Eventos del elemento <video>. Solo sincronizan lo que se ve: el avance
+    // de los pasos del nivel lo maneja el clic del usuario, no el video.
+    const elVideo = $("#ytPlayerVideo");
+    if (elVideo) {
+        elVideo.addEventListener("loadedmetadata", () => {
+            usandoVideoReal = true;
+            const pantalla = $("#ytPlayerScreen");
+            if (pantalla) pantalla.classList.add("con-video");
+
+            progresoSegundos = elVideo.currentTime || 0;
+            actualizarProgresoUI();
+        });
+
+        elVideo.addEventListener("timeupdate", () => {
+            if (!usandoVideoReal) return;
+            progresoSegundos = elVideo.currentTime;
+            actualizarProgresoUI();
+        });
+
+        // Falta el archivo o está dañado: seguimos con el fondo de color
+        elVideo.addEventListener("error", () => {
+            desactivarVideoReal();
+            console.warn("No se pudo cargar el video del simulador de YouTube.");
+        });
+
+        // Si algo pausa el video por fuera, mantenemos los iconos al día
+        elVideo.addEventListener("pause", () => {
+            if (reproduciendo && usandoVideoReal) {
+                reproduciendo = false;
+                actualizarIconosReproduccion();
             }
         });
     }
 
-    // Botón volver del Player
+    const volUp = $("#ytVolUpBtn");
+    if (volUp) volUp.onclick = () => cambiarVolumen(1);
+
+    const volDown = $("#ytVolDownBtn");
+    if (volDown) volDown.onclick = () => cambiarVolumen(-1);
+
     const volverBtn = $("#ytPlayerVolverBtn");
     if (volverBtn) {
         volverBtn.onclick = () => {
-            detenerVideo();
+            detenerReproduccion();
+            cerrarComentariosSilencioso();
             cambiarVista("ytViewFeed");
+            marcarTab("ytNavPrincipal");
+
+            if (esPaso("guardar-video", 3)) {
+                irAPaso(4);
+            } else if (nivelActual === "reaccionar-suscribir" && subPaso > 1) {
+                // Al reabrir un video se pierden el Me gusta y la suscripción,
+                // así que este nivel sí tiene que empezar de nuevo.
+                irAPaso(1);
+            } else {
+                // En el resto de niveles se conserva el avance: la guía le dirá
+                // que vuelva a abrir el video donde lo dejó.
+                actualizarBarraInstrucciones(true);
+            }
         };
     }
+
+    // Me gusta
+    const likeBtn = $("#ytLikeBtn");
+    if (likeBtn) {
+        likeBtn.onclick = () => {
+            if (!videoActual) return;
+
+            yaLiked = !yaLiked;
+            const icon = $("#ytLikeIcon");
+            const label = $("#ytLikeLabel");
+            if (icon) icon.style.fill = yaLiked ? "#065fd4" : "#0f0f0f";
+            if (label) label.textContent = formatearNumero(videoActual.likes + (yaLiked ? 1 : 0));
+            likeBtn.classList.toggle("activo", yaLiked);
+
+            if (yaLiked && esPaso("reaccionar-suscribir", 2)) irAPaso(3);
+        };
+    }
+
+    // No me gusta y compartir existen en YouTube, pero no forman parte de los niveles
+    const dislikeBtn = $("#ytDislikeBtn");
+    if (dislikeBtn) {
+        dislikeBtn.onclick = () => mostrarToast("Eso sirve para marcar que el video no te gustó.");
+    }
+
+    const shareBtn = $("#ytShareBtn");
+    if (shareBtn) shareBtn.onclick = abrirHojaCompartir;
 
     // Suscribirse
     const subBtn = $("#ytSubscribeBtn");
     if (subBtn) {
         subBtn.onclick = () => {
-            yaSubscribed = !yaSubscribed;
-            if (yaSubscribed) {
+            yaSubscrito = !yaSubscrito;
+            const bell = $("#ytBellBtn");
+
+            if (yaSubscrito) {
                 subBtn.textContent = "Suscrito";
                 subBtn.classList.add("subscribed");
-                subBtn.style.background = "#f2f2f2";
-                subBtn.style.color = "#0f0f0f";
+                if (bell) bell.style.display = "inline-flex";
+                if (esPaso("reaccionar-suscribir", 3)) irAPaso(4);
             } else {
                 subBtn.textContent = "Suscribirse";
                 subBtn.classList.remove("subscribed");
-                subBtn.style.background = "#0f0f0f";
-                subBtn.style.color = "#ffffff";
+                campanaActiva = false;
+                if (bell) {
+                    bell.style.display = "none";
+                    bell.classList.remove("activa");
+                }
+                if (esPaso("reaccionar-suscribir", 4)) irAPaso(3);
             }
         };
     }
 
-    // Me gusta (Like)
-    const likeBtn = $("#ytLikeBtn");
-    if (likeBtn) {
-        likeBtn.onclick = () => {
-            yaLikedVideo = !yaLikedVideo;
-            const likeIcon = $("#ytLikeIcon");
-            if (likeIcon) {
-                likeIcon.style.fill = yaLikedVideo ? "#065fd4" : "#0f0f0f";
+    // Campana de notificaciones
+    const bellBtn = $("#ytBellBtn");
+    if (bellBtn) {
+        bellBtn.onclick = () => {
+            campanaActiva = !campanaActiva;
+            bellBtn.classList.toggle("activa", campanaActiva);
+
+            if (campanaActiva && esPaso("reaccionar-suscribir", 4)) {
+                completarNivelActual("¡Muy bien! Le diste Me gusta al video y ahora sigues el canal.");
             }
         };
     }
 
-    // Abrir comentarios
+    // Guardar video
+    const saveBtn = $("#ytSaveBtn");
+    if (saveBtn) {
+        saveBtn.onclick = () => {
+            if (!videoActual) return;
+
+            const yaEstaba = videosGuardados.includes(videoActual.id);
+            if (yaEstaba) {
+                videosGuardados = videosGuardados.filter(id => id !== videoActual.id);
+                mostrarToast("Quitado de Ver más tarde");
+            } else {
+                videosGuardados.push(videoActual.id);
+                mostrarToast("Guardado en Ver más tarde");
+            }
+
+            actualizarBotonGuardar();
+            renderizarBiblioteca();
+
+            if (!yaEstaba && esPaso("guardar-video", 2)) irAPaso(3);
+        };
+    }
+
+    // ---- COMENTARIOS ----
     const previewBox = $("#ytCommentsPreviewBox");
-    if (previewBox) {
-        previewBox.onclick = () => {
-            renderizarComentarios();
-            const drawer = $("#ytCommentsDrawer");
-            if (drawer) drawer.classList.add("activa");
-            comentariosAbierto = true;
-        };
-    }
+    if (previewBox) previewBox.onclick = abrirComentarios;
 
-    // Cerrar comentarios
     const closeDrawerBtn = $("#ytDrawerCloseBtn");
-    if (closeDrawerBtn) {
-        closeDrawerBtn.onclick = () => {
-            const drawer = $("#ytCommentsDrawer");
-            if (drawer) drawer.classList.remove("activa");
-            comentariosAbierto = false;
+    if (closeDrawerBtn) closeDrawerBtn.onclick = cerrarComentarios;
+
+    const sendBtn = $("#ytCommentSendBtn");
+    if (sendBtn) sendBtn.onclick = enviarComentario;
+
+    // Me gusta, no me gusta y tres puntitos dentro de la lista de comentarios
+    const listaComentarios = $("#ytCommentsList");
+    if (listaComentarios) {
+        listaComentarios.addEventListener("click", (e) => {
+            const like = e.target.closest(".yt-comment-like-btn");
+            if (like) {
+                reaccionarComentario(like.dataset.id, "like");
+                return;
+            }
+
+            const dislike = e.target.closest(".yt-comment-dislike-btn");
+            if (dislike) {
+                reaccionarComentario(dislike.dataset.id, "dislike");
+                return;
+            }
+
+            const menuBtn = e.target.closest(".yt-comment-menu-btn");
+            if (menuBtn) {
+                abrirMenuComentario(menuBtn.dataset.id);
+            }
+        });
+    }
+
+    const menuEliminar = $("#ytCommentMenuEliminar");
+    if (menuEliminar) menuEliminar.onclick = eliminarComentario;
+
+    const menuCancelar = $("#ytCommentMenuCancelar");
+    if (menuCancelar) {
+        menuCancelar.onclick = () => {
+            cerrarMenuComentario();
+            if (esPaso("comentar-video", 9)) {
+                irAPaso(8);
+            } else {
+                actualizarBarraInstrucciones(false);
+            }
         };
     }
 
-    // Comentar (botón y Enter)
-    const sendBtn = $("#ytCommentSendBtn");
-    if (sendBtn) {
-        sendBtn.onclick = agregarComentario;
+    // ---- COMPARTIR ----
+    const shareClose = $("#ytShareCloseBtn");
+    if (shareClose) shareClose.onclick = cerrarHojaCompartir;
+
+    const shareWhatsapp = $("#ytShareAppWhatsapp");
+    if (shareWhatsapp) shareWhatsapp.onclick = () => mostrarContactosCompartir("WhatsApp");
+
+    const shareMensajes = $("#ytShareAppMensajes");
+    if (shareMensajes) shareMensajes.onclick = () => mostrarContactosCompartir("Mensajes");
+
+    const shareCopiar = $("#ytShareAppCopiar");
+    if (shareCopiar) {
+        shareCopiar.onclick = () => {
+            mostrarToast("Enlace copiado. Ya lo puedes pegar donde quieras.");
+        };
     }
+
+    const shareContactos = $("#ytShareContactos");
+    if (shareContactos) {
+        shareContactos.addEventListener("click", (e) => {
+            const contacto = e.target.closest(".yt-share-contacto");
+            if (contacto) enviarACompartir(contacto.dataset.contacto);
+        });
+    }
+
     const input = $("#ytCommentInput");
     if (input) {
         input.oninput = () => {
-            if (input.value.trim().length > 0) {
-                resaltarElemento("#ytCommentSendBtn");
-            } else {
-                resaltarElemento("#ytCommentInput");
+            if (esPaso("comentar-video", 5) && textoComentario().length >= 3) {
+                irAPaso(6);
+            } else if (esPaso("comentar-video", 6) && textoComentario().length < 3) {
+                irAPaso(5);
             }
         };
         input.onkeypress = (e) => {
-            if (e.key === "Enter") agregarComentario();
+            if (e.key === "Enter") enviarComentario();
         };
     }
 
-    configurarNavTabs();
-}
+    // ---- BIBLIOTECA ("Tú") ----
+    const libVerMasTarde = $("#ytLibVerMasTarde");
+    if (libVerMasTarde) {
+        libVerMasTarde.onclick = () => {
+            renderizarBiblioteca();
+            const seccion = $("#ytLibSavedSection");
+            if (seccion) seccion.style.display = "block";
 
-const INSTRUCCIONES_YOUTUBE = {
-    "buscar-video": "Toca el icono de la lupa para buscar un video que te interese.",
-    "reproducir-video": "Toca cualquier video del listado para reproducirlo a pantalla completa.",
-    "dar-like": "Toca el botón 'Me gusta' debajo del video para apoyar al creador.",
-    "comentar-video": "Abre la sección de comentarios para dejar tu opinión en el video.",
-};
-
-function actualizarGuiaVisualYoutube(idNivel) {
-    if (!idNivel) idNivel = nivelActual;
-    const viewPlayer = $("#ytViewPlayer");
-    const enPlayer = viewPlayer && viewPlayer.classList.contains("activa");
-
-    if (idNivel === "buscar-video") {
-        resaltarElemento(".yt-header-icon[aria-label='Buscar']");
-    } else if (idNivel === "reproducir-video") {
-        if (!enPlayer) {
-            resaltarElemento("#ytFeedList .yt-video-card:first-child");
-        } else {
-            limpiarResaltados();
-        }
-    } else if (idNivel === "dar-like") {
-        if (enPlayer) {
-            resaltarElemento("#ytLikeBtn");
-        } else {
-            resaltarElemento("#ytFeedList .yt-video-card:first-child");
-        }
-    } else if (idNivel === "comentar-video") {
-        if (enPlayer) {
-            const drawer = $("#ytCommentsDrawer");
-            if (drawer && drawer.classList.contains("activa")) {
-                const inputVal = $("#ytCommentInput") ? $("#ytCommentInput").value.trim() : "";
-                if (inputVal.length > 0) {
-                    resaltarElemento("#ytCommentSendBtn");
-                } else {
-                    resaltarElemento("#ytCommentInput");
-                }
-            } else {
-                resaltarElemento("#ytCommentsPreviewBtn");
+            if (esPaso("guardar-video", 5) && videosGuardados.length > 0) {
+                completarNivelActual("¡Lo lograste! Guardaste un video y lo volviste a encontrar en Ver más tarde.");
             }
-        } else {
-            resaltarElemento("#ytFeedList .yt-video-card:first-child");
-        }
+        };
     }
+
+    const libHistorial = $("#ytLibHistorial");
+    if (libHistorial) {
+        libHistorial.onclick = () => mostrarToast("Aquí aparecen los videos que ya viste.");
+    }
+
+    // ---- NAVEGACIÓN INFERIOR ----
+    document.querySelectorAll("#pantallaYoutubeSimulador .yt-nav-tab").forEach(tab => {
+        tab.addEventListener("click", () => {
+            const viewId = tab.dataset.view;
+
+            if (!viewId) {
+                mostrarToast("Esa parte no está en esta práctica. Sigue lo que dice Nico.");
+                return;
+            }
+
+            detenerReproduccion();
+            cerrarComentariosSilencioso();
+            marcarTab(tab.id);
+            cambiarVista(viewId);
+
+            if (viewId === "ytViewBiblioteca") {
+                const seccion = $("#ytLibSavedSection");
+                if (seccion) seccion.style.display = "none";
+                renderizarBiblioteca();
+
+                if (esPaso("guardar-video", 4)) {
+                    irAPaso(5);
+                    return;
+                }
+            }
+
+            actualizarBarraInstrucciones(false);
+        });
+    });
+
+    // Modal de éxito
+    const btnContinuar = $("#ytSuccessBtnContinuar");
+    if (btnContinuar) btnContinuar.onclick = salirDelSimulador;
 }
 
-// ---- PUNTO DE ENTRADA ----
+// ---------------------------------------------------------------------
+// FIN DE NIVEL Y SALIDA
+// ---------------------------------------------------------------------
+function completarNivelActual(mensajeExito) {
+    detenerReproduccion();
+    limpiarResaltados();
+    cerrarComentariosSilencioso();
+    cerrarMenuComentario();
+
+    const hojaCompartir = $("#ytShareSheet");
+    if (hojaCompartir) hojaCompartir.classList.remove("activa");
+
+    completarNivel("YouTube", nivelActual);
+
+    const msgEl = $("#ytSuccessMessage");
+    if (msgEl) msgEl.textContent = mensajeExito;
+
+    const modal = $("#ytModalExito");
+    if (modal) modal.classList.add("activa");
+
+    speak("¡Excelente trabajo! Nivel completado con éxito. Presiona continuar para regresar a la lista de niveles.");
+}
+
+function limpiarTodo() {
+    detenerReproduccion();
+
+    if (respuestaCanalTimeout) {
+        clearTimeout(respuestaCanalTimeout);
+        respuestaCanalTimeout = null;
+    }
+    if (toastTimeout) {
+        clearTimeout(toastTimeout);
+        toastTimeout = null;
+    }
+
+    const toast = $("#ytToast");
+    if (toast) toast.classList.remove("visible");
+
+    cerrarComentariosSilencioso();
+    cerrarMenuComentario();
+
+    const hoja = $("#ytShareSheet");
+    if (hoja) hoja.classList.remove("activa");
+
+    limpiarResaltados();
+}
+
+function salirDelSimulador() {
+    limpiarTodo();
+    stopSpeech();
+
+    const modal = $("#ytModalExito");
+    if (modal) modal.classList.remove("activa");
+
+    const simulador = $("#pantallaYoutubeSimulador");
+    if (simulador) simulador.classList.remove("activa");
+
+    location.hash = "/modulo/YouTube";
+}
+
+// ---------------------------------------------------------------------
+// PUNTO DE ENTRADA
+// ---------------------------------------------------------------------
 export function iniciarSimulador(idNivel) {
     nivelActual = idNivel;
-    comentariosAbierto = false;
+    subPaso = 1;
+    ultimaInstruccionHablada = "";
 
     asegurarTemplateHTML();
-    renderizarFeed();
+    limpiarTodo();
 
+    // Estado limpio en cada intento del nivel
+    videoActual = null;
+    progresoSegundos = 0;
+    volumenActual = 2;
+    yaLiked = false;
+    yaSubscrito = false;
+    campanaActiva = false;
+    videosGuardados = [];
+    appCompartir = "WhatsApp";
+    comentarios = JSON.parse(JSON.stringify(COMENTARIOS_BASE));
+
+    renderizarFeed();
+    renderizarBiblioteca();
+    actualizarVolumenUI();
+
+    const modal = $("#ytModalExito");
+    if (modal) modal.classList.remove("activa");
+
+    const seccionGuardados = $("#ytLibSavedSection");
+    if (seccionGuardados) seccionGuardados.style.display = "none";
+
+    const inputComentario = $("#ytCommentInput");
+    if (inputComentario) inputComentario.value = "";
+
+    // Mostrar la pantalla del simulador
     document.querySelectorAll(".pantalla").forEach(p => p.classList.remove("activa"));
     const sim = $("#pantallaYoutubeSimulador");
     if (sim) sim.classList.add("activa");
 
-    // Reiniciar vista
     cambiarVista("ytViewFeed");
-    document.querySelectorAll("#pantallaYoutubeSimulador .yt-nav-tab").forEach(t => t.classList.remove("active"));
-    const principalTab = $("#ytNavPrincipal");
-    if (principalTab) principalTab.classList.add("active");
-
-    const msg = INSTRUCCIONES_YOUTUBE[idNivel] || "Explora y disfruta de los videos.";
-    const textEl = $("#ytInstructionsText");
-    if (textEl) textEl.textContent = msg;
-
-    speak(msg);
-    actualizarGuiaVisualYoutube(idNivel);
+    marcarTab("ytNavPrincipal");
 
     if (!simuladorInicializado) {
         inicializarListeners();
         simuladorInicializado = true;
     }
+
+    actualizarBarraInstrucciones(true);
+
+    console.log(`Simulador de YouTube iniciado para el nivel: ${idNivel}`);
 }

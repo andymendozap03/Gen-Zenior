@@ -131,20 +131,6 @@
     fill: #0f0f0f;
 }
 
-.yt-bell-badge {
-    position: absolute;
-    top: -2px;
-    right: -2px;
-    background: #ff0000;
-    color: #ffffff;
-    font-size: 9px;
-    font-weight: 800;
-    border-radius: 10px;
-    padding: 1px 4px;
-    border: 1.5px solid #ffffff;
-    line-height: 1;
-}
-
 /* ========================================================
    PILLS DE CATEGORÍAS (SCROLL HORIZONTAL)
    ======================================================== */
@@ -162,25 +148,6 @@
 
 .yt-categories-container::-webkit-scrollbar {
     display: none;
-}
-
-.yt-explore-btn {
-    width: 32px;
-    height: 32px;
-    background: #f2f2f2;
-    border: none;
-    border-radius: 6px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    cursor: pointer;
-    flex-shrink: 0;
-}
-
-.yt-explore-btn svg {
-    width: 20px;
-    height: 20px;
-    fill: #0f0f0f;
 }
 
 .yt-pill {
@@ -236,12 +203,6 @@
     aspect-ratio: 16 / 9;
     background: #f2f2f2;
     overflow: hidden;
-}
-
-.yt-video-thumbnail {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
 }
 
 .yt-video-duration {
@@ -301,106 +262,6 @@
     line-height: 1.4;
 }
 
-.yt-video-more-btn {
-    background: none;
-    border: none;
-    cursor: pointer;
-    padding: 4px;
-    align-self: flex-start;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-}
-
-.yt-video-more-btn svg {
-    width: 20px;
-    height: 20px;
-    fill: #0f0f0f;
-}
-
-/* Card Publicidad (Ad Card) */
-.yt-ad-card {
-    background: #ffffff;
-    border-bottom: 6px solid #f2f2f2;
-    padding-bottom: 12px;
-}
-
-.yt-ad-banner {
-    width: 100%;
-    aspect-ratio: 16 / 9;
-    background: #6200ee;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    color: #ffffff;
-    font-size: 28px;
-    font-weight: 800;
-    position: relative;
-}
-
-.yt-ad-details {
-    display: flex;
-    padding: 12px 16px;
-    gap: 12px;
-}
-
-.yt-ad-info {
-    flex: 1;
-}
-
-.yt-ad-title {
-    font-size: 15px;
-    font-weight: 700;
-    color: #0f0f0f;
-    margin-bottom: 2px;
-}
-
-.yt-ad-desc {
-    font-size: 13px;
-    color: #606060;
-    line-height: 1.35;
-    margin-bottom: 4px;
-}
-
-.yt-ad-badge-row {
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    font-size: 12px;
-    color: #606060;
-}
-
-.yt-ad-badge {
-    background: #f2f2f2;
-    color: #0f0f0f;
-    font-weight: 700;
-    padding: 1px 4px;
-    border-radius: 3px;
-    font-size: 11px;
-}
-
-.yt-ad-action-row {
-    padding: 0 16px 4px;
-}
-
-.yt-ad-btn {
-    width: 100%;
-    padding: 10px;
-    background: #0f0f0f;
-    color: #ffffff;
-    border: none;
-    border-radius: 20px;
-    font-size: 14px;
-    font-weight: 700;
-    cursor: pointer;
-    text-align: center;
-    transition: opacity 0.15s;
-}
-
-.yt-ad-btn:hover {
-    opacity: 0.9;
-}
-
 /* ========================================================
    VISTA DE VIDEO PLAYER (PANTALLA DE REPRODUCCIÓN)
    ======================================================== */
@@ -409,108 +270,6 @@
     overflow-y: auto;
 }
 
-.yt-video-player-container {
-    width: 100%;
-    aspect-ratio: 16 / 9;
-    background: #000000;
-    position: relative;
-    flex-shrink: 0;
-}
-
-.yt-video-player-frame {
-    width: 100%;
-    height: 100%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    position: relative;
-    overflow: hidden;
-}
-
-.yt-video-player-frame img {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-}
-
-/* Controles flotantes simulados */
-.yt-player-controls-overlay {
-    position: absolute;
-    inset: 0;
-    background: rgba(0,0,0,0.3);
-    display: flex;
-    flex-direction: column;
-    justify-content: space-between;
-    padding: 12px;
-    opacity: 0;
-    transition: opacity 0.3s;
-}
-
-.yt-video-player-container:hover .yt-player-controls-overlay {
-    opacity: 1;
-}
-
-.yt-player-overlay-top {
-    display: flex;
-    justify-content: flex-end;
-    gap: 16px;
-}
-
-.yt-player-overlay-btn {
-    background: none;
-    border: none;
-    cursor: pointer;
-}
-
-.yt-player-overlay-btn svg {
-    width: 22px;
-    height: 22px;
-    fill: #ffffff;
-}
-
-.yt-player-overlay-center {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 40px;
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-}
-
-.yt-player-play-btn {
-    width: 48px;
-    height: 48px;
-    border-radius: 50%;
-    background: rgba(0,0,0,0.6);
-    border: none;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    cursor: pointer;
-}
-
-.yt-player-play-btn svg {
-    width: 26px;
-    height: 26px;
-    fill: #ffffff;
-}
-
-.yt-player-progress-bar {
-    width: 100%;
-    height: 3px;
-    background: rgba(255,255,255,0.3);
-    position: absolute;
-    bottom: 0;
-    left: 0;
-}
-
-.yt-player-progress-fill {
-    height: 100%;
-    width: 35%;
-    background: #ff0000;
-}
 
 /* Contenido de texto bajo el player */
 .yt-player-info-section {
@@ -568,13 +327,16 @@
 }
 
 /* Fila de Botones de Acción (Like, Share, etc.) */
+/* La fila de acciones NO lleva scroll horizontal: con scroll, el marco de
+   resaltado de Nico quedaba recortado por el contenedor y además el botón
+   "Guardar" podía quedar fuera de la pantalla. Con wrap siempre se ven todos
+   los botones y el resaltado se dibuja completo. */
 .yt-actions-row {
     display: flex;
+    flex-wrap: wrap;
     gap: 8px;
-    overflow-x: auto;
-    scrollbar-width: none;
     margin-bottom: 14px;
-    padding-bottom: 2px;
+    padding: 4px 2px 6px;
 }
 
 .yt-actions-row::-webkit-scrollbar { display: none; }
@@ -598,40 +360,6 @@
     width: 18px;
     height: 18px;
     fill: #0f0f0f;
-}
-
-.yt-action-pill-split {
-    display: flex;
-    background: #f2f2f2;
-    border-radius: 18px;
-    overflow: hidden;
-    flex-shrink: 0;
-}
-
-.yt-action-pill-split button {
-    background: none;
-    border: none;
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    padding: 6px 12px;
-    font-size: 13px;
-    font-weight: 600;
-    color: #0f0f0f;
-}
-
-.yt-action-pill-split button svg {
-    width: 18px;
-    height: 18px;
-    fill: #0f0f0f;
-}
-
-.yt-action-pill-split span.divider {
-    width: 1px;
-    background: rgba(0,0,0,0.1);
-    align-self: stretch;
-    margin: 6px 0;
 }
 
 /* Caja Resumen de Comentarios */
@@ -762,34 +490,6 @@
     background: #f2f2f2;
 }
 
-/* Filtros rápidos del cajón */
-.yt-drawer-filters {
-    display: flex;
-    gap: 8px;
-    padding: 8px 16px;
-    border-bottom: 1px solid #f2f2f2;
-    overflow-x: auto;
-    scrollbar-width: none;
-    flex-shrink: 0;
-}
-
-.yt-drawer-filters::-webkit-scrollbar { display: none; }
-
-.yt-drawer-filter-pill {
-    padding: 6px 12px;
-    background: #f2f2f2;
-    color: #0f0f0f;
-    font-size: 13px;
-    font-weight: 600;
-    border: none;
-    border-radius: 8px;
-    cursor: pointer;
-}
-
-.yt-drawer-filter-pill.active {
-    background: #0f0f0f;
-    color: #ffffff;
-}
 
 /* Banner de advertencia */
 .yt-comments-warning-banner {
@@ -823,6 +523,7 @@
     display: flex;
     gap: 12px;
     margin-bottom: 20px;
+    position: relative;
 }
 
 .yt-comment-avatar {
@@ -882,9 +583,10 @@
     background: none;
     border: none;
     cursor: pointer;
+    font-family: inherit;
     font-size: 12px;
     color: #606060;
-    padding: 4px;
+    padding: 4px 6px;
 }
 
 .yt-comment-action-btn svg {
@@ -895,44 +597,6 @@
 
 .yt-comment-action-btn.liked svg {
     fill: #065fd4;
-}
-
-.yt-comment-heart-badge {
-    width: 18px;
-    height: 18px;
-    border-radius: 50%;
-    border: 1px solid #ffffff;
-    background: #cc0000;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    margin-left: 2px;
-    position: relative;
-}
-
-.yt-comment-heart-badge img {
-    width: 14px;
-    height: 14px;
-    border-radius: 50%;
-}
-
-.yt-comment-heart-icon {
-    position: absolute;
-    bottom: -2px;
-    right: -2px;
-    font-size: 8px;
-    color: #ff0000;
-}
-
-.yt-comment-replies-link {
-    display: inline-flex;
-    align-items: center;
-    gap: 4px;
-    color: #065fd4;
-    font-size: 13px;
-    font-weight: 700;
-    cursor: pointer;
-    margin-top: 8px;
 }
 
 /* Caja de entrada de Comentarios (Cajón) */
@@ -994,100 +658,6 @@
 }
 
 /* ========================================================
-   SECCIÓN SHORTS (GRID VISTA SHORTS)
-   ======================================================== */
-.yt-shorts-grid-section {
-    padding: 16px;
-    border-bottom: 6px solid #f2f2f2;
-}
-
-.yt-shorts-header {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    margin-bottom: 12px;
-}
-
-.yt-shorts-title-row {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    font-size: 18px;
-    font-weight: 800;
-}
-
-.yt-shorts-title-row svg {
-    width: 22px;
-    height: 22px;
-    fill: #ff0000;
-}
-
-.yt-shorts-grid {
-    display: grid;
-    grid-template-columns: repeat(2, 1fr);
-    gap: 12px;
-}
-
-.yt-short-card {
-    display: flex;
-    flex-direction: column;
-    aspect-ratio: 9 / 16;
-    background: #000;
-    border-radius: 12px;
-    overflow: hidden;
-    position: relative;
-    cursor: pointer;
-}
-
-.yt-short-thumbnail {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-}
-
-.yt-short-overlay {
-    position: absolute;
-    inset: 0;
-    background: linear-gradient(to top, rgba(0,0,0,0.7) 0%, rgba(0,0,0,0) 50%);
-    display: flex;
-    flex-direction: column;
-    justify-content: flex-end;
-    padding: 12px;
-    color: #ffffff;
-}
-
-.yt-short-card-title {
-    font-size: 13px;
-    font-weight: 700;
-    line-height: 1.35;
-    margin-bottom: 4px;
-    display: -webkit-box;
-    -webkit-line-clamp: 2;
-    -webkit-box-orient: vertical;
-    overflow: hidden;
-}
-
-.yt-short-card-views {
-    font-size: 11px;
-    color: rgba(255,255,255,0.75);
-}
-
-.yt-short-options-btn {
-    position: absolute;
-    top: 8px;
-    right: 8px;
-    background: none;
-    border: none;
-    cursor: pointer;
-}
-
-.yt-short-options-btn svg {
-    width: 18px;
-    height: 18px;
-    fill: #ffffff;
-}
-
-/* ========================================================
    TAB NAVIGATION COMPARTIDO
    ======================================================== */
 .yt-bottom-nav {
@@ -1129,19 +699,839 @@
     font-weight: 500;
 }
 
-.yt-nav-plus {
-    width: 38px;
-    height: 38px;
-    border-radius: 50%;
-    border: 1px solid #0f0f0f;
+/* ========================================================
+   BARRA DE INSTRUCCIONES DE NICO (propia del módulo)
+   ======================================================== */
+.yt-instructions-bar {
+    background-color: #fff7e9;
+    border-bottom: 2px solid #6b4a3a;
+    padding: 8px 12px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    font-size: 14px;
+    color: #4b2e22;
+    z-index: 15;
+    flex-shrink: 0;
+}
+
+.yt-instructions-nico {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    background-color: #7b9f42;
+    color: #ffffff;
+    border: none;
+    padding: 4px 8px;
+    border-radius: 8px;
+    font-weight: bold;
+    font-size: 11px;
+    cursor: pointer;
+    flex-shrink: 0;
+}
+
+.yt-instructions-icono-nico {
+    width: 20px;
+    height: 20px;
+    filter: brightness(0) invert(1);
+}
+
+.yt-instructions-text {
+    font-weight: 700;
+    line-height: 1.25;
+}
+
+/* ========================================================
+   MINIATURAS SIN INTERNET (color + emoji)
+   ======================================================== */
+.yt-video-thumb-emoji {
+    position: absolute;
+    inset: 0;
     display: flex;
     align-items: center;
     justify-content: center;
-    margin-top: -2px;
+    font-size: 64px;
+    line-height: 1;
+    text-shadow: 0 4px 12px rgba(0, 0, 0, 0.25);
+    user-select: none;
 }
 
-.yt-nav-plus svg {
-    width: 24px;
-    height: 24px;
+/* ========================================================
+   VISTA DE BÚSQUEDA
+   ======================================================== */
+.yt-search-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 12px;
+    background: #ffffff;
+    border-bottom: 1px solid #e5e5e5;
+    flex-shrink: 0;
+}
+
+.yt-search-input {
+    flex: 1;
+    min-width: 0;
+    border: 2px solid #d9d9d9;
+    border-radius: 22px;
+    padding: 10px 16px;
+    font-size: 16px;
+    font-family: inherit;
+    color: #0f0f0f;
+    outline: none;
+}
+
+.yt-search-input:focus {
+    border-color: #065fd4;
+}
+
+.yt-search-go-btn {
+    width: 44px;
+    height: 44px;
+    flex-shrink: 0;
+    border: none;
+    border-radius: 50%;
+    background: #065fd4;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.yt-search-go-btn svg {
+    width: 22px;
+    height: 22px;
+    fill: #ffffff;
+}
+
+.yt-search-chips {
+    padding: 12px 16px;
+    flex-shrink: 0;
+}
+
+.yt-search-chips-title {
+    margin: 0 0 10px;
+    font-size: 13px;
+    font-weight: 700;
+    color: #606060;
+    text-transform: uppercase;
+    letter-spacing: 0.4px;
+}
+
+.yt-search-chip {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    width: 100%;
+    background: #f7f7f7;
+    border: 1px solid #e5e5e5;
+    border-radius: 12px;
+    padding: 12px 14px;
+    margin-bottom: 8px;
+    font-size: 16px;
+    font-family: inherit;
+    color: #0f0f0f;
+    text-align: left;
+    cursor: pointer;
+}
+
+.yt-search-chip svg {
+    width: 20px;
+    height: 20px;
+    fill: #606060;
+    flex-shrink: 0;
+}
+
+/* ========================================================
+   REPRODUCTOR SIMULADO
+   ======================================================== */
+.yt-player-screen {
+    position: relative;
+    width: 100%;
+    aspect-ratio: 16 / 9;
+    background: #202020;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+    flex-shrink: 0;
+}
+
+.yt-player-emoji {
+    font-size: 88px;
+    line-height: 1;
+    user-select: none;
+    transition: transform 0.4s ease;
+}
+
+.yt-player-screen.reproduciendo .yt-player-emoji {
+    animation: ytLatido 2.4s ease-in-out infinite;
+}
+
+@keyframes ytLatido {
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(1.12); }
+}
+
+.yt-big-play-btn {
+    position: absolute;
+    width: 88px;
+    height: 88px;
+    border-radius: 50%;
+    border: 3px solid rgba(255, 255, 255, 0.9);
+    background: rgba(0, 0, 0, 0.55);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+}
+
+.yt-big-play-btn svg {
+    width: 44px;
+    height: 44px;
+    fill: #ffffff;
+}
+
+.yt-player-bar {
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 10px;
+    background: linear-gradient(transparent, rgba(0, 0, 0, 0.75));
+}
+
+.yt-ctrl-btn {
+    width: 34px;
+    height: 34px;
+    flex-shrink: 0;
+    border: none;
+    background: transparent;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+}
+
+.yt-ctrl-btn svg {
+    width: 22px;
+    height: 22px;
+    fill: #ffffff;
+}
+
+#ytVolUpBtn svg {
+    width: 26px;
+    height: 26px;
+}
+
+.yt-time-label {
+    color: #ffffff;
+    font-size: 12px;
+    font-weight: 600;
+    white-space: nowrap;
+    flex-shrink: 0;
+}
+
+.yt-progress-track {
+    flex: 1;
+    min-width: 30px;
+    height: 5px;
+    border-radius: 3px;
+    background: rgba(255, 255, 255, 0.35);
+    overflow: hidden;
+}
+
+.yt-progress-fill {
+    height: 100%;
+    width: 0;
+    background: #ff0000;
+    border-radius: 3px;
+    transition: width 0.35s linear;
+}
+
+.yt-vol-bars {
+    display: flex;
+    align-items: flex-end;
+    gap: 3px;
+    height: 18px;
+    flex-shrink: 0;
+}
+
+.yt-vol-bar {
+    width: 4px;
+    height: 100%;
+    border-radius: 2px;
+    background: rgba(255, 255, 255, 0.3);
+}
+
+.yt-vol-bar.activa {
+    background: #ffffff;
+}
+
+/* ========================================================
+   DETALLES DEL VIDEO: VOLVER, CANAL, ACCIONES
+   ======================================================== */
+.yt-volver-pill {
+    margin-bottom: 12px;
+    padding: 8px 14px 8px 10px;
+}
+
+.yt-channel-actions {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-shrink: 0;
+}
+
+.yt-bell-btn {
+    width: 38px;
+    height: 38px;
+    border: none;
+    border-radius: 50%;
+    background: #f2f2f2;
+    cursor: pointer;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+}
+
+.yt-bell-btn svg {
+    width: 20px;
+    height: 20px;
     fill: #0f0f0f;
+}
+
+.yt-bell-btn.activa {
+    background: #065fd4;
+}
+
+.yt-bell-btn.activa svg {
+    fill: #ffffff;
+}
+
+.yt-action-pill.activo {
+    background: #def1ff;
+    color: #065fd4;
+}
+
+/* ========================================================
+   COMENTARIOS: PROPIO Y CORAZÓN DEL CANAL
+   ======================================================== */
+.yt-comment-item-mio {
+    background: #f4f0ff;
+    border-radius: 12px;
+    padding: 8px;
+    margin-left: -8px;
+    margin-right: -8px;
+}
+
+.yt-comment-heart {
+    font-size: 14px;
+    line-height: 1;
+}
+
+/* ========================================================
+   VISTA "TÚ" (BIBLIOTECA)
+   ======================================================== */
+.yt-lib-user {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.yt-lib-avatar {
+    width: 42px;
+    height: 42px;
+    border-radius: 50%;
+    background: #673ab7;
+    color: #ffffff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 18px;
+    font-weight: 700;
+}
+
+.yt-lib-name {
+    font-size: 16px;
+    font-weight: 700;
+    color: #0f0f0f;
+}
+
+.yt-lib-mail {
+    font-size: 13px;
+    color: #606060;
+}
+
+.yt-lib-body {
+    flex: 1;
+    min-height: 0;
+    overflow-y: auto;
+    padding: 8px 0 16px;
+}
+
+.yt-lib-option {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    width: 100%;
+    background: transparent;
+    border: none;
+    border-bottom: 1px solid #f2f2f2;
+    padding: 16px;
+    font-family: inherit;
+    text-align: left;
+    cursor: pointer;
+}
+
+.yt-lib-option svg {
+    width: 26px;
+    height: 26px;
+    fill: #0f0f0f;
+    flex-shrink: 0;
+}
+
+.yt-lib-option-text {
+    flex: 1;
+    min-width: 0;
+}
+
+.yt-lib-option-text strong {
+    display: block;
+    font-size: 16px;
+    color: #0f0f0f;
+}
+
+.yt-lib-option-text small {
+    font-size: 13px;
+    color: #606060;
+}
+
+.yt-lib-arrow {
+    font-size: 24px;
+    color: #909090;
+    flex-shrink: 0;
+}
+
+.yt-lib-saved-section {
+    padding-top: 8px;
+}
+
+.yt-lib-saved-title {
+    margin: 0;
+    padding: 12px 16px 4px;
+    font-size: 15px;
+    font-weight: 700;
+    color: #0f0f0f;
+}
+
+.yt-lib-vacio {
+    padding: 20px 16px;
+    color: #606060;
+    font-size: 15px;
+}
+
+.yt-lib-saved-section .yt-feed {
+    overflow: visible;
+}
+
+.yt-nav-avatar {
+    width: 22px;
+    height: 22px;
+    border-radius: 50%;
+    background: #673ab7;
+    color: #ffffff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 11px;
+    font-weight: 700;
+}
+
+/* ========================================================
+   AVISO FLOTANTE (TOAST)
+   ======================================================== */
+.yt-toast {
+    position: absolute;
+    left: 50%;
+    bottom: 84px;
+    transform: translate(-50%, 12px);
+    max-width: 86%;
+    background: rgba(15, 15, 15, 0.92);
+    color: #ffffff;
+    font-size: 14px;
+    font-weight: 600;
+    padding: 12px 18px;
+    border-radius: 10px;
+    text-align: center;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.25s ease, transform 0.25s ease;
+    z-index: 380;
+}
+
+.yt-toast.visible {
+    opacity: 1;
+    transform: translate(-50%, 0);
+}
+
+/* ========================================================
+   MODAL DE NIVEL COMPLETADO
+   ======================================================== */
+.yt-modal-exito {
+    display: none;
+    position: absolute;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.65);
+    z-index: 400;
+    align-items: center;
+    justify-content: center;
+    padding: 24px;
+}
+
+.yt-modal-exito.activa {
+    display: flex;
+}
+
+.yt-success-container {
+    background: #fff7e9;
+    border: 3px solid #6b4a3a;
+    border-radius: 20px;
+    padding: 28px 24px;
+    text-align: center;
+    max-width: 340px;
+    width: 100%;
+    animation: ytSuccessPop 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+@keyframes ytSuccessPop {
+    from { transform: scale(0.8); opacity: 0; }
+    to { transform: scale(1); opacity: 1; }
+}
+
+.yt-success-trophy {
+    width: 72px;
+    height: 72px;
+    margin-bottom: 12px;
+}
+
+.yt-success-container h2 {
+    margin: 0 0 10px;
+    font-size: 24px;
+    color: #4b2e22;
+}
+
+.yt-success-container p {
+    margin: 0 0 22px;
+    font-size: 16px;
+    line-height: 1.4;
+    color: #5b4034;
+}
+
+.yt-success-btn-continuar {
+    width: 100%;
+    background: #7b9f42;
+    color: #ffffff;
+    border: none;
+    border-bottom: 5px solid #5c7a2e;
+    border-radius: 14px;
+    padding: 14px;
+    font-size: 18px;
+    font-weight: 800;
+    font-family: inherit;
+    cursor: pointer;
+}
+
+.yt-success-btn-continuar:active {
+    transform: translateY(3px);
+    border-bottom-width: 2px;
+}
+
+/* ========================================================
+   AJUSTE DEL RESALTADO DE NICO EN BOTONES REDONDEADOS
+   El marco genérico (outline + offset 3px) sobresalía demasiado en las
+   píldoras del reproductor. Aquí lo pegamos al borde del botón.
+   ======================================================== */
+.yt-action-pill.nico-highlight-target,
+.yt-subscribe-btn.nico-highlight-target,
+.yt-bell-btn.nico-highlight-target,
+.yt-comment-action-btn.nico-highlight-target,
+.yt-comment-menu-btn.nico-highlight-target,
+.yt-share-app.nico-highlight-target,
+.yt-share-contacto.nico-highlight-target,
+.yt-lib-option.nico-highlight-target,
+.yt-comment-menu-opcion.nico-highlight-target {
+    outline-width: 3px !important;
+    outline-offset: 1px !important;
+    border-radius: 18px;
+}
+
+.yt-lib-option.nico-highlight-target,
+.yt-comment-menu-opcion.nico-highlight-target,
+.yt-share-contacto.nico-highlight-target {
+    border-radius: 12px;
+}
+
+.yt-comment-action-btn.nico-highlight-target {
+    border-radius: 14px;
+}
+
+.yt-comment-menu-btn.nico-highlight-target {
+    border-radius: 50%;
+}
+
+.yt-share-contactos {
+    max-height: 260px;
+    overflow-y: auto;
+}
+
+/* ========================================================
+   BOTONES DE UN COMENTARIO (me gusta / no me gusta / opciones)
+   ======================================================== */
+.yt-comment-action-btn.activo svg {
+    fill: #065fd4;
+}
+
+.yt-comment-action-btn.activo span {
+    color: #065fd4;
+    font-weight: 700;
+}
+
+/* Sitio para los tres puntitos, que van sobre la esquina del comentario */
+.yt-comment-item-mio .yt-comment-content {
+    padding-right: 30px;
+}
+
+.yt-comment-menu-btn {
+    position: absolute;
+    top: 4px;
+    right: 0;
+    width: 32px;
+    height: 32px;
+    border: none;
+    border-radius: 50%;
+    background: transparent;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+}
+
+.yt-comment-menu-btn svg {
+    width: 18px;
+    height: 18px;
+    fill: #606060;
+}
+
+.yt-comment-menu {
+    display: none;
+    position: absolute;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.4);
+    z-index: 350;
+    align-items: flex-end;
+}
+
+.yt-comment-menu.activa {
+    display: flex;
+}
+
+.yt-comment-menu-panel {
+    width: 100%;
+    background: #ffffff;
+    border-radius: 16px 16px 0 0;
+    padding: 12px;
+}
+
+.yt-comment-menu-opcion {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    width: 100%;
+    background: transparent;
+    border: none;
+    border-radius: 12px;
+    padding: 16px 12px;
+    font-family: inherit;
+    font-size: 16px;
+    font-weight: 600;
+    color: #0f0f0f;
+    text-align: left;
+    cursor: pointer;
+}
+
+.yt-comment-menu-opcion svg {
+    width: 22px;
+    height: 22px;
+    fill: #0f0f0f;
+    flex-shrink: 0;
+}
+
+#ytCommentMenuEliminar {
+    color: #cc0000;
+}
+
+#ytCommentMenuEliminar svg {
+    fill: #cc0000;
+}
+
+/* ========================================================
+   HOJA DE COMPARTIR
+   ======================================================== */
+.yt-share-sheet {
+    display: none;
+    position: absolute;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.45);
+    z-index: 320;
+    align-items: flex-end;
+}
+
+.yt-share-sheet.activa {
+    display: flex;
+}
+
+.yt-share-panel {
+    width: 100%;
+    max-height: 70%;
+    overflow-y: auto;
+    background: #ffffff;
+    border-radius: 18px 18px 0 0;
+    padding: 8px 16px 20px;
+}
+
+.yt-share-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 10px 0 14px;
+    border-bottom: 1px solid #f0f0f0;
+    margin-bottom: 14px;
+}
+
+.yt-share-title {
+    font-size: 18px;
+    font-weight: 800;
+    color: #0f0f0f;
+}
+
+.yt-share-apps {
+    display: flex;
+    gap: 18px;
+    justify-content: space-around;
+}
+
+.yt-share-app {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+    background: transparent;
+    border: none;
+    font-family: inherit;
+    font-size: 13px;
+    font-weight: 600;
+    color: #0f0f0f;
+    cursor: pointer;
+    padding: 6px;
+}
+
+.yt-share-app-icono {
+    width: 56px;
+    height: 56px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 26px;
+}
+
+.yt-share-contacto {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    width: 100%;
+    background: transparent;
+    border: none;
+    border-bottom: 1px solid #f2f2f2;
+    padding: 14px 8px;
+    font-family: inherit;
+    text-align: left;
+    cursor: pointer;
+}
+
+.yt-share-contacto-avatar {
+    width: 44px;
+    height: 44px;
+    border-radius: 50%;
+    color: #ffffff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 18px;
+    font-weight: 700;
+    flex-shrink: 0;
+}
+
+.yt-share-contacto-nombre {
+    flex: 1;
+    min-width: 0;
+    font-size: 16px;
+    font-weight: 600;
+    color: #0f0f0f;
+}
+
+.yt-share-contacto-enviar {
+    background: #065fd4;
+    color: #ffffff;
+    font-size: 13px;
+    font-weight: 700;
+    padding: 7px 16px;
+    border-radius: 16px;
+    flex-shrink: 0;
+}
+
+/* ========================================================
+   VIDEO REAL DENTRO DEL REPRODUCTOR
+   Se muestra solo cuando el archivo cargó bien; si falta, queda a la vista
+   el fondo de color con emoji que hay debajo.
+   ======================================================== */
+.yt-player-video {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: none;
+}
+
+.yt-player-screen.con-video .yt-player-video {
+    display: block;
+}
+
+/* Los controles siempre por encima del video */
+.yt-big-play-btn,
+.yt-player-bar {
+    z-index: 2;
+}
+
+/* Con video real el botón grande estorba menos si es algo más discreto */
+.yt-player-screen.con-video .yt-big-play-btn {
+    background: rgba(0, 0, 0, 0.45);
+}
+
+/* Fotograma real del video como miniatura del listado.
+   Va encima del emoji: si la imagen falta, el emoji queda a la vista. */
+.yt-video-thumb-img {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
 }
