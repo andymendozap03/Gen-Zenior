@@ -113,6 +113,12 @@
     display: flex;
     border-bottom: 1px solid #ddd;
     flex-shrink: 0;
+    /* En un contenedor flex, el z-index de un flex item se aplica aunque su position
+       sea static. .fb-header tiene z-index:100, así que sin esto su caja completa se
+       pintaría por encima de .fb-nav-tabs y recortaría visualmente el halo de Nico
+       cuando se desborda hacia arriba (ej. al resaltar el ícono "Amigos"). */
+    position: relative;
+    z-index: 101;
 }
 
 .fb-nav-tab {
@@ -1898,13 +1904,15 @@
     pointer-events: none;
 }
 
-/* Acciones laterales (derecha) */
+/* Acciones apiladas verticalmente en el lado derecho (Me gusta, Comentar, Compartir),
+   igual que Facebook real. .fb-reel-info va primero en el HTML (flex:1, ocupa el
+   espacio flexible a la izquierda) y estas acciones van después, por lo que ya no
+   necesitan margin-left:auto para empujarse a la derecha. */
 .fb-reel-actions {
     display: flex;
     flex-direction: column;
     align-items: center;
     gap: 18px;
-    margin-left: auto;
     pointer-events: all;
 }
 
@@ -2071,83 +2079,61 @@
     z-index: 10;
 }
 
-/* Botón Siguiente Reel (flecha abajo, centrado en la parte inferior del player) */
-.fb-reel-next-btn {
+/* Aviso visual del gesto de deslizar (Nivel 5 guiado) — misma escala/lenguaje visual
+   que .fb-hold-hint del Nivel 2: etiqueta pequeña, no un banner grande centrado.
+   "Desliza hacia arriba" se ancla dentro de la franja SIEMPRE vacía que garantiza
+   el padding-bottom:80px de .fb-reel-overlay (info/acciones se anclan con
+   align-items:flex-end a esos 80px, así que nunca invaden esta franja). "Desliza
+   hacia abajo" se ancla cerca del borde SUPERIOR, debajo del contador de reel, zona
+   que info/acciones no ocupan porque están ancladas abajo. Ninguna de las dos tapa
+   el centro del video. pointer-events:none para no interferir con el gesto. */
+.fb-reel-swipe-hint {
     position: absolute;
-    bottom: 14px;
+    bottom: 16px;
     left: 50%;
     transform: translateX(-50%);
-    z-index: 20;
     display: flex;
-    flex-direction: column;
     align-items: center;
-    gap: 2px;
-    background: rgba(255, 255, 255, 0.16);
-    border: 2px solid rgba(255, 255, 255, 0.55);
-    border-radius: 24px;
-    padding: 8px 18px 7px;
-    color: #fff;
-    font-size: 13px;
+    gap: 6px;
+    background: #1877f2;
+    color: #ffffff;
+    font-size: 12px;
     font-weight: 800;
-    font-family: inherit;
-    cursor: pointer;
-    backdrop-filter: blur(6px);
-    box-shadow: 0 3px 14px rgba(0, 0, 0, 0.35);
-    transition: background 0.15s, transform 0.1s;
-    animation: reelNextPulse 2s ease-in-out infinite;
-}
-
-.fb-reel-next-btn svg {
-    width: 22px;
-    height: 22px;
-    fill: #fff;
-}
-
-.fb-reel-next-btn:hover {
-    background: rgba(255, 255, 255, 0.28);
-}
-
-.fb-reel-next-btn:active {
-    transform: translateX(-50%) scale(0.95);
-}
-
-@keyframes reelNextPulse {
-
-    0%,
-    100% {
-        box-shadow: 0 3px 14px rgba(0, 0, 0, 0.35);
-    }
-
-    50% {
-        box-shadow: 0 3px 22px rgba(255, 255, 255, 0.3), 0 3px 14px rgba(0, 0, 0, 0.35);
-    }
-}
-
-/* Botón Anterior Reel (flecha arriba, arriba izquierda del player) */
-.fb-reel-prev-btn {
-    position: absolute;
-    top: 58px;
-    left: 12px;
+    padding: 6px 12px;
+    border-radius: 14px;
+    white-space: nowrap;
+    box-shadow: 0 4px 12px rgba(24, 119, 242, 0.5);
+    pointer-events: none;
     z-index: 20;
-    width: 34px;
-    height: 34px;
-    background: rgba(255, 255, 255, 0.18);
-    border: 1.5px solid rgba(255, 255, 255, 0.5);
-    border-radius: 50%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    cursor: pointer;
-    backdrop-filter: blur(4px);
-    transition: background 0.15s;
+    animation: fbReelSwipeHintBounce 0.9s infinite alternate ease-in-out;
 }
 
-.fb-reel-prev-btn svg {
-    width: 20px;
-    height: 20px;
-    fill: #fff;
+.fb-reel-swipe-hint span:first-child {
+    font-size: 15px;
 }
 
-.fb-reel-prev-btn:hover {
-    background: rgba(255, 255, 255, 0.3);
+@keyframes fbReelSwipeHintBounce {
+    from {
+        transform: translateX(-50%) translateY(0);
+    }
+
+    to {
+        transform: translateX(-50%) translateY(-6px);
+    }
+}
+
+.fb-reel-swipe-hint-abajo {
+    bottom: auto;
+    top: 100px;
+    animation-name: fbReelSwipeHintBounceAbajo;
+}
+
+@keyframes fbReelSwipeHintBounceAbajo {
+    from {
+        transform: translateX(-50%) translateY(0);
+    }
+
+    to {
+        transform: translateX(-50%) translateY(6px);
+    }
 }

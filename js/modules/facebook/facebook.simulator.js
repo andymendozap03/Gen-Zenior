@@ -15,10 +15,16 @@ let rondaNivel2 = 1; // 1 = primera publicación (María), 2 = repaso en otra pu
 let postObjetivoNivel2 = 1; // id del post donde se guía la reacción (1 en ronda 1, 3 en ronda 2)
 let ultimaReaccionElegidaNivel2 = "👍";
 let subPasoNivel3 = 1;
+let rondaNivel3 = 1; // 1 = primer comentario (María), 2 = repaso en otra publicación (Club de Adultos Activos)
+let postObjetivoNivel3 = 1; // id del post donde se guía el comentario (1 en ronda 1, 4 en ronda 2)
 let subPasoNivel4 = 1;
+let rondaNivel4 = 1; // 1 = primera solicitud (Rosa Elena), 2 = repaso con Carlos Méndez o Beatriz Soto
 let subPasoNivel5 = 1;
+let rondaNivel5 = 1; // 1 y 2 = deslizar hacia arriba (siguiente, dos veces), 3 = deslizar hacia abajo (anterior)
 let reelActualIdx = 0;
 let reelLikeYaDado = false;
+let reelSwipeStartY = null;
+let reelArrastrandoMouse = false;
 let pestanaActiva = "inicio";
 let activeCommentsPostId = 1;
 let ultimaInstruccionHablada = "";
@@ -361,23 +367,7 @@ function asegurarTemplateHTML() {
                     <!-- Overlay de info -->
                     <div class="fb-reel-overlay">
 
-                        <!-- Acciones laterales (derecha) -->
-                        <div class="fb-reel-actions">
-                            <button id="fbReelLikeBtn" class="fb-reel-action-btn" aria-label="Me gusta">
-                                <svg viewBox="0 0 24 24" id="fbReelLikeIcon"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg>
-                                <span id="fbReelLikeCount" class="fb-reel-action-label">847</span>
-                            </button>
-                            <button class="fb-reel-action-btn" aria-label="Comentar">
-                                <svg viewBox="0 0 24 24"><path d="M21.99 4c0-1.1-.89-2-1.99-2H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h14l4 4-.01-18z"/></svg>
-                                <span class="fb-reel-action-label">32</span>
-                            </button>
-                            <button class="fb-reel-action-btn" aria-label="Compartir">
-                                <svg viewBox="0 0 24 24"><path d="M18 16.08c-.76 0-1.44.3-1.96.77L8.91 12.7c.05-.23.09-.46.09-.7s-.04-.47-.09-.7l7.05-4.11c.54.5 1.25.81 2.04.81 1.66 0 3-1.34 3-3s-1.34-3-3-3-3 1.34-3 3c0 .24.04.47.09.7L8.04 9.81C7.5 9.31 6.79 9 6 9c-1.66 0-3 1.34-3 3s1.34 3 3 3c.79 0 1.5-.31 2.04-.81l7.12 4.16c-.05.21-.08.43-.08.65 0 1.61 1.31 2.92 2.92 2.92 1.61 0 2.92-1.31 2.92-2.92s-1.31-2.92-2.92-2.92z"/></svg>
-                                <span class="fb-reel-action-label">Compartir</span>
-                            </button>
-                        </div>
-
-                        <!-- Info del creador (abajo izquierda) -->
+                        <!-- Info del creador (izquierda, ocupa el espacio flexible) -->
                         <div class="fb-reel-info">
                             <div class="fb-reel-creator">
                                 <div class="fb-reel-avatar" id="fbReelAvatar">💪</div>
@@ -395,21 +385,32 @@ function asegurarTemplateHTML() {
                             </div>
                         </div>
 
+                        <!-- Acciones apiladas (derecha), igual que Facebook real -->
+                        <div class="fb-reel-actions">
+                            <button id="fbReelLikeBtn" class="fb-reel-action-btn" aria-label="Me gusta">
+                                <svg viewBox="0 0 24 24" id="fbReelLikeIcon"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg>
+                                <span id="fbReelLikeCount" class="fb-reel-action-label">847</span>
+                            </button>
+                            <button class="fb-reel-action-btn" aria-label="Comentar">
+                                <svg viewBox="0 0 24 24"><path d="M21.99 4c0-1.1-.89-2-1.99-2H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h14l4 4-.01-18z"/></svg>
+                                <span class="fb-reel-action-label">32</span>
+                            </button>
+                            <button class="fb-reel-action-btn" aria-label="Compartir">
+                                <svg viewBox="0 0 24 24"><path d="M18 16.08c-.76 0-1.44.3-1.96.77L8.91 12.7c.05-.23.09-.46.09-.7s-.04-.47-.09-.7l7.05-4.11c.54.5 1.25.81 2.04.81 1.66 0 3-1.34 3-3s-1.34-3-3-3-3 1.34-3 3c0 .24.04.47.09.7L8.04 9.81C7.5 9.31 6.79 9 6 9c-1.66 0-3 1.34-3 3s1.34 3 3 3c.79 0 1.5-.31 2.04-.81l7.12 4.16c-.05.21-.08.43-.08.65 0 1.61 1.31 2.92 2.92 2.92 1.61 0 2.92-1.31 2.92-2.92s-1.31-2.92-2.92-2.92z"/></svg>
+                                <span class="fb-reel-action-label">Compartir</span>
+                            </button>
+                        </div>
+
                     </div>
 
                     <!-- Contador de reel -->
                     <div class="fb-reel-counter" id="fbReelCounter">1 / 6</div>
 
-                    <!-- Botón Siguiente Reel (flecha abajo) -->
-                    <button id="fbReelNextBtn" class="fb-reel-next-btn" aria-label="Siguiente Reel">
-                        <svg viewBox="0 0 24 24"><path d="M7.41 8.59L12 13.17l4.59-4.58L18 10l-6 6-6-6 1.41-1.41z"/></svg>
-                        <span>Siguiente Reel</span>
-                    </button>
-
-                    <!-- Botón Anterior Reel -->
-                    <button id="fbReelPrevBtn" class="fb-reel-prev-btn" aria-label="Reel anterior" style="display:none;">
-                        <svg viewBox="0 0 24 24"><path d="M7.41 15.41L12 10.83l4.59 4.58L18 14l-6-6-6 6 1.41 1.41z"/></svg>
-                    </button>
+                    <!-- Aviso visual del gesto de deslizar (solo durante el paso guiado del Nivel 5) -->
+                    <div id="fbReelSwipeHint" class="fb-reel-swipe-hint" style="display:none;">
+                        <span id="fbReelSwipeHintIcon">☝️</span>
+                        <span id="fbReelSwipeHintText">Desliza hacia arriba</span>
+                    </div>
 
                 </div>
             </div>
@@ -722,7 +723,7 @@ function abrirComentarios(postId) {
 
     modal.classList.add("activa");
 
-    if (nivelActual === "comentar-publicacion") {
+    if (nivelActual === "comentar-publicacion" && postId === postObjetivoNivel3 && subPasoNivel3 === 1) {
         subPasoNivel3 = 2;
         actualizarBarraInstrucciones(true);
     }
@@ -1122,10 +1123,81 @@ function renderizarReel(idx) {
     if (likeBtn) likeBtn.classList.remove("liked");
     if (likeIcon) likeIcon.style.fill = "";
     reelLikeYaDado = false;
+}
 
-    // Mostrar/ocultar flecha de anterior
-    const prevBtn = $("#fbReelPrevBtn");
-    if (prevBtn) prevBtn.style.display = idx > 0 ? "flex" : "none";
+// ---------- NAVEGACIÓN POR GESTO DE DESLIZAR (NIVEL 5) ----------
+function irReelSiguiente() {
+    if (reelActualIdx >= REELS_DATA.length - 1) return;
+    reelActualIdx++;
+    renderizarReel(reelActualIdx);
+    manejarProgresoNivel5("arriba");
+}
+
+function irReelAnterior() {
+    if (reelActualIdx <= 0) return;
+    reelActualIdx--;
+    renderizarReel(reelActualIdx);
+    manejarProgresoNivel5("abajo");
+}
+
+// Dirección de deslizamiento que corresponde practicar en la ronda actual:
+// rondas 1 y 2 = arriba (dos veces seguidas, refuerzo del mismo gesto),
+// ronda 3 = abajo (el gesto nuevo, para volver al Reel anterior).
+function direccionEsperadaNivel5() {
+    return rondaNivel5 === 3 ? "abajo" : "arriba";
+}
+
+// Avanza la guía del Nivel 5 cuando el deslizamiento ocurre en la dirección esperada
+// para la ronda actual. En cualquier otro caso el Reel cambia igual, pero sin
+// afectar el progreso del nivel.
+function manejarProgresoNivel5(direccion) {
+    if (nivelActual !== "ver-reels" || subPasoNivel5 !== 2 || direccion !== direccionEsperadaNivel5()) return;
+
+    subPasoNivel5 = 3;
+    actualizarBarraInstrucciones(true);
+
+    setTimeout(() => {
+        const sim = $("#pantallaFacebookSimulador");
+        const enPantalla = sim && sim.classList.contains("activa");
+        if (!enPantalla || nivelActual !== "ver-reels" || subPasoNivel5 !== 3) return;
+
+        if (rondaNivel5 < 3) {
+            rondaNivel5++;
+            subPasoNivel5 = 2;
+            actualizarBarraInstrucciones(true);
+        } else {
+            completarNivelActual("¡Excelente! Ya sabes navegar por los Reels de Facebook.");
+        }
+    }, 2600);
+}
+
+// Actualiza el aviso visual de "desliza hacia arriba/abajo" durante el paso guiado
+function actualizarSwipeHintReel() {
+    const hint = $("#fbReelSwipeHint");
+    if (!hint) return;
+
+    const reelsView = $("#fbReelsView");
+    const estaEnReels = reelsView && reelsView.style.display !== "none";
+    const mostrar = nivelActual === "ver-reels" && estaEnReels && subPasoNivel5 === 2;
+
+    if (!mostrar) {
+        hint.style.display = "none";
+        return;
+    }
+
+    hint.style.display = "flex";
+    const textoHint = $("#fbReelSwipeHintText");
+    const iconoHint = $("#fbReelSwipeHintIcon");
+
+    if (direccionEsperadaNivel5() === "arriba") {
+        if (textoHint) textoHint.textContent = "Desliza hacia arriba";
+        if (iconoHint) iconoHint.textContent = "☝️";
+        hint.classList.remove("fb-reel-swipe-hint-abajo");
+    } else {
+        if (textoHint) textoHint.textContent = "Desliza hacia abajo";
+        if (iconoHint) iconoHint.textContent = "👇";
+        hint.classList.add("fb-reel-swipe-hint-abajo");
+    }
 }
 
 function manejarAgregarAmigo(friendId, btnElement) {
@@ -1153,9 +1225,30 @@ function manejarAgregarAmigo(friendId, btnElement) {
         }
     }
 
-    if (nivelActual === "agregar-amigo" && (friendId === "rosa" || subPasoNivel4 >= 1)) {
-        subPasoNivel4 = 3;
-        completarNivelActual("¡Excelente! Has enviado tu primera solicitud de amistad en Facebook.");
+    if (nivelActual === "agregar-amigo") {
+        // Ronda 1: solo Rosa Elena es válida. Ronda 2: cualquiera de los dos perfiles restantes.
+        const esObjetivoValido = rondaNivel4 === 1
+            ? friendId === "rosa"
+            : (friendId === "carlos" || friendId === "beatriz");
+
+        if (esObjetivoValido && subPasoNivel4 === 2) {
+            subPasoNivel4 = 3;
+            actualizarBarraInstrucciones(true);
+
+            setTimeout(() => {
+                const sim = $("#pantallaFacebookSimulador");
+                const enPantalla = sim && sim.classList.contains("activa");
+                if (!enPantalla || nivelActual !== "agregar-amigo" || subPasoNivel4 !== 3) return;
+
+                if (rondaNivel4 === 1) {
+                    rondaNivel4 = 2;
+                    subPasoNivel4 = 2; // ya está en la pestaña de Amigos, no hace falta repetir ese paso
+                    actualizarBarraInstrucciones(true);
+                } else {
+                    completarNivelActual("¡Excelente! Ya sabes agregar amigos en Facebook.");
+                }
+            }, 2600);
+        }
     }
 }
 
@@ -1263,45 +1356,84 @@ function actualizarBarraInstrucciones(autoSpeak = true) {
         const modal = $("#fbCommentsModal");
         const estaAbierto = modal && modal.classList.contains("activa");
         const inputVal = $("#fbCommentInput") ? $("#fbCommentInput").value.trim() : "";
+        const postObjetivoN3 = POSTS_DATA.find(p => p.id === postObjetivoNivel3);
+        const autorObjetivoN3 = postObjetivoN3 ? postObjetivoN3.autor : "esa publicación";
 
-        if (subPasoNivel3 === 1) {
-            instruccion = estaAbierto
-                ? "Escribe un comentario o toca una frase sugerida para responder."
-                : "En la publicación de María, toca el botón 'Comentar' para ver los comentarios.";
-        } else if (subPasoNivel3 === 2) {
-            instruccion = inputVal.length > 0
-                ? "Toca el botón azul de la flecha para enviar tu comentario."
-                : "Escribe lo que deseas responder o toca una de las frases sugeridas.";
-        } else if (subPasoNivel3 === 3) {
-            instruccion = "¡Excelente! Has publicado tu comentario.";
+        if (rondaNivel3 === 1) {
+            // Ronda 1: flujo completo guiado (identificar → tocar campo → escribir → confirmación)
+            if (subPasoNivel3 === 1) {
+                instruccion = `En la publicación de ${autorObjetivoN3}, toca el botón 'Comentar' para ver los comentarios.`;
+            } else if (subPasoNivel3 === 2) {
+                instruccion = "Toca el cuadro de texto para escribir tu comentario.";
+            } else if (subPasoNivel3 === 3) {
+                instruccion = inputVal.length > 0
+                    ? "Toca el botón azul de la flecha para enviar tu comentario."
+                    : "Escribe lo que deseas responder o toca una de las frases sugeridas.";
+            } else if (subPasoNivel3 === 4) {
+                instruccion = "¡Tu comentario ya se publicó!";
+            }
+        } else {
+            // Ronda 2: repaso ligero (tocar Comentar → escribir → mensaje final)
+            if (subPasoNivel3 === 1) {
+                instruccion = estaAbierto
+                    ? "Escribe un comentario o toca una frase sugerida para responder."
+                    : `¡Practiquemos una vez más! Toca 'Comentar' en la publicación de ${autorObjetivoN3}.`;
+            } else if (subPasoNivel3 === 2) {
+                instruccion = inputVal.length > 0
+                    ? "Toca el botón azul de la flecha para enviar tu comentario."
+                    : "Escribe lo que deseas responder o toca una de las frases sugeridas.";
+            } else if (subPasoNivel3 === 3) {
+                instruccion = "¡Excelente! Ya sabes comentar en las publicaciones de tus amigos.";
+            }
         }
     } else if (nivelActual === "agregar-amigo") {
         const friendsView = $("#fbFriendsView");
         const estaEnAmigos = friendsView && friendsView.style.display !== "none";
 
-        if (subPasoNivel4 === 1) {
-            instruccion = estaEnAmigos
-                ? "Encuentra a Rosa Elena en 'Personas que quizás conozcas' y toca el botón azul 'Agregar a amigos'."
-                : "Toca el icono de 'Amigos' en la barra superior (el que tiene dos personas).";
-        } else if (subPasoNivel4 === 2) {
-            instruccion = "Encuentra a Rosa Elena en 'Personas que quizás conozcas' y toca el botón azul 'Agregar a amigos'.";
-        } else if (subPasoNivel4 === 3) {
-            instruccion = "¡Excelente! Has enviado tu solicitud de amistad.";
+        if (rondaNivel4 === 1) {
+            // Ronda 1: identificar pestaña → tocar Agregar en Rosa Elena → confirmación
+            if (subPasoNivel4 === 1) {
+                instruccion = estaEnAmigos
+                    ? "Encuentra a Rosa Elena en 'Personas que quizás conozcas' y toca el botón azul 'Agregar a amigos'."
+                    : "Toca el icono de 'Amigos' en la barra superior (el que tiene dos personas).";
+            } else if (subPasoNivel4 === 2) {
+                instruccion = "Encuentra a Rosa Elena en 'Personas que quizás conozcas' y toca el botón azul 'Agregar a amigos'.";
+            } else if (subPasoNivel4 === 3) {
+                instruccion = "¡Tu solicitud ya se envió!";
+            }
+        } else {
+            // Ronda 2: repaso ligero, ya en la pestaña de Amigos. Cualquiera de los dos
+            // perfiles restantes (Carlos Méndez o Beatriz Soto) es válido para avanzar.
+            if (subPasoNivel4 === 1) {
+                instruccion = "Toca el icono de 'Amigos' en la barra superior (el que tiene dos personas).";
+            } else if (subPasoNivel4 === 2) {
+                instruccion = "¡Practiquemos una vez más! Toca 'Agregar a amigos' en cualquiera de los perfiles sugeridos.";
+            } else if (subPasoNivel4 === 3) {
+                instruccion = "¡Excelente! Ya sabes agregar amigos en Facebook.";
+            }
         }
     } else if (nivelActual === "ver-reels") {
         const reelsView = $("#fbReelsView");
         const estaEnReels = reelsView && reelsView.style.display !== "none";
 
-        if (subPasoNivel5 === 1) {
+        if (subPasoNivel5 === 1 || !estaEnReels) {
             instruccion = "Toca el icono de Video en la barra superior para entrar a los Reels.";
         } else if (subPasoNivel5 === 2) {
-            instruccion = estaEnReels
-                ? "Toca la flecha de abajo para ver el siguiente Reel."
-                : "Toca el icono de Video en la barra superior para entrar a los Reels.";
+            if (rondaNivel5 === 1) {
+                instruccion = "Desliza el video hacia arriba para ver el siguiente Reel.";
+            } else if (rondaNivel5 === 2) {
+                instruccion = "¡Bien hecho! Ahora desliza hacia arriba una vez más para ver el siguiente Reel.";
+            } else {
+                instruccion = "¡Practiquemos algo nuevo! Ahora desliza hacia abajo para volver al Reel anterior.";
+            }
         } else if (subPasoNivel5 === 3) {
-            instruccion = "Ahora toca el corazon para dar Me gusta a este Reel.";
-        } else if (subPasoNivel5 === 4) {
-            instruccion = "¡Excelente! Has explorado los Reels de Facebook.";
+            if (rondaNivel5 === 1) {
+                instruccion = "¡Muy bien! Así se navega entre Reels.";
+            } else if (rondaNivel5 === 2) {
+                instruccion = "¡Perfecto! Ya dominas deslizar hacia arriba.";
+            } else {
+                instruccion = "¡Excelente! Ya sabes navegar por los Reels de Facebook.";
+            }
         }
     }
 
@@ -1360,11 +1492,21 @@ function actualizarGuiaVisualFacebook(idNivel) {
     } else if (idNivel === "comentar-publicacion") {
         const modal = $("#fbCommentsModal");
         const estaAbierto = modal && modal.classList.contains("activa");
+        const inputVal = $("#fbCommentInput") ? $("#fbCommentInput").value.trim() : "";
 
         if (!estaAbierto || subPasoNivel3 === 1) {
-            resaltarElemento("#fbFeed .fb-post[data-post-id='1'] .fb-open-comments");
+            // .fb-open-comments también la comparten el resumen de reacciones y el contador de
+            // comentarios (ambos abren el modal en uso libre); aquí se resalta solo el botón real.
+            resaltarElemento(`#fbFeed .fb-post[data-post-id='${postObjetivoNivel3}'] .fb-action-btn.fb-open-comments`);
+        } else if (rondaNivel3 === 1) {
+            if (subPasoNivel3 === 2) {
+                resaltarElemento("#fbCommentInput");
+            } else if (subPasoNivel3 === 3) {
+                resaltarElemento(inputVal.length > 0 ? "#fbCommentSend" : "#fbCommentInput");
+            } else if (subPasoNivel3 === 4) {
+                resaltarElemento("#fbCommentsList .fb-comment:last-child", { scroll: true });
+            }
         } else {
-            const inputVal = $("#fbCommentInput") ? $("#fbCommentInput").value.trim() : "";
             if (inputVal.length > 0) {
                 resaltarElemento("#fbCommentSend");
             } else {
@@ -1375,10 +1517,13 @@ function actualizarGuiaVisualFacebook(idNivel) {
         const friendsView = $("#fbFriendsView");
         const estaEnAmigos = friendsView && friendsView.style.display !== "none";
 
-        if (!estaEnAmigos || subPasoNivel4 === 1) {
+        if (!estaEnAmigos || (rondaNivel4 === 1 && subPasoNivel4 === 1)) {
             resaltarElemento(".fb-nav-tab[data-tab='amigos']");
-        } else {
+        } else if (rondaNivel4 === 1) {
             resaltarElemento("#fbAddFriendBtn-rosa");
+        } else if (subPasoNivel4 === 2) {
+            // Cualquiera de los dos perfiles restantes es válido: se resaltan ambos botones.
+            resaltarElemento(".fb-btn-add-friend[data-friend='carlos'], .fb-btn-add-friend[data-friend='beatriz']");
         }
     } else if (idNivel === "ver-reels") {
         const reelsView = $("#fbReelsView");
@@ -1386,11 +1531,12 @@ function actualizarGuiaVisualFacebook(idNivel) {
 
         if (subPasoNivel5 === 1 || !estaEnReels) {
             resaltarElemento(".fb-nav-tab[data-tab='video']");
-        } else if (subPasoNivel5 === 2) {
-            resaltarElemento("#fbReelNextBtn");
-        } else if (subPasoNivel5 === 3) {
-            resaltarElemento("#fbReelLikeBtn");
+        } else {
+            // Sin botón de respaldo: se resalta el video completo, la interacción es
+            // el gesto de deslizar (indicado además por el aviso #fbReelSwipeHint).
+            resaltarElemento("#fbReelPlayer");
         }
+        actualizarSwipeHintReel();
     } else {
         resaltarElemento("#fbFeed .fb-post:first-child");
     }
@@ -1449,30 +1595,46 @@ function inicializarListeners() {
         };
     });
 
-    // ---- Nivel 5: Reels ----
-    const reelNextBtn = $("#fbReelNextBtn");
-    if (reelNextBtn) {
-        reelNextBtn.onclick = () => {
-            if (reelActualIdx < REELS_DATA.length - 1) {
-                reelActualIdx++;
-                renderizarReel(reelActualIdx);
+    // ---- Nivel 5: Reels — navegación por gesto de deslizar (sin botón de respaldo) ----
+    const reelPlayer = $("#fbReelPlayer");
+    if (reelPlayer) {
+        const UMBRAL_SWIPE = 40; // px mínimos para considerar el gesto intencional
+        const dentroDeAccionesOInfo = (target) =>
+            target.closest(".fb-reel-actions") || target.closest(".fb-reel-info");
 
-                if (nivelActual === "ver-reels" && subPasoNivel5 === 2) {
-                    subPasoNivel5 = 3;
-                    actualizarBarraInstrucciones(true);
-                }
+        const manejarSwipeReel = (deltaY) => {
+            if (deltaY <= -UMBRAL_SWIPE) {
+                irReelSiguiente();
+            } else if (deltaY >= UMBRAL_SWIPE) {
+                irReelAnterior();
             }
         };
-    }
 
-    const reelPrevBtn = $("#fbReelPrevBtn");
-    if (reelPrevBtn) {
-        reelPrevBtn.onclick = () => {
-            if (reelActualIdx > 0) {
-                reelActualIdx--;
-                renderizarReel(reelActualIdx);
-            }
-        };
+        // Touch (móvil)
+        reelPlayer.addEventListener("touchstart", (e) => {
+            if (dentroDeAccionesOInfo(e.target)) { reelSwipeStartY = null; return; }
+            reelSwipeStartY = e.touches[0].clientY;
+        }, { passive: true });
+
+        reelPlayer.addEventListener("touchend", (e) => {
+            if (reelSwipeStartY === null) return;
+            manejarSwipeReel(e.changedTouches[0].clientY - reelSwipeStartY);
+            reelSwipeStartY = null;
+        }, { passive: true });
+
+        // Arrastre con mouse (equivalente de escritorio)
+        reelPlayer.addEventListener("mousedown", (e) => {
+            if (dentroDeAccionesOInfo(e.target)) return;
+            reelSwipeStartY = e.clientY;
+            reelArrastrandoMouse = true;
+        });
+
+        window.addEventListener("mouseup", (e) => {
+            if (!reelArrastrandoMouse || reelSwipeStartY === null) return;
+            reelArrastrandoMouse = false;
+            manejarSwipeReel(e.clientY - reelSwipeStartY);
+            reelSwipeStartY = null;
+        });
     }
 
     const reelLikeBtn = $("#fbReelLikeBtn");
@@ -1490,11 +1652,8 @@ function inicializarListeners() {
                 const current = REELS_DATA[reelActualIdx].likes;
                 likeCount.textContent = (current + 1).toLocaleString("es-MX");
             }
-
-            if (nivelActual === "ver-reels" && subPasoNivel5 === 3) {
-                subPasoNivel5 = 4;
-                completarNivelActual("¡Excelente! Entraste a Reels, navegaste entre videos y diste Me gusta. ¡Ya sabes usar los Reels de Facebook!");
-            }
+            // "Me gusta" queda funcional en pantalla pero no forma parte de la
+            // secuencia guiada del Nivel 5 (ese aprendizaje ya se cubrió en el Nivel 2).
         };
     }
 
@@ -1609,6 +1768,9 @@ function inicializarListeners() {
             const inputComentario = $("#fbCommentInput");
             if (inputComentario) {
                 inputComentario.value = texto;
+                if (nivelActual === "comentar-publicacion" && rondaNivel3 === 1 && subPasoNivel3 === 2) {
+                    subPasoNivel3 = 3;
+                }
                 if (nivelActual === "comentar-publicacion") {
                     actualizarBarraInstrucciones(true);
                 } else {
@@ -1645,7 +1807,16 @@ function inicializarListeners() {
     }
     const inputComentario = $("#fbCommentInput");
     if (inputComentario) {
+        inputComentario.onfocus = () => {
+            if (nivelActual === "comentar-publicacion" && rondaNivel3 === 1 && subPasoNivel3 === 2) {
+                subPasoNivel3 = 3;
+                actualizarBarraInstrucciones(true);
+            }
+        };
         inputComentario.oninput = () => {
+            if (nivelActual === "comentar-publicacion" && rondaNivel3 === 1 && subPasoNivel3 === 2) {
+                subPasoNivel3 = 3;
+            }
             if (nivelActual === "comentar-publicacion") {
                 actualizarBarraInstrucciones(false);
             } else {
@@ -1789,9 +1960,24 @@ function enviarComentario() {
     input.value = "";
     renderizarPublicaciones();
 
-    if (nivelActual === "comentar-publicacion") {
-        subPasoNivel3 = 3;
-        completarNivelActual("¡Excelente! Has publicado tu comentario exitosamente.");
+    if (nivelActual === "comentar-publicacion" && activeCommentsPostId === postObjetivoNivel3) {
+        if (rondaNivel3 === 1 && subPasoNivel3 === 3) {
+            subPasoNivel3 = 4;
+            actualizarBarraInstrucciones(true);
+
+            setTimeout(() => {
+                const sim = $("#pantallaFacebookSimulador");
+                const enPantalla = sim && sim.classList.contains("activa");
+                if (!enPantalla || nivelActual !== "comentar-publicacion" || subPasoNivel3 !== 4) return;
+
+                rondaNivel3 = 2;
+                postObjetivoNivel3 = 4;
+                cerrarComentarios();
+            }, 2600);
+        } else if (rondaNivel3 === 2 && subPasoNivel3 === 2) {
+            subPasoNivel3 = 3;
+            completarNivelActual("¡Excelente! Ya sabes comentar en las publicaciones de tus amigos.");
+        }
     }
 }
 
@@ -1807,10 +1993,16 @@ export function iniciarSimulador(idNivel) {
     postObjetivoNivel2 = 1;
     ultimaReaccionElegidaNivel2 = "👍";
     subPasoNivel3 = 1;
+    rondaNivel3 = 1;
+    postObjetivoNivel3 = 1;
     subPasoNivel4 = 1;
+    rondaNivel4 = 1;
     subPasoNivel5 = 1;
+    rondaNivel5 = 1;
     reelActualIdx = 0;
     reelLikeYaDado = false;
+    reelSwipeStartY = null;
+    reelArrastrandoMouse = false;
     activeCommentsPostId = 1;
     ultimaInstruccionHablada = "";
     reaccionesEstado = {};
