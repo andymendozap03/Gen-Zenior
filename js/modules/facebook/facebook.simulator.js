@@ -11,6 +11,9 @@ let rondaNivel1 = 1; // 1 = primera publicación (con foto y etiqueta), 2 = repa
 let fotoSeleccionadaNivel1 = null;
 let etiquetaSeleccionadaNivel1 = null;
 let subPasoNivel2 = 1;
+let rondaNivel2 = 1; // 1 = primera publicación (María), 2 = repaso en otra publicación (Recetas)
+let postObjetivoNivel2 = 1; // id del post donde se guía la reacción (1 en ronda 1, 3 en ronda 2)
+let ultimaReaccionElegidaNivel2 = "👍";
 let subPasoNivel3 = 1;
 let subPasoNivel4 = 1;
 let subPasoNivel5 = 1;
@@ -426,7 +429,7 @@ function asegurarTemplateHTML() {
                         <img src="./assets/img/facebook/user_profile.png" alt="Tú" class="fb-avatar-img fb-create-avatar-img">
                     </div>
                     <div class="fb-create-user-details">
-                        <span class="fb-create-username">Génesis Gutiérrez</span>
+                        <span class="fb-create-username">Ramona Pico</span>
                         <div class="fb-create-audience-tag">
                             <span>🌐 Público</span>
                         </div>
@@ -434,7 +437,7 @@ function asegurarTemplateHTML() {
                 </div>
 
                 <div class="fb-create-input-area">
-                    <textarea id="fbCreatePostTextarea" class="fb-create-textarea" placeholder="¿Qué estás pensando, Génesis?" rows="4"></textarea>
+                    <textarea id="fbCreatePostTextarea" class="fb-create-textarea" placeholder="¿Qué estás pensando, Ramona?" rows="4"></textarea>
                 </div>
 
                 <!-- Frases sugeridas para accesibilidad -->
@@ -452,39 +455,41 @@ function asegurarTemplateHTML() {
                     <div class="fb-create-addons-icons">
                         <button type="button" id="fbAddonFotoBtn" class="fb-addon-icon-btn" aria-label="Foto/video">
                             <svg viewBox="0 0 24 24" style="fill:#45bd62;"><circle cx="12" cy="12" r="3.2"/><path d="M9 2L7.17 4H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2h-3.17L15 2H9zm3 15c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5z"/></svg>
-                            <div id="fbPhotoPickerPopup" class="fb-photo-picker-popup">
-                                <div class="fb-photo-picker-option" data-photo="mascota">
-                                    <img src="./assets/img/facebook/mascota.png" alt="Foto de mascota">
-                                    <span>Mascota</span>
-                                </div>
-                                <div class="fb-photo-picker-option" data-photo="vacaciones">
-                                    <img src="./assets/img/facebook/vacaciones.png" alt="Foto de vacaciones">
-                                    <span>Vacaciones</span>
-                                </div>
-                            </div>
                         </button>
                         <button type="button" id="fbAddonTagBtn" class="fb-addon-icon-btn" aria-label="Etiquetar personas">
                             <svg viewBox="0 0 24 24" style="fill:#1877f2;"><path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/></svg>
-                            <div id="fbTagPickerPopup" class="fb-tag-picker-popup">
-                                <div class="fb-tag-option" data-nombre="María Fernanda López" data-iniciales="ML" data-color="#e91e8c">
-                                    <span class="fb-tag-option-avatar" style="background:#e91e8c;">ML</span>
-                                    <span>María Fernanda López</span>
-                                </div>
-                                <div class="fb-tag-option" data-nombre="Carmen Ruiz" data-iniciales="CR" data-color="#9c27b0">
-                                    <span class="fb-tag-option-avatar" style="background:#9c27b0;">CR</span>
-                                    <span>Carmen Ruiz</span>
-                                </div>
-                                <div class="fb-tag-option" data-nombre="Rosa Elena Morales" data-iniciales="RM" data-color="#2196f3">
-                                    <span class="fb-tag-option-avatar" style="background:#2196f3;">RM</span>
-                                    <span>Rosa Elena Morales</span>
-                                </div>
-                            </div>
                         </button>
                         <button type="button" class="fb-addon-icon-btn" aria-label="Sentimiento/actividad">
                             <svg viewBox="0 0 24 24" style="fill:#f7b928;"><circle cx="12" cy="12" r="10"/><path d="M12 16c2.2 0 4-1.8 4-4H8c0 2.2 1.8 4 4 4zm-3-6c.6 0 1-.4 1-1s-.4-1-1-1-1 .4-1 1 .4 1 1 1zm6 0c.6 0 1-.4 1-1s-.4-1-1-1-1 .4-1 1 .4 1 1 1z"/></svg>
                         </button>
                     </div>
                     <div id="fbCreateAttachments" class="fb-create-attachments"></div>
+                </div>
+
+                <!-- Popups de selección de foto y etiqueta (se reubican en document.body para no quedar recortados por el overflow:hidden del modal) -->
+                <div id="fbPhotoPickerPopup" class="fb-photo-picker-popup">
+                    <div class="fb-photo-picker-option" data-photo="mascota">
+                        <img src="./assets/img/facebook/mascota.png" alt="Foto de mascota">
+                        <span>Mascota</span>
+                    </div>
+                    <div class="fb-photo-picker-option" data-photo="vacaciones">
+                        <img src="./assets/img/facebook/vacaciones.png" alt="Foto de vacaciones">
+                        <span>Vacaciones</span>
+                    </div>
+                </div>
+                <div id="fbTagPickerPopup" class="fb-tag-picker-popup">
+                    <div class="fb-tag-option" data-nombre="María Fernanda López" data-iniciales="ML" data-color="#e91e8c">
+                        <span class="fb-tag-option-avatar" style="background:#e91e8c;">ML</span>
+                        <span>María Fernanda López</span>
+                    </div>
+                    <div class="fb-tag-option" data-nombre="Carmen Ruiz" data-iniciales="CR" data-color="#9c27b0">
+                        <span class="fb-tag-option-avatar" style="background:#9c27b0;">CR</span>
+                        <span>Carmen Ruiz</span>
+                    </div>
+                    <div class="fb-tag-option" data-nombre="Rosa Elena Morales" data-iniciales="RM" data-color="#2196f3">
+                        <span class="fb-tag-option-avatar" style="background:#2196f3;">RM</span>
+                        <span>Rosa Elena Morales</span>
+                    </div>
                 </div>
 
                 <button id="fbCreatePostSubmitBtn" class="fb-create-submit-btn" disabled>Publicar</button>
@@ -541,6 +546,50 @@ function asegurarTemplateHTML() {
             </div>
         </div>
     `;
+
+    // Los popups de foto y etiqueta se reubican en document.body (position:fixed calculado por JS)
+    // para que nunca queden recortados por el overflow:hidden del modal de crear publicación.
+    const fotoPopupEl = $("#fbPhotoPickerPopup");
+    if (fotoPopupEl) document.body.appendChild(fotoPopupEl);
+    const tagPopupEl = $("#fbTagPickerPopup");
+    if (tagPopupEl) document.body.appendChild(tagPopupEl);
+}
+
+// ---------- POSICIONAMIENTO DE POPUPS FLOTANTES (evita recortes por overflow:hidden) ----------
+function posicionarPopupCerca(popupEl, anchorEl) {
+    if (!popupEl || !anchorEl) return;
+
+    const margen = 10;
+    const rectAnchor = anchorEl.getBoundingClientRect();
+    const rectPopup = popupEl.getBoundingClientRect();
+
+    // Los íconos de Foto/Etiqueta están justo encima del botón "Publicar", con muy poco
+    // espacio libre debajo. Por eso se prefiere abrir el popup HACIA ARRIBA del ícono
+    // (así nunca tapa el botón "Publicar"); solo si no cabe arriba, se abre hacia abajo.
+    const espacioArriba = rectAnchor.top - margen;
+    const espacioAbajo = window.innerHeight - rectAnchor.bottom - margen;
+    let top;
+
+    if (rectPopup.height <= espacioArriba || espacioArriba >= espacioAbajo) {
+        top = rectAnchor.top - rectPopup.height - margen;
+    } else {
+        top = rectAnchor.bottom + margen;
+    }
+
+    // Asegurar que quede siempre dentro del viewport vertical
+    if (top < margen) top = margen;
+    if (top + rectPopup.height > window.innerHeight - margen) {
+        top = Math.max(margen, window.innerHeight - rectPopup.height - margen);
+    }
+
+    let left = rectAnchor.right - rectPopup.width;
+    if (left < margen) left = margen;
+    if (left + rectPopup.width > window.innerWidth - margen) {
+        left = window.innerWidth - rectPopup.width - margen;
+    }
+
+    popupEl.style.top = `${top}px`;
+    popupEl.style.left = `${left}px`;
 }
 
 // ---------- RENDERIZAR PUBLICACIONES ----------
@@ -558,7 +607,7 @@ function renderizarPublicaciones() {
         postEl.className = "fb-post";
         postEl.dataset.postId = post.id;
 
-        const holdHintHtml = (nivelActual === "reaccionar-foto" && subPasoNivel2 === 1 && post.id === 1)
+        const holdHintHtml = (nivelActual === "reaccionar-foto" && subPasoNivel2 === 1 && post.id === postObjetivoNivel2)
             ? `<span class="fb-hold-hint">👆 Deja presionado</span>`
             : "";
 
@@ -698,9 +747,9 @@ function manejarLike(postId) {
     const post = POSTS_DATA.find(p => p.id === postId);
     if (!post) return;
 
-    if (nivelActual === "reaccionar-foto" && postId === 1 && subPasoNivel2 === 1) {
+    if (nivelActual === "reaccionar-foto" && postId === postObjetivoNivel2 && subPasoNivel2 === 1) {
         // Fallback amigable: si el usuario da un toque simple en vez de dejar presionado
-        mostrarReacciones(1);
+        mostrarReacciones(postObjetivoNivel2);
         const msg = "¡Muy bien! Para elegir más reacciones, deja presionado el botón. Ahora toca una de las emociones, como 'Me encanta' ❤️.";
         const textEl = $("#fbInstructionsText");
         if (textEl) textEl.textContent = msg;
@@ -725,7 +774,7 @@ function mostrarReacciones(postId) {
         popup.classList.add("visible");
         reactionPopupOpen = postId;
 
-        if (nivelActual === "reaccionar-foto" && postId === 1) {
+        if (nivelActual === "reaccionar-foto" && postId === postObjetivoNivel2 && subPasoNivel2 === 1) {
             subPasoNivel2 = 2;
             actualizarBarraInstrucciones(true);
         }
@@ -747,9 +796,26 @@ function aplicarReaccion(emoji, postId) {
     cerrarTodosPopups();
     renderizarPublicaciones();
 
-    if (nivelActual === "reaccionar-foto" && (postId === 1 || subPasoNivel2 >= 1)) {
+    if (nivelActual === "reaccionar-foto" && postId === postObjetivoNivel2 && subPasoNivel2 === 2) {
         subPasoNivel2 = 3;
-        completarNivelActual("¡Excelente! Aprendiste a expresar tus emociones reaccionando a las fotos de tus amigos.");
+        ultimaReaccionElegidaNivel2 = emoji;
+        actualizarBarraInstrucciones(true);
+
+        setTimeout(() => {
+            const sim = $("#pantallaFacebookSimulador");
+            const enPantalla = sim && sim.classList.contains("activa");
+            if (!enPantalla || nivelActual !== "reaccionar-foto" || subPasoNivel2 !== 3) return;
+
+            if (rondaNivel2 === 1) {
+                rondaNivel2 = 2;
+                postObjetivoNivel2 = 3;
+                subPasoNivel2 = 1;
+                renderizarPublicaciones();
+                actualizarBarraInstrucciones(true);
+            } else {
+                completarNivelActual("¡Excelente! Aprendiste a expresar tus emociones reaccionando a las fotos de tus amigos.");
+            }
+        }, 2600);
     }
 }
 
@@ -835,7 +901,12 @@ function abrirSelectorFoto() {
     const tagPopup = $("#fbTagPickerPopup");
     if (tagPopup) tagPopup.classList.remove("visible");
     const popup = $("#fbPhotoPickerPopup");
-    if (popup) popup.classList.toggle("visible");
+    const btn = $("#fbAddonFotoBtn");
+    if (popup) {
+        const seVaAMostrar = !popup.classList.contains("visible");
+        popup.classList.toggle("visible");
+        if (seVaAMostrar) posicionarPopupCerca(popup, btn);
+    }
 
     if (nivelActual === "realizar-publicacion" && rondaNivel1 === 1 && subPasoNivel1 === 3) {
         subPasoNivel1 = 4;
@@ -864,7 +935,12 @@ function abrirSelectorEtiqueta() {
     const fotoPopup = $("#fbPhotoPickerPopup");
     if (fotoPopup) fotoPopup.classList.remove("visible");
     const popup = $("#fbTagPickerPopup");
-    if (popup) popup.classList.toggle("visible");
+    const btn = $("#fbAddonTagBtn");
+    if (popup) {
+        const seVaAMostrar = !popup.classList.contains("visible");
+        popup.classList.toggle("visible");
+        if (seVaAMostrar) posicionarPopupCerca(popup, btn);
+    }
 
     if (nivelActual === "realizar-publicacion" && rondaNivel1 === 1 && subPasoNivel1 === 5) {
         subPasoNivel1 = 6;
@@ -894,8 +970,8 @@ function publicarNuevoPost() {
 
     const nuevoPost = {
         id: Date.now(),
-        autor: "Génesis Gutiérrez",
-        iniciales: "GG",
+        autor: "Ramona Pico",
+        iniciales: "RP",
         avatar: "./assets/img/facebook/user_profile.png",
         color: "#1877f2",
         tiempo: "Hace un momento",
@@ -1169,12 +1245,19 @@ function actualizarBarraInstrucciones(autoSpeak = true) {
             }
         }
     } else if (nivelActual === "reaccionar-foto") {
+        const postObjetivo = POSTS_DATA.find(p => p.id === postObjetivoNivel2);
+        const autorObjetivo = postObjetivo ? postObjetivo.autor : "esa publicación";
+
         if (subPasoNivel2 === 1) {
-            instruccion = "En la publicación de María, mantén presionado el botón 'Me gusta' para ver todas las reacciones.";
+            instruccion = rondaNivel2 === 1
+                ? `En la publicación de ${autorObjetivo}, mantén presionado el botón 'Me gusta' para ver todas las reacciones.`
+                : `¡Practiquemos una vez más! En la publicación de ${autorObjetivo}, mantén presionado el botón 'Me gusta'.`;
         } else if (subPasoNivel2 === 2) {
             instruccion = "Ahora toca la reacción que prefieras, como 'Me encanta' ❤️ o 'Me gusta' 👍.";
         } else if (subPasoNivel2 === 3) {
-            instruccion = "¡Excelente! Has reaccionado a la publicación.";
+            instruccion = rondaNivel2 === 1
+                ? `¡Reaccionaste con ${ultimaReaccionElegidaNivel2}! Mira cómo se refleja en la publicación.`
+                : `¡Reaccionaste con ${ultimaReaccionElegidaNivel2}! Ya sabes reaccionar a las publicaciones de tus amigos.`;
         }
     } else if (nivelActual === "comentar-publicacion") {
         const modal = $("#fbCommentsModal");
@@ -1268,9 +1351,11 @@ function actualizarGuiaVisualFacebook(idNivel) {
         }
     } else if (idNivel === "reaccionar-foto") {
         if (subPasoNivel2 === 1) {
-            resaltarElemento("#fbFeed .fb-post[data-post-id='1'] .fb-like-btn");
+            resaltarElemento(`#fbFeed .fb-post[data-post-id='${postObjetivoNivel2}'] .fb-like-btn`);
         } else if (subPasoNivel2 === 2) {
-            resaltarElemento("#fbReactions-1");
+            resaltarElemento(`#fbReactions-${postObjetivoNivel2}`);
+        } else if (subPasoNivel2 === 3) {
+            resaltarElemento(`#fbFeed .fb-post[data-post-id='${postObjetivoNivel2}'] .fb-post-reactions-summary`, { scroll: true });
         }
     } else if (idNivel === "comentar-publicacion") {
         const modal = $("#fbCommentsModal");
@@ -1454,6 +1539,18 @@ function inicializarListeners() {
             e.stopPropagation();
             seleccionarEtiqueta(opt.dataset.nombre, opt.dataset.iniciales, opt.dataset.color);
         };
+    });
+
+    // Reposicionar los popups flotantes si cambia el tamaño de la ventana mientras están abiertos
+    window.addEventListener("resize", () => {
+        const fotoPopup = $("#fbPhotoPickerPopup");
+        if (fotoPopup && fotoPopup.classList.contains("visible")) {
+            posicionarPopupCerca(fotoPopup, $("#fbAddonFotoBtn"));
+        }
+        const tagPopup = $("#fbTagPickerPopup");
+        if (tagPopup && tagPopup.classList.contains("visible")) {
+            posicionarPopupCerca(tagPopup, $("#fbAddonTagBtn"));
+        }
     });
 
     // Campo textarea de publicación
@@ -1654,8 +1751,8 @@ function enviarComentario() {
     if (post) {
         if (!post.comentariosData) post.comentariosData = [];
         post.comentariosData.push({
-            autor: "Génesis Gutiérrez",
-            iniciales: "GG",
+            autor: "Ramona Pico",
+            iniciales: "RP",
             avatar: "./assets/img/facebook/user_profile.png",
             color: "#1877f2",
             texto: texto,
@@ -1671,11 +1768,11 @@ function enviarComentario() {
         el.className = "fb-comment";
         el.innerHTML = `
             <div class="fb-comment-avatar" style="background:#1877f2;">
-                <img src="./assets/img/facebook/user_profile.png" alt="Tú" class="fb-avatar-img" onerror="this.style.display='none'; this.parentElement.innerText='GG'">
+                <img src="./assets/img/facebook/user_profile.png" alt="Tú" class="fb-avatar-img" onerror="this.style.display='none'; this.parentElement.innerText='RP'">
             </div>
             <div class="fb-comment-right">
                 <div class="fb-comment-bubble">
-                    <div class="fb-comment-author">Génesis Gutiérrez</div>
+                    <div class="fb-comment-author">Ramona Pico</div>
                     <div class="fb-comment-text">${texto}</div>
                 </div>
                 <div class="fb-comment-footer">
@@ -1706,6 +1803,9 @@ export function iniciarSimulador(idNivel) {
     fotoSeleccionadaNivel1 = null;
     etiquetaSeleccionadaNivel1 = null;
     subPasoNivel2 = 1;
+    rondaNivel2 = 1;
+    postObjetivoNivel2 = 1;
+    ultimaReaccionElegidaNivel2 = "👍";
     subPasoNivel3 = 1;
     subPasoNivel4 = 1;
     subPasoNivel5 = 1;
