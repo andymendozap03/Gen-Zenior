@@ -9,29 +9,19 @@ let nivelActual = null;
 let chatSeleccionado = null;
 let listaChatsData = [];
 let callTimerInterval = null;
+let videoCallTimerInterval = null;
 
-// Lógica de sub-pasos para el Nivel 1 (Enviar mensaje)
-// 1: Escribir primer mensaje a Juan (Nieto)
-// 2: Esperar respuesta de Juan (Typing...)
-// 3: Responder a Juan
-// 4: Regresar a la lista de chats
-// 4.5: Esperando en la lista de chats
-// 5: Recibir mensaje de Familia Mendoza, abrir chat
-// 6: Responder en el grupo de Familia Mendoza
+// Lógica de sub-pasos para los niveles de WhatsApp
 let subPasoNivel1 = 1;
-
-// Lógica de sub-pasos para el Nivel 2 (Grabar audio)
-// 1: Presionar micrófono para grabar y enviar audio
-// 3: Tocar el botón de reproducción (Play) en la nota de voz enviada para escucharla
-// 4: Esperar a que Juan escuche y responda con otro audio (Typing...)
-// 5: Tocar el botón de reproducción (Play) en la nota de voz recibida de Juan para escucharla
-// 6: Grabar un segundo audio respondiendo a Juan si vas a ir a visitarlo
-// 7: Regresar a la lista de chats presionando la flecha arriba a la izquierda
-// 7.5: Esperando en la lista de chats
-// 8: Tocar el chat del Dr. Martínez para abrir el nuevo audio del doctor
-// 9: Tocar reproducir en el audio recibido del doctor
-// 10: Grabar una nota de voz de respuesta confirmando la cita al doctor
 let subPasoNivel2 = 1;
+let subPasoNivel3 = 1; // 1: entrar chat o llamar, 2: conectando, 3: silenciado por error, 4: desmuteado (habla contacto), 5: colgar
+let subPasoNivel4 = 1; // 1: entrar chat o videollamar, 2: conectando, 3: videollamada activa con PiP, 4: colgar
+let subPasoNivel5 = 1; // 1: entrar chat o adjuntar, 2: galería abierta, 3: preview de foto, 4: enviada
+
+let isMicMutedInCall = true;
+let isVideoCameraOn = true;
+let isVideoMicMuted = false;
+let fotoSeleccionadaParaPreview = null;
 
 let ultimaInstruccionHablada = "";
 
@@ -133,8 +123,20 @@ function obtenerChatsDefecto(nivel) {
         ];
     }
 
-    if (nivel === "llamada-grupal") {
+    if (nivel === "videollamada" || nivel === "llamada-grupal") {
         return [
+            {
+                id: "juan-nieto",
+                nombre: "Juan (Nieto)",
+                avatarClass: "ws-avatar-color-4",
+                iniciales: "JN",
+                preview: "¡Hola abuelo! ¿Hacemos una videollamada para vernos?",
+                hora: "10:15",
+                unreadCount: 0,
+                mensajes: [
+                    { sender: "recibida", text: "¡Hola abuelo! ¿Hacemos una videollamada para vernos?", time: "10:15" }
+                ]
+            },
             {
                 id: "familia-mendoza",
                 nombre: "Familia Mendoza",
@@ -157,11 +159,11 @@ function obtenerChatsDefecto(nivel) {
                 nombre: "Juan (Nieto)",
                 avatarClass: "ws-avatar-color-4",
                 iniciales: "JN",
-                preview: "¡Hola abuelo! ¿Qué tal te fue hoy en tu paseo?",
-                hora: "Ayer",
+                preview: "Abuelo, ¿tienes la foto del viaje a Mitad del Mundo?",
+                hora: "11:20",
                 unreadCount: 0,
                 mensajes: [
-                    { sender: "recibida", text: "¡Hola abuelo! ¿Qué tal te fue hoy en tu paseo?", time: "Ayer" }
+                    { sender: "recibida", text: "Abuelo, ¿tienes la foto del viaje a Mitad del Mundo?", time: "11:20" }
                 ]
             }
         ];
@@ -507,35 +509,305 @@ function asegurarTemplateHTML() {
                 </footer>
             </div>
 
+            <!-- Aviso flotante acción bloqueada -->
+            <div id="wsToastBlocked" class="ws-toast-blocked"></div>
+
             <!-- Modales -->
+            <!-- 1. Modal de llamada de voz realista estilo WhatsApp -->
             <div id="wsModalLlamada" class="ws-modal-llamada">
-                <div class="ws-call-container">
-                    <div id="wsCallAvatar" class="ws-avatar ws-call-avatar"></div>
-                    <h2 id="wsCallName" class="ws-call-name"></h2>
-                    <p id="wsCallStatus" class="ws-call-status">Llamando...</p>
-                    <div class="ws-call-actions-container">
-                        <button id="wsCallBtnColgar" class="ws-call-btn-colgar" aria-label="Colgar llamada">
+                <header class="ws-call-header">
+                    <button id="wsCallBtnMinimizar" class="ws-call-header-btn" aria-label="Minimizar llamada">
+                        <svg viewBox="0 0 24 24" style="width: 22px; height: 22px; fill: white;"><path d="M5 16h3v3h2v-5H5v2zm3-8H5v2h5V5H8v3zm6 11h2v-3h3v-2h-5v5zm2-14v3h3v2h-5V5h2z"/></svg>
+                    </button>
+                    <div class="ws-call-header-info">
+                        <h2 id="wsCallName" class="ws-call-name">Juan (Nieto)</h2>
+                        <p id="wsCallStatus" class="ws-call-status">Llamando...</p>
+                    </div>
+                    <button class="ws-call-header-btn" aria-label="Añadir participante">
+                        <svg viewBox="0 0 24 24" style="width: 22px; height: 22px; fill: white;"><path d="M15 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm-9-2V7H4v3H1v2h3v3h2v-3h3v-2H6zm9 4c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/></svg>
+                    </button>
+                </header>
+
+                <div class="ws-call-center-body">
+                    <div class="ws-call-avatar-wrapper">
+                        <div id="wsCallAvatarLetter" class="ws-avatar ws-call-avatar ws-avatar-color-4 ws-call-avatar-letter">JN</div>
+                    </div>
+                </div>
+
+                <div class="ws-call-bottom-card">
+                    <div class="ws-call-controls-grid">
+                        <div class="ws-call-control-item">
+                            <button class="ws-call-ctrl-btn" aria-label="Altavoz">
+                                <svg viewBox="0 0 24 24" style="width: 24px; height: 24px; fill: white;"><path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02zM14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77s-2.99-7.86-7-8.77z"/></svg>
+                            </button>
+                            <span class="ws-call-ctrl-label">Altavoz</span>
+                        </div>
+                        <div class="ws-call-control-item">
+                            <button class="ws-call-ctrl-btn" aria-label="Video">
+                                <svg viewBox="0 0 24 24" style="width: 24px; height: 24px; fill: white;"><path d="M17 10.5V7c0-.55-.45-1-1-1H4c-.55 0-1 .45-1 1v10c0 .55.45 1 1 1h12c.55 0 1-.45 1-1v-3.5l4 4v-11l-4 4z"/></svg>
+                            </button>
+                            <span class="ws-call-ctrl-label">Video</span>
+                        </div>
+                        <div class="ws-call-control-item">
+                            <button id="wsCallBtnMute" class="ws-call-ctrl-btn" aria-label="Silenciar">
+                                <svg id="wsCallMicMutedIcon" viewBox="0 0 24 24" style="width: 24px; height: 24px; fill: white; display: none;"><path d="M19 11h-1.7c0 .74-.16 1.43-.43 2.05l1.23 1.23c.56-.98.9-2.09.9-3.28zm-4.02.17c0-.06.02-.11.02-.17V5c0-1.66-1.34-3-3-3S9 3.34 9 5v.18l5.98 5.99zM4.27 3L3 4.27l6.01 6.01V11c0 1.66 1.33 3 2.99 3 .22 0 .44-.03.65-.08l4.07 4.07c-1.38.72-2.96 1.13-4.72 1.13-4.42 0-8-3.58-8-8H2c0 5.18 3.95 9.45 9 9.93V23h2v-2.07c1.78-.17 3.42-.82 4.84-1.78l2.89 2.89L22 20.73 4.27 3z"/></svg>
+                                <svg id="wsCallMicUnmutedIcon" viewBox="0 0 24 24" style="width: 24px; height: 24px; fill: white;"><path d="M12 14c1.66 0 3-1.34 3-3V5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3zm5.3-3c0 3-2.54 5.1-5.3 5.1S6.7 14 6.7 11H5c0 3.41 2.72 6.23 6 6.72V21h2v-3.28c3.28-.48 6-3.3 6-6.72h-1.7z"/></svg>
+                            </button>
+                            <span id="wsCallMuteLabel" class="ws-call-ctrl-label">Silenciar</span>
+                        </div>
+                        <div class="ws-call-control-item">
+                            <button class="ws-call-ctrl-btn" aria-label="Más opciones">
+                                <svg viewBox="0 0 24 24" style="width: 24px; height: 24px; fill: white;"><path d="M6 10c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2zm12 0c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2zm-6 0c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2z"/></svg>
+                            </button>
+                            <span class="ws-call-ctrl-label">Más</span>
+                        </div>
+                        <div class="ws-call-control-item">
+                            <button class="ws-call-ctrl-btn" aria-label="Compartir">
+                                <svg viewBox="0 0 24 24" style="width: 24px; height: 24px; fill: white;"><path d="M18 16.08c-.76 0-1.44.3-1.96.77L8.91 12.7c.05-.23.09-.46.09-.7s-.04-.47-.09-.7l7.05-4.11c.54.5 1.25.81 2.04.81 1.66 0 3-1.34 3-3s-1.34-3-3-3-3 1.34-3 3c0 .24.04.47.09.7L8.04 9.81C7.5 9.31 6.79 9 6 9c-1.66 0-3 1.34-3 3s1.34 3 3 3c.79 0 1.5-.31 2.04-.81l7.12 4.16c-.05.21-.08.43-.08.65 0 1.61 1.31 2.92 2.92 2.92 1.61 0 2.92-1.31 2.92-2.92s-1.31-2.92-2.92-2.92z"/></svg>
+                            </button>
+                            <span class="ws-call-ctrl-label">Compartir</span>
+                        </div>
+                        <div class="ws-call-control-item">
+                            <button id="wsCallBtnColgar" class="ws-call-ctrl-btn end-call" aria-label="Finalizar llamada">
+                                <svg viewBox="0 0 24 24" style="width: 26px; height: 26px; fill: white; transform: rotate(135deg);"><path d="M20.01 15.38c-1.23 0-2.42-.2-3.53-.56a.977.977 0 0 0-1.01.24l-2.2 2.2a15.045 15.045 0 0 1-6.59-6.59l2.2-2.21a.96.96 0 0 0 .25-1A11.36 11.36 0 0 1 8.5 4c0-.55-.45-1-1-1H4c-.55 0-1 .45-1 1 0 9.39 7.61 17 17 17 .55 0 1-.45 1-1v-3.62c0-.55-.45-1-1-1z"/></svg>
+                            </button>
+                            <span class="ws-call-ctrl-label">Finalizar</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Modal de Llamada Entrante Realista -->
+            <div id="wsModalLlamadaEntrante" class="ws-modal-llamada-entrante">
+                <header class="ws-incoming-header">
+                    <span class="ws-incoming-app-label">
+                        <svg viewBox="0 0 24 24" style="width: 18px; height: 18px; fill: #25D366; vertical-align: middle; margin-right: 6px;"><path d="M12.04 2c-5.46 0-9.91 4.45-9.91 9.91 0 1.75.46 3.45 1.32 4.95L2.05 22l5.25-1.38c1.45.79 3.08 1.21 4.74 1.21 5.46 0 9.91-4.45 9.91-9.91 0-2.65-1.03-5.14-2.9-7.01A9.816 9.816 0 0 0 12.04 2z"/></svg>
+                        WhatsApp audio
+                    </span>
+                </header>
+                <div class="ws-incoming-body">
+                    <div id="wsIncomingAvatarLetter" class="ws-avatar ws-incoming-avatar ws-avatar-color-4">JN</div>
+                    <h2 id="wsIncomingName" class="ws-incoming-name">Juan (Nieto)</h2>
+                    <p class="ws-incoming-type">Llamada entrante...</p>
+                </div>
+                <div class="ws-incoming-actions">
+                    <button id="wsIncomingBtnRechazar" class="ws-incoming-btn reject" aria-label="Rechazar">
+                        <div class="ws-incoming-btn-icon-wrapper">
                             <svg viewBox="0 0 24 24" style="width: 28px; height: 28px; fill: white; transform: rotate(135deg);"><path d="M20.01 15.38c-1.23 0-2.42-.2-3.53-.56a.977.977 0 0 0-1.01.24l-2.2 2.2a15.045 15.045 0 0 1-6.59-6.59l2.2-2.21a.96.96 0 0 0 .25-1A11.36 11.36 0 0 1 8.5 4c0-.55-.45-1-1-1H4c-.55 0-1 .45-1 1 0 9.39 7.61 17 17 17 .55 0 1-.45 1-1v-3.62c0-.55-.45-1-1-1z"/></svg>
+                        </div>
+                        <span>Rechazar</span>
+                    </button>
+                    <button id="wsIncomingBtnContestar" class="ws-incoming-btn accept" aria-label="Contestar">
+                        <div class="ws-incoming-btn-icon-wrapper">
+                            <svg viewBox="0 0 24 24" style="width: 28px; height: 28px; fill: white;"><path d="M20.01 15.38c-1.23 0-2.42-.2-3.53-.56a.977.977 0 0 0-1.01.24l-2.2 2.2a15.045 15.045 0 0 1-6.59-6.59l2.2-2.21a.96.96 0 0 0 .25-1A11.36 11.36 0 0 1 8.5 4c0-.55-.45-1-1-1H4c-.55 0-1 .45-1 1 0 9.39 7.61 17 17 17 .55 0 1-.45 1-1v-3.62c0-.55-.45-1-1-1z"/></svg>
+                        </div>
+                        <span>Contestar</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- 2. Modal de videollamada realista estilo WhatsApp -->
+            <div id="wsModalVideoLlamada" class="ws-modal-videollamada">
+                <div class="ws-videocall-remote-bg"></div>
+                <div class="ws-videocall-overlay-gradient"></div>
+                <div class="ws-videocall-content">
+                    <header class="ws-call-header">
+                        <button id="wsVideoCallBtnMinimizar" class="ws-call-header-btn" aria-label="Minimizar">
+                            <svg viewBox="0 0 24 24" style="width: 22px; height: 22px; fill: white;"><path d="M5 16h3v3h2v-5H5v2zm3-8H5v2h5V5H8v3zm6 11h2v-3h3v-2h-5v5zm2-14v3h3v2h-5V5h2z"/></svg>
+                        </button>
+                        <div class="ws-call-header-info">
+                            <h2 id="wsVideoCallName" class="ws-call-name">Juan (Nieto)</h2>
+                            <p id="wsVideoCallStatus" class="ws-call-status">0:01</p>
+                        </div>
+                        <button class="ws-call-header-btn" aria-label="Añadir participante">
+                            <svg viewBox="0 0 24 24" style="width: 22px; height: 22px; fill: white;"><path d="M15 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm-9-2V7H4v3H1v2h3v3h2v-3h3v-2H6zm9 4c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/></svg>
+                        </button>
+                    </header>
+
+                    <!-- Ventana flotante PiP (propia cámara) -->
+                    <div id="wsVideoCallPip" class="ws-videocall-pip">
+                        <img id="wsVideoCallPipImg" src="./assets/img/whatsapp/video_self.png" alt="Mi cámara" class="ws-videocall-pip-img">
+                        <div id="wsVideoCallPipOff" class="ws-videocall-pip-off" style="display: none;">
+                            <svg viewBox="0 0 24 24" style="width: 32px; height: 32px; fill: rgba(255,255,255,0.7);"><path d="M21 6.5l-4 4V7c0-.55-.45-1-1-1H9.82L21 17.18V6.5zM3.27 2L2 3.27 4.73 6H4c-.55 0-1 .45-1 1v10c0 .55.45 1 1 1h12c.21 0 .39-.08.54-.18L19.73 21 21 19.73 3.27 2zM5 16V8h1.73l8 8H5z"/></svg>
+                            <span>Cámara apagada</span>
+                        </div>
+                        <div class="ws-videocall-pip-actions">
+                            <button class="ws-videocall-pip-btn" aria-label="Girar cámara">
+                                <svg viewBox="0 0 24 24" style="width: 16px; height: 16px; fill: white;"><path d="M9.01 14H2v2h7.01v3L13 15l-3.99-4v3zm5.98-1v-3H22V8h-7.01V5L11 9l3.99 4z"/></svg>
+                            </button>
+                            <button class="ws-videocall-pip-btn" aria-label="Efectos">
+                                <svg viewBox="0 0 24 24" style="width: 16px; height: 16px; fill: white;"><path d="M7 14c-1.66 0-3 1.34-3 3 0 1.31-1.16 2-2 2 .92 1.22 2.49 2 4 2 2.21 0 4-1.79 4-4 0-1.66-1.34-3-3-3zm13.71-9.71a1.003 1.003 0 0 0-1.42 0L17.5 6.09l-1.79-1.8a1.003 1.003 0 0 0-1.42 1.42L16.09 7.5l-1.8 1.79a1.003 1.003 0 0 0 1.42 1.42L17.5 8.91l1.79 1.8a1.003 1.003 0 0 0 1.42-1.42L18.91 7.5l1.8-1.79c.39-.39.39-1.03 0-1.42z"/></svg>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Barra de control horizontal -->
+                    <div class="ws-videocall-bottom-bar">
+                        <button id="wsVideoCallBtnMore" class="ws-videocall-bottom-btn" aria-label="Más opciones">
+                            <svg viewBox="0 0 24 24" style="width: 24px; height: 24px; fill: white;"><path d="M6 10c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2zm12 0c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2zm-6 0c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2z"/></svg>
+                        </button>
+                        <button id="wsVideoCallBtnVideo" class="ws-videocall-bottom-btn" aria-label="Cámara">
+                            <svg id="wsVideoCamOnIcon" viewBox="0 0 24 24" style="width: 24px; height: 24px; fill: white;"><path d="M17 10.5V7c0-.55-.45-1-1-1H4c-.55 0-1 .45-1 1v10c0 .55.45 1 1 1h12c.55 0 1-.45 1-1v-3.5l4 4v-11l-4 4z"/></svg>
+                            <svg id="wsVideoCamOffIcon" viewBox="0 0 24 24" style="width: 24px; height: 24px; fill: white; display: none;"><path d="M21 6.5l-4 4V7c0-.55-.45-1-1-1H9.82L21 17.18V6.5zM3.27 2L2 3.27 4.73 6H4c-.55 0-1 .45-1 1v10c0 .55.45 1 1 1h12c.21 0 .39-.08.54-.18L19.73 21 21 19.73 3.27 2zM5 16V8h1.73l8 8H5z"/></svg>
+                        </button>
+                        <button id="wsVideoCallBtnSpeaker" class="ws-videocall-bottom-btn" aria-label="Altavoz">
+                            <svg viewBox="0 0 24 24" style="width: 24px; height: 24px; fill: white;"><path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02z"/></svg>
+                        </button>
+                        <button id="wsVideoCallBtnMute" class="ws-videocall-bottom-btn" aria-label="Silenciar">
+                            <svg id="wsVideoMicUnmutedIcon" viewBox="0 0 24 24" style="width: 24px; height: 24px; fill: white;"><path d="M12 14c1.66 0 3-1.34 3-3V5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3zm5.3-3c0 3-2.54 5.1-5.3 5.1S6.7 14 6.7 11H5c0 3.41 2.72 6.23 6 6.72V21h2v-3.28c3.28-.48 6-3.3 6-6.72h-1.7z"/></svg>
+                            <svg id="wsVideoMicMutedIcon" viewBox="0 0 24 24" style="width: 24px; height: 24px; fill: white; display: none;"><path d="M19 11h-1.7c0 .74-.16 1.43-.43 2.05l1.23 1.23c.56-.98.9-2.09.9-3.28zm-4.02.17c0-.06.02-.11.02-.17V5c0-1.66-1.34-3-3-3S9 3.34 9 5v.18l5.98 5.99zM4.27 3L3 4.27l6.01 6.01V11c0 1.66 1.33 3 2.99 3 .22 0 .44-.03.65-.08l4.07 4.07c-1.38.72-2.96 1.13-4.72 1.13-4.42 0-8-3.58-8-8H2c0 5.18 3.95 9.45 9 9.93V23h2v-2.07c1.78-.17 3.42-.82 4.84-1.78l2.89 2.89L22 20.73 4.27 3z"/></svg>
+                        </button>
+                        <button id="wsVideoCallBtnColgar" class="ws-videocall-bottom-btn end-call" aria-label="Finalizar videollamada">
+                            <svg viewBox="0 0 24 24" style="width: 24px; height: 24px; fill: white; transform: rotate(135deg);"><path d="M20.01 15.38c-1.23 0-2.42-.2-3.53-.56a.977.977 0 0 0-1.01.24l-2.2 2.2a15.045 15.045 0 0 1-6.59-6.59l2.2-2.21a.96.96 0 0 0 .25-1A11.36 11.36 0 0 1 8.5 4c0-.55-.45-1-1-1H4c-.55 0-1 .45-1 1 0 9.39 7.61 17 17 17 .55 0 1-.45 1-1v-3.62c0-.55-.45-1-1-1z"/></svg>
                         </button>
                     </div>
                 </div>
             </div>
 
+            <!-- 3. Modal de adjuntar archivos y fotos recientes -->
             <div id="wsModalGaleria" class="ws-modal-galeria">
                 <div class="ws-galeria-container">
                     <header class="ws-galeria-header">
-                        <h3>Selecciona una foto para enviar</h3>
-                        <button id="wsGaleriaBtnCerrar" class="ws-galeria-close-btn" aria-label="Cerrar galería">&times;</button>
+                        <h3>Compartir contenido</h3>
+                        <button id="wsGaleriaBtnCerrar" class="ws-galeria-close-btn" aria-label="Cerrar">&times;</button>
                     </header>
-                    <div class="ws-galeria-grid">
-                        <div class="ws-galeria-item" data-photo-name="flores.jpg" style="background: #ffcdd2;">🌸<small>flores.jpg</small></div>
-                        <div class="ws-galeria-item" data-photo-name="paisaje.jpg" style="background: #c8e6c9;">🌲<small>paisaje.jpg</small></div>
-                        <div class="ws-galeria-item" data-photo-name="comida.jpg" style="background: #ffe0b2;">🍕<small>comida.jpg</small></div>
-                        <div class="ws-galeria-item" data-photo-name="familia.jpg" style="background: #bbdefb;">👨‍👩‍👧‍👦<small>familia.jpg</small></div>
+                    <div class="ws-attach-options-grid">
+                        <button class="ws-attach-option" data-attach="galeria">
+                            <div class="ws-attach-circle" style="background: linear-gradient(135deg, #1877f2, #0056b3);">
+                                <svg viewBox="0 0 24 24" style="width:24px;height:24px;fill:white;"><path d="M21 19V5c0-1.1-.9-2-2-2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2zM8.5 13.5l2.5 3.01L14.5 12l4.5 6H5l3.5-4.5z"/></svg>
+                            </div>
+                            <span class="ws-attach-label">Galería</span>
+                        </button>
+                        <button class="ws-attach-option" data-attach="camara">
+                            <div class="ws-attach-circle" style="background: linear-gradient(135deg, #e91e63, #c2185b);">
+                                <svg viewBox="0 0 24 24" style="width:24px;height:24px;fill:white;"><circle cx="12" cy="12" r="3.2"/><path d="M9 2L7.17 4H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2h-3.17L15 2H9zm3 15c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5z"/></svg>
+                            </div>
+                            <span class="ws-attach-label">Cámara</span>
+                        </button>
+                        <button class="ws-attach-option" data-attach="ubicacion">
+                            <div class="ws-attach-circle" style="background: linear-gradient(135deg, #00a884, #00796b);">
+                                <svg viewBox="0 0 24 24" style="width:24px;height:24px;fill:white;"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/></svg>
+                            </div>
+                            <span class="ws-attach-label">Ubicación</span>
+                        </button>
+                        <button class="ws-attach-option" data-attach="contacto">
+                            <div class="ws-attach-circle" style="background: linear-gradient(135deg, #0288d1, #01579b);">
+                                <svg viewBox="0 0 24 24" style="width:24px;height:24px;fill:white;"><path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/></svg>
+                            </div>
+                            <span class="ws-attach-label">Contacto</span>
+                        </button>
+                        <button class="ws-attach-option" data-attach="documento">
+                            <div class="ws-attach-circle" style="background: linear-gradient(135deg, #7c4dff, #512da8);">
+                                <svg viewBox="0 0 24 24" style="width:24px;height:24px;fill:white;"><path d="M14 2H6c-1.1 0-1.99.9-1.99 2L4 20c0 1.1.89 2 1.99 2H18c1.1 0 2-.9 2-2V8l-6-6zm2 16H8v-2h8v2zm0-4H8v-2h8v2zm-3-5V3.5L18.5 9H13z"/></svg>
+                            </div>
+                            <span class="ws-attach-label">Documento</span>
+                        </button>
+                        <button class="ws-attach-option" data-attach="encuesta">
+                            <div class="ws-attach-circle" style="background: linear-gradient(135deg, #ff9800, #f57c00);">
+                                <svg viewBox="0 0 24 24" style="width:24px;height:24px;fill:white;"><path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zM9 17H7v-7h2v7zm4 0h-2V7h2v10zm4 0h-2v-4h2v4z"/></svg>
+                            </div>
+                            <span class="ws-attach-label">Encuesta</span>
+                        </button>
+                        <button class="ws-attach-option" data-attach="evento">
+                            <div class="ws-attach-circle" style="background: linear-gradient(135deg, #e91e63, #ad1457);">
+                                <svg viewBox="0 0 24 24" style="width:24px;height:24px;fill:white;"><path d="M19 4h-1V2h-2v2H8V2H6v2H5c-1.11 0-1.99.9-1.99 2L3 20c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 16H5V10h14v10zM9 14H7v-2h2v2zm4 0h-2v-2h2v2zm4 0h-2v-2h2v2z"/></svg>
+                            </div>
+                            <span class="ws-attach-label">Evento</span>
+                        </button>
+                        <button class="ws-attach-option" data-attach="ia">
+                            <div class="ws-attach-circle" style="background: linear-gradient(135deg, #00b0ff, #0081cb);">
+                                <svg viewBox="0 0 24 24" style="width:24px;height:24px;fill:white;"><path d="M19 9l1.25-2.75L23 5l-2.75-1.25L19 1l-1.25 2.75L15 5l2.75 1.25L19 9zm-7.5.5L9 4 6.5 9.5 1 12l5.5 2.5L9 20l2.5-5.5L17 12l-5.5-2.5z"/></svg>
+                            </div>
+                            <span class="ws-attach-label">Imágenes IA</span>
+                        </button>
+                    </div>
+
+                    <div class="ws-galeria-recent-section">
+                        <p class="ws-galeria-recent-label">Fotos recientes</p>
+                        <div class="ws-galeria-grid">
+                            <div class="ws-galeria-item" data-photo-path="./assets/img/whatsapp/photo_mitad_mundo.jpg" data-photo-caption="Paseo familiar Mitad del Mundo">
+                                <img src="./assets/img/whatsapp/photo_mitad_mundo.jpg" alt="Mitad del Mundo" class="ws-galeria-item-img">
+                                <small>Mitad del Mundo</small>
+                            </div>
+                            <div class="ws-galeria-item" data-photo-path="./assets/img/whatsapp/photo_almuerzo.jpg" data-photo-caption="Almuerzo en familia delicioso">
+                                <img src="./assets/img/whatsapp/photo_almuerzo.jpg" alt="Almuerzo familiar" class="ws-galeria-item-img">
+                                <small>Almuerzo familiar</small>
+                            </div>
+                            <div class="ws-galeria-item" data-photo-path="./assets/img/whatsapp/photo_parque.jpg" data-photo-caption="Perrito en el parque">
+                                <img src="./assets/img/whatsapp/photo_parque.jpg" alt="Perrito parque" class="ws-galeria-item-img">
+                                <small>Perrito parque</small>
+                            </div>
+                            <div class="ws-galeria-item" data-photo-path="./assets/img/whatsapp/mami_avatar.jpg" data-photo-caption="Foto de recuerdo">
+                                <img src="./assets/img/whatsapp/mami_avatar.jpg" alt="Foto familiar" class="ws-galeria-item-img">
+                                <small>Foto recuerdo</small>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
 
+            <!-- 4. Modal de preview de foto antes de enviar (Estilo WhatsApp) -->
+            <div id="wsModalPreviewFoto" class="ws-modal-preview-foto">
+                <header class="ws-photo-preview-header">
+                    <button id="wsPhotoPreviewBtnCerrar" class="ws-call-header-btn" aria-label="Cancelar envío">
+                        <svg viewBox="0 0 24 24" style="width: 22px; height: 22px; fill: white;"><path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+                    </button>
+                    <div class="ws-photo-preview-actions-top">
+                        <button class="ws-call-header-btn" aria-label="Recortar">
+                            <svg viewBox="0 0 24 24" style="width: 20px; height: 20px; fill: white;"><path d="M17 15h2V7c0-1.1-.9-2-2-2H9v2h8v8zM7 17V1H5v4H1v2h4v10c0 1.1.9 2 2 2h10v4h2v-4h4v-2H7z"/></svg>
+                        </button>
+                        <button class="ws-call-header-btn" aria-label="Stickers">
+                            <svg viewBox="0 0 24 24" style="width: 20px; height: 20px; fill: white;"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8zm3.5-9c.83 0 1.5-.67 1.5-1.5S16.33 8 15.5 8 14 8.67 14 9.5s.67 1.5 1.5 1.5zm-7 0c.83 0 1.5-.67 1.5-1.5S9.33 8 8.5 8 7 8.67 7 9.5 7.67 11 8.5 11zm3.5 6.5c2.33 0 4.31-1.46 5.11-3.5H6.89c.8 2.04 2.78 3.5 5.11 3.5z"/></svg>
+                        </button>
+                        <button class="ws-call-header-btn" aria-label="Texto">
+                            <svg viewBox="0 0 24 24" style="width: 20px; height: 20px; fill: white;"><path d="M5 4v3h5.5v12h3V7H19V4z"/></svg>
+                        </button>
+                    </div>
+                </header>
+
+                <div class="ws-photo-preview-main">
+                    <img id="wsPhotoPreviewImg" src="./assets/img/whatsapp/photo_mitad_mundo.jpg" alt="Foto seleccionada" class="ws-photo-preview-img">
+                </div>
+
+                <footer class="ws-photo-preview-footer">
+                    <div class="ws-photo-preview-input-box">
+                        <svg viewBox="0 0 24 24" style="width: 22px; height: 22px; fill: #8696a0; flex-shrink: 0;"><circle cx="12" cy="12" r="10"/><path d="M12 16c2.2 0 4-1.8 4-4H8c0 2.2 1.8 4 4 4zm-3-6c.6 0 1-.4 1-1s-.4-1-1-1-1 .4-1 1 .4 1 1 1zm6 0c.6 0 1-.4 1-1s-.4-1-1-1-1 .4-1 1 .4 1 1 1z"/></svg>
+                        <input type="text" id="wsPhotoPreviewCaption" class="ws-photo-preview-input" placeholder="Añade un comentario..." autocomplete="off">
+                    </div>
+                    <button id="wsBtnEnviarFotoPreview" class="ws-photo-preview-send-btn" aria-label="Enviar foto">
+                        <svg viewBox="0 0 24 24" style="width: 22px; height: 22px; fill: white; margin-left: 2px;"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/></svg>
+                    </button>
+                </footer>
+            </div>
+
+            <!-- 5. Modal de Visor de Foto en Pantalla Completa (Estilo WhatsApp) -->
+            <div id="wsModalVisorFoto" class="ws-modal-visor-foto">
+                <header class="ws-visor-header">
+                    <button id="wsVisorBtnVolver" class="ws-call-header-btn" aria-label="Volver al chat">
+                        <svg viewBox="0 0 24 24" style="width: 24px; height: 24px; fill: white;"><path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z"/></svg>
+                    </button>
+                    <div class="ws-visor-header-info">
+                        <h3 id="wsVisorSenderName">Juan (Nieto)</h3>
+                        <span id="wsVisorDate">Hoy a las 14:30</span>
+                    </div>
+                    <div class="ws-visor-header-actions">
+                        <button class="ws-call-header-btn" aria-label="Destacar">
+                            <svg viewBox="0 0 24 24" style="width: 22px; height: 22px; fill: white;"><path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z"/></svg>
+                        </button>
+                        <button class="ws-call-header-btn" aria-label="Compartir">
+                            <svg viewBox="0 0 24 24" style="width: 22px; height: 22px; fill: white;"><path d="M18 16.08c-.76 0-1.44.3-1.96.77L8.91 12.7c.05-.23.09-.46.09-.7s-.04-.47-.09-.7l7.05-4.11c.54.5 1.25.81 2.04.81 1.66 0 3-1.34 3-3s-1.34-3-3-3-3 1.34-3 3c0 .24.04.47.09.7L8.04 9.81C7.5 9.31 6.79 9 6 9c-1.66 0-3 1.34-3 3s1.34 3 3 3c.79 0 1.5-.31 2.04-.81l7.12 4.16c-.05.21-.08.43-.08.65 0 1.61 1.31 2.92 2.92 2.92 1.61 0 2.92-1.31 2.92-2.92s-1.31-2.92-2.92-2.92z"/></svg>
+                        </button>
+                    </div>
+                </header>
+                <div class="ws-visor-main">
+                    <img id="wsVisorImg" src="./assets/img/whatsapp/photo_parque.jpg" alt="Foto en pantalla completa" class="ws-visor-img">
+                </div>
+                <footer id="wsVisorFooter" class="ws-visor-footer">
+                    <p id="wsVisorCaption" class="ws-visor-caption">Un perrito en el parque 🐶</p>
+                </footer>
+            </div>
+
+            <!-- 6. Modal de éxito y trofeo -->
             <div id="wsModalExito" class="ws-modal-exito">
                 <div class="ws-success-container">
                     <img src="./assets/img/icons/trofeo.svg" alt="Trofeo" class="ws-success-trophy">
@@ -571,32 +843,40 @@ export function iniciarSimulador(idNivel) {
     $("#wsChatsList").classList.add("activa");
     $("#wsChatConversation").classList.remove("activa");
 
+    // Cerrar cualquier modal abierto
+    $("#wsModalLlamada")?.classList.remove("activa");
+    $("#wsModalLlamadaEntrante")?.classList.remove("activa");
+    $("#wsModalVideoLlamada")?.classList.remove("activa");
+    $("#wsModalGaleria")?.classList.remove("activa");
+    $("#wsModalPreviewFoto")?.classList.remove("activa");
+    $("#wsModalVisorFoto")?.classList.remove("activa");
+    $("#wsModalExito")?.classList.remove("activa");
+
     // Generar una copia limpia de los chats predeterminados recreando los arrays
     const defaultChats = obtenerChatsDefecto(nivelActual);
-
     const storageKey = `gz_whatsapp_chats_${nivelActual}`;
 
     // Restablecer el estado específico e independiente de listaChatsData y subpasos
-    if (nivelActual === "enviar-mensaje") {
-        subPasoNivel1 = 1;
-        ultimaInstruccionHablada = "";
+    subPasoNivel1 = 1;
+    subPasoNivel2 = 1;
+    subPasoNivel3 = 1;
+    subPasoNivel4 = 1;
+    subPasoNivel5 = 1;
+    isMicMutedInCall = true;
+    fotoSeleccionadaParaPreview = null;
+    ultimaInstruccionHablada = "";
+
+    if (nivelActual === "enviar-mensaje" || nivelActual === "grabar-audio") {
         try {
             localStorage.removeItem(storageKey);
-        } catch(e) {}
+        } catch (e) { }
         listaChatsData = JSON.parse(JSON.stringify(defaultChats));
         guardar(storageKey, listaChatsData);
-    } else if (nivelActual === "grabar-audio") {
-        subPasoNivel2 = 1;
-        ultimaInstruccionHablada = "";
-        try {
-            localStorage.removeItem(storageKey);
-        } catch(e) {}
-        listaChatsData = JSON.parse(JSON.stringify(defaultChats));
-        guardar(storageKey, listaChatsData);
-        // Pre-aprobar micrófono y calentarlo
-        solicitarMicrofonoTemprano();
+        if (nivelActual === "grabar-audio") {
+            solicitarMicrofonoTemprano();
+        }
     } else {
-        listaChatsData = cargar(storageKey, defaultChats);
+        listaChatsData = JSON.parse(JSON.stringify(defaultChats));
     }
 
     // Renderizar la lista de chats dinámicamente
@@ -627,10 +907,10 @@ function actualizarBarraInstrucciones(autoSpeak = true) {
     // Bloquear el botón de volver en pasos críticos (espera o grabación activa)
     const btnVolver = $("#wsVolverChats");
     if (btnVolver) {
-        const bloquearVolver = 
+        const bloquearVolver =
             (nivelActual === "enviar-mensaje" && subPasoNivel1 === 2) ||
             (nivelActual === "grabar-audio" && (subPasoNivel2 === 4 || estaGrabandoAudio));
-        
+
         if (bloquearVolver) {
             btnVolver.style.visibility = "hidden";
         } else {
@@ -642,7 +922,7 @@ function actualizarBarraInstrucciones(autoSpeak = true) {
         instruccion = "Presiona el botón rojo para detener la grabación y enviar el audio.";
     } else if (nivelActual === "enviar-mensaje") {
         if (subPasoNivel1 === 1) {
-            instruccion = estaEnChat 
+            instruccion = estaEnChat
                 ? "Escribe un mensaje de saludo a Juan y presiona enviar."
                 : "Toca el chat de Juan para empezar a escribirle.";
         } else if (subPasoNivel1 === 2) {
@@ -701,17 +981,83 @@ function actualizarBarraInstrucciones(autoSpeak = true) {
             }
         }
     } else if (nivelActual === "hacer-llamada") {
-        instruccion = estaEnChat
-            ? "Presiona el botón de llamada en la esquina superior derecha."
-            : "Toca el chat de Juan para entrar a la conversación.";
-    } else if (nivelActual === "llamada-grupal") {
-        instruccion = estaEnChat
-            ? "Presiona el botón de llamada en la parte superior derecha de la conversación grupal."
-            : "Toca el chat de la Familia Mendoza para entrar a la conversación grupal.";
+        if (!estaEnChat) {
+            instruccion = "Toca el chat de Juan para entrar a la conversación.";
+        } else {
+            const modalEntrante = $("#wsModalLlamadaEntrante");
+            const modalLlamada = $("#wsModalLlamada");
+            if (modalEntrante && modalEntrante.classList.contains("activa")) {
+                instruccion = "Tienes una llamada entrante de Juan. Toca el botón verde para contestar.";
+            } else if (modalLlamada && modalLlamada.classList.contains("activa")) {
+                if (subPasoNivel3 === 3) {
+                    instruccion = "Se ha silenciado tu micrófono. Toca el botón 'Silenciar' para activarlo de nuevo.";
+                } else if (subPasoNivel3 === 4) {
+                    instruccion = "Escucha lo que te dice Juan.";
+                } else if (subPasoNivel3 === 5) {
+                    instruccion = "Presiona el botón rojo para colgar la llamada.";
+                } else if (subPasoNivel3 === 8) {
+                    instruccion = "Escucha a Juan en la llamada.";
+                } else if (subPasoNivel3 === 9) {
+                    instruccion = "Muy bien, ahora presiona el botón rojo para colgar y finalizar el nivel.";
+                } else {
+                    instruccion = "Llamando a Juan...";
+                }
+            } else {
+                if (subPasoNivel3 === 6) {
+                    instruccion = "Espera un momento, estás a punto de recibir una llamada entrante.";
+                } else {
+                    instruccion = "Presiona el botón de llamada telefónica en la esquina superior derecha.";
+                }
+            }
+        }
+    } else if (nivelActual === "videollamada" || nivelActual === "llamada-grupal") {
+        if (!estaEnChat) {
+            instruccion = "Toca el chat de Juan para entrar a la conversación.";
+        } else {
+            const modalVideo = $("#wsModalVideoLlamada");
+            if (modalVideo && modalVideo.classList.contains("activa")) {
+                if (subPasoNivel4 === 2) {
+                    instruccion = "Conectando videollamada con Juan...";
+                } else if (subPasoNivel4 === 3) {
+                    instruccion = "Por error se apagó tu cámara. Toca el botón de la cámara para volver a encenderla.";
+                } else if (subPasoNivel4 === 4) {
+                    instruccion = "Escucha lo que te dice Juan.";
+                } else if (subPasoNivel4 === 5) {
+                    instruccion = "Se ha silenciado tu micrófono. Toca el botón del micrófono para activarlo.";
+                } else if (subPasoNivel4 === 6) {
+                    instruccion = "Escucha a Juan en la videollamada.";
+                } else if (subPasoNivel4 >= 7) {
+                    instruccion = "Muy bien, ahora presiona el botón rojo para finalizar la videollamada.";
+                } else {
+                    instruccion = "En videollamada con Juan...";
+                }
+            } else {
+                instruccion = "Presiona el botón de videollamada (icono de cámara) en la esquina superior derecha.";
+            }
+        }
     } else if (nivelActual === "enviar-foto") {
-        instruccion = estaEnChat
-            ? "Presiona el icono del clip o de la cámara, selecciona una foto y envíala."
-            : "Toca el chat de Juan para entrar a la conversación.";
+        if (!estaEnChat) {
+            instruccion = "Toca el chat de Juan para entrar a la conversación.";
+        } else {
+            const modalVisor = $("#wsModalVisorFoto");
+            const modalPreview = $("#wsModalPreviewFoto");
+            const modalGaleria = $("#wsModalGaleria");
+            if (modalVisor && modalVisor.classList.contains("activa")) {
+                instruccion = "¡Excelente! Aquí puedes ver la foto en pantalla completa. Toca la flecha arriba a la izquierda para volver al chat.";
+            } else if (modalPreview && modalPreview.classList.contains("activa")) {
+                instruccion = "Escribe un comentario si deseas y presiona el botón verde circular para enviar la foto.";
+            } else if (modalGaleria && modalGaleria.classList.contains("activa")) {
+                instruccion = "Toca la foto de 'Mitad del Mundo' para seleccionarla.";
+            } else {
+                if (subPasoNivel5 === 5) {
+                    instruccion = "¡Juan te ha respondido con una foto! Toca la foto del perrito para abrirla en grande.";
+                } else if (subPasoNivel5 === 6) {
+                    instruccion = "¡Has completado todas las acciones con fotos!";
+                } else {
+                    instruccion = "Presiona el icono del clip para adjuntar una foto de tu galería.";
+                }
+            }
+        }
     }
 
     textEl.textContent = instruccion;
@@ -823,33 +1169,72 @@ function actualizarGuiaVisualWhatsApp() {
         if (!estaEnChat) {
             resaltarElemento("[data-chat-id='juan-nieto']");
         } else {
+            const modalEntrante = $("#wsModalLlamadaEntrante");
             const modalLlamada = $("#wsModalLlamada");
-            if (modalLlamada && modalLlamada.classList.contains("activa")) {
-                resaltarElemento("#wsCallBtnColgar", { variant: "amber" });
+            if (modalEntrante && modalEntrante.classList.contains("activa")) {
+                resaltarElemento("#wsIncomingBtnContestar", { variant: "amber" });
+            } else if (modalLlamada && modalLlamada.classList.contains("activa")) {
+                if (subPasoNivel3 === 3) {
+                    resaltarElemento("#wsCallBtnMute", { variant: "amber" });
+                } else if (subPasoNivel3 === 5 || subPasoNivel3 === 9) {
+                    resaltarElemento("#wsCallBtnColgar", { variant: "amber" });
+                } else {
+                    limpiarResaltados();
+                }
             } else {
-                resaltarElemento("#wsBtnLlamada");
+                if (subPasoNivel3 === 6) {
+                    limpiarResaltados();
+                } else {
+                    resaltarElemento("#wsBtnLlamada");
+                }
             }
         }
-    } else if (nivelActual === "llamada-grupal") {
+    } else if (nivelActual === "videollamada" || nivelActual === "llamada-grupal") {
         if (!estaEnChat) {
-            resaltarElemento("[data-chat-id='familia-mendoza']");
+            resaltarElemento("[data-chat-id='juan-nieto']");
         } else {
-            const modalLlamada = $("#wsModalLlamada");
-            if (modalLlamada && modalLlamada.classList.contains("activa")) {
-                resaltarElemento("#wsCallBtnColgar", { variant: "amber" });
+            const modalVideo = $("#wsModalVideoLlamada");
+            if (modalVideo && modalVideo.classList.contains("activa")) {
+                if (subPasoNivel4 === 3) {
+                    resaltarElemento("#wsVideoCallBtnVideo", { variant: "amber" });
+                } else if (subPasoNivel4 === 5) {
+                    resaltarElemento("#wsVideoCallBtnMute", { variant: "amber" });
+                } else if (subPasoNivel4 >= 7) {
+                    resaltarElemento("#wsVideoCallBtnColgar", { variant: "amber" });
+                } else {
+                    limpiarResaltados();
+                }
             } else {
-                resaltarElemento("#wsBtnLlamada");
+                resaltarElemento("#wsBtnVideoLlamada");
             }
         }
     } else if (nivelActual === "enviar-foto") {
         if (!estaEnChat) {
             resaltarElemento("[data-chat-id='juan-nieto']");
         } else {
+            const modalVisor = $("#wsModalVisorFoto");
+            const modalPreview = $("#wsModalPreviewFoto");
             const modalGaleria = $("#wsModalGaleria");
-            if (modalGaleria && modalGaleria.classList.contains("activa")) {
-                resaltarElemento(".ws-galeria-item");
+            if (modalVisor && modalVisor.classList.contains("activa")) {
+                resaltarElemento("#wsVisorBtnVolver", { variant: "amber" });
+            } else if (modalPreview && modalPreview.classList.contains("activa")) {
+                resaltarElemento("#wsBtnEnviarFotoPreview", { variant: "amber" });
+            } else if (modalGaleria && modalGaleria.classList.contains("activa")) {
+                resaltarElemento(".ws-galeria-item:first-child", { variant: "amber" });
             } else {
-                resaltarElemento("#wsBtnAdjuntar");
+                if (subPasoNivel5 === 5) {
+                    const receivedPhotos = document.querySelectorAll("#wsChatBody .ws-msg-bubble.recibida .ws-photo-msg-clickable");
+                    const lastPhoto = receivedPhotos[receivedPhotos.length - 1];
+                    if (lastPhoto) {
+                        resaltarElemento(lastPhoto, { variant: "amber" });
+                    } else {
+                        limpiarResaltados();
+                    }
+                } else if (subPasoNivel5 >= 6) {
+                    limpiarResaltados();
+                } else {
+                    resaltarElemento("#wsBtnAdjuntar");
+                }
             }
         }
     }
@@ -910,7 +1295,7 @@ function renderizarListaChats() {
  * Abre la pantalla de conversación individual
  */
 function abrirConversacion(chatId) {
-    console.log("DEBUG abrirConversacion chatId param=" + chatId + " listaIds=" + listaChatsData.map(c=>c.id).join(","));
+    console.log("DEBUG abrirConversacion chatId param=" + chatId + " listaIds=" + listaChatsData.map(c => c.id).join(","));
     chatSeleccionado = listaChatsData.find(c => c.id === chatId);
     console.log("DEBUG abrirConversacion resolved chatSeleccionado.id=" + (chatSeleccionado && chatSeleccionado.id) + " nombre=" + (chatSeleccionado && chatSeleccionado.nombre));
     if (!chatSeleccionado) return;
@@ -1008,15 +1393,19 @@ function renderizarMensajes() {
             `;
         } else if (msg.type === "photo") {
             bubble.style.padding = "6px";
-            bubble.style.borderRadius = "10px";
+            bubble.style.borderRadius = "14px";
+            const imageTag = msg.photoUrl
+                ? `<img src="${msg.photoUrl}" alt="Foto" style="width: 100%; height: 160px; object-fit: cover; border-radius: 10px; display: block;">`
+                : `<div style="background-color: #b9e7b3; height: 120px; border-radius: 10px; display: grid; place-items: center; font-size: 40px;">${msg.photoEmoji || "📷"}</div>`;
+            const captionHTML = msg.text ? `<span style="font-size: 14px; color: #111b21; font-weight: 500; padding: 4px 2px 0; display: block;">${msg.text}</span>` : "";
+            const senderName = msg.senderName || (msg.sender === "enviada" ? "Tú" : (chatSeleccionado ? chatSeleccionado.nombre : "Contacto"));
+            
             bubble.innerHTML = `
-                <div style="display: flex; flex-direction: column; gap: 6px; width: 200px;">
-                    <div style="background-color: #b9e7b3; height: 120px; border-radius: 6px; display: grid; place-items: center; font-size: 40px;">
-                        ${msg.photoEmoji || "📷"}
-                    </div>
-                    <span style="font-size: 13.5px; color: #466a41; font-weight: 700;">${msg.text}</span>
+                <div class="ws-photo-msg-clickable" data-photo-url="${msg.photoUrl || ''}" data-photo-caption="${msg.text || ''}" data-photo-sender="${senderName}" data-photo-time="${msg.time}" style="display: flex; flex-direction: column; gap: 4px; width: 220px;">
+                    ${imageTag}
+                    ${captionHTML}
                 </div>
-                <div class="ws-msg-meta" style="margin-top: 4px; margin-right: 0;">
+                <div class="ws-msg-meta" style="margin-top: 2px; margin-right: 0;">
                     <span>${msg.time}</span>
                     ${msg.sender === "enviada" ? `<svg class="ws-msg-checkmark" viewBox="0 0 24 24"><path d="M0.293,12.293L1.707,10.88L6,15.17L18.293,2.88L19.707,4.293L6,18L0.293,12.293Z"/></svg>` : ""}
                 </div>
@@ -1064,48 +1453,27 @@ function moverChatAlTop(chatId) {
  */
 function simularReproduccionAudio(btn, esEnviada, msg) {
     const bubble = btn.closest(".ws-msg-bubble");
+    if (!bubble) return;
     const progress = bubble.querySelector(".ws-audio-progress");
     const pin = bubble.querySelector(".ws-audio-pin");
     const timeline = bubble.querySelector(".ws-audio-timeline");
     const estado = btn.dataset.estado || "detenido";
 
-    // Si hay otro audio en reproducción, detenerlo antes de reproducir este
-    if (audioActivoMsg && audioActivoMsg !== msg) {
-        const otroBtn = $("#wsChatBody").querySelector(`.ws-msg-bubble button.reproduciendo`);
-        if (otroBtn) {
-            otroBtn.dataset.estado = "detenido";
-            otroBtn.classList.remove("reproduciendo");
-            otroBtn.innerHTML = `<svg class="ws-audio-btn-icon" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>`;
-            const otraBubble = otroBtn.closest(".ws-msg-bubble");
-            const otroProgress = otraBubble.querySelector(".ws-audio-progress");
-            const otroPin = otraBubble.querySelector(".ws-audio-pin");
-            if (otroProgress) otroProgress.style.width = "0%";
-            if (otroPin) otroPin.style.left = "0%";
-        }
-        if (audioActivo) {
-            audioActivo.pause();
-            audioActivo = null;
-        }
-        stopSpeech();
-        audioActivoMsg = null;
-    }
-
+    // 1. Si se hace clic en pausa sobre el audio en reproducción
     if (estado === "reproduciendo") {
-        // ACCIÓN: PAUSAR
         btn.dataset.estado = "pausado";
         btn.classList.remove("reproduciendo");
         btn.innerHTML = `<svg class="ws-audio-btn-icon" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>`;
-        
+
         if (audioActivo) {
             audioActivo.pause();
-        } else {
-            window.speechSynthesis.pause();
         }
+        stopSpeech();
         return;
     }
 
-    if (estado === "pausado") {
-        // ACCIÓN: REANUDAR
+    // 2. Si se hace clic en reanudar sobre el mismo audio pausado
+    if (estado === "pausado" && audioActivoMsg === msg) {
         btn.dataset.estado = "reproduciendo";
         btn.classList.add("reproduciendo");
         btn.innerHTML = `
@@ -1116,12 +1484,36 @@ function simularReproduccionAudio(btn, esEnviada, msg) {
         if (audioActivo) {
             audioActivo.play().catch(e => console.warn(e));
         } else {
-            window.speechSynthesis.resume();
+            const mensajeTexto = !esEnviada && msg && msg.textToSpeak
+                ? msg.textToSpeak
+                : "Reproduciendo nota de voz.";
+            speak(mensajeTexto);
         }
         return;
     }
 
-    // ACCIÓN: REPRODUCIR DESDE EL PRINCIPIO
+    // 3. NUEVA REPRODUCCIÓN (Detener cualquier audio o síntesis anterior)
+    const otrosBtns = $("#wsChatBody") ? $("#wsChatBody").querySelectorAll(".ws-msg-bubble button.reproduciendo, .ws-msg-bubble button[data-estado='pausado']") : [];
+    otrosBtns.forEach(otroBtn => {
+        otroBtn.dataset.estado = "detenido";
+        otroBtn.classList.remove("reproduciendo");
+        otroBtn.innerHTML = `<svg class="ws-audio-btn-icon" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>`;
+        const otraBubble = otroBtn.closest(".ws-msg-bubble");
+        const otroProgress = otraBubble?.querySelector(".ws-audio-progress");
+        const otroPin = otraBubble?.querySelector(".ws-audio-pin");
+        if (otroProgress) otroProgress.style.width = "0%";
+        if (otroPin) otroPin.style.left = "0%";
+    });
+
+    if (audioActivo) {
+        audioActivo.pause();
+        audioActivo.currentTime = 0;
+        audioActivo = null;
+    }
+    stopSpeech();
+    playbackIntervals.forEach(t => clearInterval(t));
+    playbackIntervals = [];
+
     btn.dataset.estado = "reproduciendo";
     btn.classList.add("reproduciendo");
     btn.innerHTML = `
@@ -1135,17 +1527,24 @@ function simularReproduccionAudio(btn, esEnviada, msg) {
     let duracion = 5000;
     let playReal = false;
 
-    // Resetear seek anterior
-    if (timeline) delete timeline.dataset.seekPercentage;
-
+    // Verificar si el mensaje es una nota de voz enviada con archivo real
     if (esEnviada && msg && msg.audioUrl) {
         const audio = new Audio(msg.audioUrl);
         audioActivo = audio;
         playReal = true;
 
-        audio.addEventListener("loadedmetadata", () => {
-            duracion = audio.duration * 1000;
-        });
+        if (timeline && timeline.dataset.seekPercentage !== undefined) {
+            const seekPct = parseFloat(timeline.dataset.seekPercentage);
+            pct = seekPct;
+            audio.addEventListener("loadedmetadata", () => {
+                duracion = audio.duration * 1000;
+                audio.currentTime = (seekPct / 100) * audio.duration;
+            }, { once: true });
+        } else {
+            audio.addEventListener("loadedmetadata", () => {
+                duracion = audio.duration * 1000;
+            }, { once: true });
+        }
 
         audio.play().catch(e => {
             console.warn("No se pudo iniciar la reproducción del audio real:", e);
@@ -1156,13 +1555,15 @@ function simularReproduccionAudio(btn, esEnviada, msg) {
             completarReproduccion();
         };
     } else {
-        // Mensaje simulado directo
-        const mensajeTexto = esEnviada 
-            ? "Reproduciendo nota de voz." 
-            : (msg && msg.textToSpeak ? msg.textToSpeak : "Hola abuelo, muchas gracias por tu mensaje, me alegro de que estés muy bien, te quiero mucho, te mando un gran abrazo.");
+        // Mensaje recibido simulado del contacto (nunca usa audioUrl del usuario)
+        audioActivo = null;
+        playReal = false;
+        const mensajeTexto = !esEnviada && msg && msg.textToSpeak
+            ? msg.textToSpeak
+            : (esEnviada ? "Reproduciendo nota de voz." : "Hola abuelo, muchas gracias por tu mensaje, te quiero mucho.");
 
         speak(mensajeTexto);
-        duracion = esEnviada ? 3000 : 7000;
+        duracion = (!esEnviada && msg && msg.duration) ? (parseInt(msg.duration.split(":")[1] || "6") * 1000) : 5000;
     }
 
     const paso = 50;
@@ -1172,12 +1573,11 @@ function simularReproduccionAudio(btn, esEnviada, msg) {
         if (timer) clearInterval(timer);
         btn.dataset.estado = "detenido";
         btn.classList.remove("reproduciendo");
-        btn.innerHTML = `
-            <svg class="ws-audio-btn-icon" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
-        `;
+        btn.innerHTML = `<svg class="ws-audio-btn-icon" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>`;
         if (progress) progress.style.width = "0%";
         if (pin) pin.style.left = "0%";
         if (timeline) delete timeline.dataset.seekPercentage;
+        audioActivo = null;
         audioActivoMsg = null;
 
         avanzarNivel2DespuesDeAudio(esEnviada);
@@ -1193,15 +1593,19 @@ function simularReproduccionAudio(btn, esEnviada, msg) {
             return;
         }
 
-        // Si se hizo drag/seek en la barra progresiva
+        // Si se hizo seek interactivo
         if (timeline && timeline.dataset.seekPercentage !== undefined) {
             pct = parseFloat(timeline.dataset.seekPercentage);
             delete timeline.dataset.seekPercentage;
         }
 
-        if (playReal && audioActivo) {
+        if (playReal && audioActivo && audioActivo.duration) {
             pct = (audioActivo.currentTime / audioActivo.duration) * 100;
-            if (pct >= 100) pct = 100;
+            if (pct >= 100) {
+                pct = 100;
+                completarReproduccion();
+                return;
+            }
             if (progress) progress.style.width = `${pct}%`;
             if (pin) pin.style.left = `${pct}%`;
         } else {
@@ -1209,7 +1613,6 @@ function simularReproduccionAudio(btn, esEnviada, msg) {
             pct += incremento;
             if (pct >= 100) {
                 pct = 100;
-                clearInterval(timer);
                 completarReproduccion();
                 return;
             }
@@ -1226,13 +1629,13 @@ function simularReproduccionAudio(btn, esEnviada, msg) {
 function avanzarNivel2DespuesDeAudio(esEnviada) {
     if (nivelActual !== "grabar-audio") return;
 
-    if (esEnviada && subPasoNivel2 === 3) {
+    if (esEnviada && subPasoNivel2 <= 3) {
         // Escuchó el primer audio enviado
         subPasoNivel2 = 4;
         actualizarBarraInstrucciones(true); // "Espera a que Juan te responda..."
 
         // Simular escritura de Juan
-        const statusEl = $("#wsChatConversation").querySelector(".ws-chat-contact-status");
+        const statusEl = $("#wsChatConversation")?.querySelector(".ws-chat-contact-status");
         if (statusEl) statusEl.textContent = "escribiendo...";
 
         // Respuesta de Juan tras 6 segundos
@@ -1271,26 +1674,62 @@ function avanzarNivel2DespuesDeAudio(esEnviada) {
     }
 }
 
-/**
- * Configura los eventos del simulador
- */
+// ---- AVISO FLOTANTE DE ACCIÓN BLOQUEADA ----
+function mostrarAvisoBloqueado(mensaje = "Para este nivel el envío de audio está bloqueado. Por favor, escribe un mensaje de texto.") {
+    let toast = $("#wsToastBlocked");
+    if (!toast) {
+        toast = document.createElement("div");
+        toast.id = "wsToastBlocked";
+        toast.className = "ws-toast-blocked";
+        $("#pantallaWhatsappSimulador")?.appendChild(toast);
+    }
+    toast.textContent = mensaje;
+    toast.classList.add("mostrar");
+    setTimeout(() => {
+        toast.classList.remove("mostrar");
+    }, 3200);
+}
+
+// ---- LISTENERS DE LA INTERFAZ ----
 function inicializarListeners() {
+    // Retorno al selector de niveles
     const retornarANiveles = () => {
         limpiarTodosLosTimers();
+        if (estaGrabandoAudio) {
+            detenerGrabacionReal().catch(e => console.warn(e));
+            estaGrabandoAudio = false;
+        }
+        if (audioActivo) {
+            audioActivo.pause();
+            audioActivo = null;
+        }
+        audioActivoMsg = null;
         stopSpeech();
 
         const modalExito = $("#wsModalExito");
         if (modalExito) modalExito.classList.remove("activa");
-        
+
         const modalLlamada = $("#wsModalLlamada");
         if (modalLlamada) modalLlamada.classList.remove("activa");
-        
+
+        const modalEntrante = $("#wsModalLlamadaEntrante");
+        if (modalEntrante) modalEntrante.classList.remove("activa");
+
+        const modalVideo = $("#wsModalVideoLlamada");
+        if (modalVideo) modalVideo.classList.remove("activa");
+
         const modalGaleria = $("#wsModalGaleria");
         if (modalGaleria) modalGaleria.classList.remove("activa");
 
+        const modalPreview = $("#wsModalPreviewFoto");
+        if (modalPreview) modalPreview.classList.remove("activa");
+
+        const modalVisor = $("#wsModalVisorFoto");
+        if (modalVisor) modalVisor.classList.remove("activa");
+
         const simulador = $("#pantallaWhatsappSimulador");
         if (simulador) simulador.classList.remove("activa");
-        
+
         limpiarResaltados();
         location.hash = "/modulo/WhatsApp";
     };
@@ -1303,15 +1742,13 @@ function inicializarListeners() {
     const btnVolver = $("#wsVolverChats");
     if (btnVolver) {
         btnVolver.onclick = () => {
-            // Detener cualquier audio en reproducción al salir de la conversación
             if (audioActivo) {
                 audioActivo.pause();
                 audioActivo = null;
             }
             audioActivoMsg = null;
             stopSpeech();
-            
-            // Detener progress/timer de reproducción activo
+
             const activeAudioBtns = $("#wsChatBody") ? $("#wsChatBody").querySelectorAll("button.reproduciendo") : [];
             activeAudioBtns.forEach(btn => {
                 btn.dataset.estado = "detenido";
@@ -1323,12 +1760,10 @@ function inicializarListeners() {
             $("#wsChatsList").classList.add("activa");
             renderizarListaChats();
 
-            // Lógica de paso 2.7: Regresar a la lista y esperar mensaje de Dr. Martínez
-            if (nivelActual === "grabar-audio" && subPasoNivel2 === 7) {
+            if (nivelActual === "grabar-audio" && subPasoNivel2 >= 7 && subPasoNivel2 < 8) {
                 subPasoNivel2 = 7.5;
-                actualizarBarraInstrucciones(true); // Nico: "Espera a recibir un nuevo..."
+                actualizarBarraInstrucciones(true);
 
-                // Esperar 6 segundos y recibir mensaje del Doctor
                 familyMessageTimeout = setTimeout(() => {
                     const simulador = $("#pantallaWhatsappSimulador");
                     if (simulador && simulador.classList.contains("activa") && subPasoNivel2 === 7.5) {
@@ -1366,7 +1801,7 @@ function inicializarListeners() {
                         renderizarListaChats();
 
                         subPasoNivel2 = 8;
-                        actualizarBarraInstrucciones(true); // Nico: "Toca el chat del doctor..."
+                        actualizarBarraInstrucciones(true);
                     }
                 }, 6000);
             } else if (nivelActual === "enviar-mensaje" && subPasoNivel1 === 4) {
@@ -1418,7 +1853,7 @@ function inicializarListeners() {
     }
 
     // Clic en la insignia Nico para repetir instrucción
-    const nicoBtn = $("#wsInstructionsBar").querySelector(".ws-instructions-nico");
+    const nicoBtn = $("#wsInstructionsBar")?.querySelector(".ws-instructions-nico");
     if (nicoBtn) {
         nicoBtn.onclick = (e) => {
             e.stopPropagation();
@@ -1430,48 +1865,57 @@ function inicializarListeners() {
         };
     }
 
-    // Detectar clicks en el cuerpo del chat para el reproductor de audio
+    // Reproducción y Scrubber / Seek de notas de voz en chat
     const chatBody = $("#wsChatBody");
     if (chatBody) {
+        // Manejador común de adelantar o retroceder audios
+        const handleBarSeek = (clientX, timeline) => {
+            if (!timeline) return;
+            const rect = timeline.getBoundingClientRect();
+            const clickX = clientX - rect.left;
+            const percentage = Math.max(0, Math.min(100, (clickX / rect.width) * 100));
+
+            const progress = timeline.querySelector(".ws-audio-progress");
+            const pin = timeline.querySelector(".ws-audio-pin");
+            if (progress) progress.style.width = `${percentage}%`;
+            if (pin) pin.style.left = `${percentage}%`;
+
+            const bubble = timeline.closest(".ws-msg-bubble");
+            if (!bubble) return;
+            const index = bubble.dataset.msgIndex;
+            const msg = chatSeleccionado?.mensajes[index];
+            const esEnviada = bubble.classList.contains("enviada");
+
+            timeline.dataset.seekPercentage = percentage;
+
+            if (audioActivo && audioActivoMsg === msg && esEnviada && audioActivo.duration) {
+                audioActivo.currentTime = (percentage / 100) * audioActivo.duration;
+            }
+        };
+
+        // Click en play/pause
         chatBody.onclick = (e) => {
             const btn = e.target.closest(".ws-audio-btn");
-            if (!btn) return;
+            if (btn) {
+                const bubble = btn.closest(".ws-msg-bubble");
+                if (!bubble) return;
 
-            const bubble = btn.closest(".ws-msg-bubble");
-            if (!bubble) return;
+                const index = bubble.dataset.msgIndex;
+                const msg = chatSeleccionado.mensajes[index];
+                const esEnviada = bubble.classList.contains("enviada");
 
-            const index = bubble.dataset.msgIndex;
-            const msg = chatSeleccionado.mensajes[index];
-            const esEnviada = bubble.classList.contains("enviada");
-            
-            simularReproduccionAudio(btn, esEnviada, msg);
+                simularReproduccionAudio(btn, esEnviada, msg);
+                return;
+            }
+
+            // Click directo en la barra para seek
+            const timeline = e.target.closest(".ws-audio-timeline");
+            if (timeline) {
+                handleBarSeek(e.clientX, timeline);
+            }
         };
-    }
 
-    // Funciones comunes para actualizar el seek del audio por arrastre o clic en barra
-    const handleBarSeek = (clientX, timeline) => {
-        const rect = timeline.getBoundingClientRect();
-        const clickX = clientX - rect.left;
-        const percentage = Math.max(0, Math.min(100, (clickX / rect.width) * 100));
-
-        const progress = timeline.querySelector(".ws-audio-progress");
-        const pin = timeline.querySelector(".ws-audio-pin");
-        if (progress) progress.style.width = `${percentage}%`;
-        if (pin) pin.style.left = `${percentage}%`;
-
-        const bubble = timeline.closest(".ws-msg-bubble");
-        const index = bubble.dataset.msgIndex;
-        const msg = chatSeleccionado.mensajes[index];
-        const esEnviada = bubble.classList.contains("enviada");
-
-        if (audioActivo && audioActivoMsg === msg && esEnviada && msg.audioUrl) {
-            audioActivo.currentTime = (percentage / 100) * audioActivo.duration;
-        }
-        timeline.dataset.seekPercentage = percentage;
-    };
-
-    // Soporte para Mouse Drag y Clic
-    if (chatBody) {
+        // Soporte de arrastre con mouse
         chatBody.onmousedown = (e) => {
             const timeline = e.target.closest(".ws-audio-timeline");
             if (!timeline) return;
@@ -1491,7 +1935,7 @@ function inicializarListeners() {
             document.addEventListener("mouseup", onMouseUp);
         };
 
-        // Soporte para Mobile/Touch Drag y Clic
+        // Soporte de arrastre táctil en móviles/tablets
         chatBody.ontouchstart = (e) => {
             const timeline = e.target.closest(".ws-audio-timeline");
             if (!timeline) return;
@@ -1512,7 +1956,7 @@ function inicializarListeners() {
         };
     }
 
-    // Detectar escritura
+    // Entrada de texto
     const campoTexto = $("#wsInputMensaje");
     if (campoTexto) {
         campoTexto.oninput = () => {
@@ -1530,7 +1974,6 @@ function inicializarListeners() {
             actualizarGuiaVisualWhatsApp();
         };
 
-        // Enviar mensaje con Enter
         campoTexto.onkeypress = (evento) => {
             if (evento.key === "Enter") {
                 if (estaGrabandoAudio) return;
@@ -1542,7 +1985,7 @@ function inicializarListeners() {
         };
     }
 
-    // Enviar mensaje al presionar botón verde circular o detener grabación
+    // Botón verde circular de envío / micrófono
     const btnEnviar = $("#wsEnviarMensajeBtn");
     if (btnEnviar) {
         btnEnviar.onclick = () => {
@@ -1550,30 +1993,121 @@ function inicializarListeners() {
                 enviarMensajeVoz();
                 return;
             }
-            const texto = campoTexto.value.trim();
+            const texto = campoTexto ? campoTexto.value.trim() : "";
             if (texto.length > 0) {
                 enviarMensajeTexto(texto);
             } else {
+                // Validación Nivel 1: Bloqueo de audio en el primer nivel (SOLO visual sin narrar)
+                if (nivelActual === "enviar-mensaje") {
+                    mostrarAvisoBloqueado("Para este nivel el envío de audio está bloqueado. Por favor, escribe un mensaje de texto.");
+                    return;
+                }
                 enviarMensajeVoz();
             }
         };
     }
 
-    // Llamadas
+    // Botón de Llamada de Voz
     const btnLlamada = $("#wsBtnLlamada");
     if (btnLlamada) {
         btnLlamada.onclick = () => {
-            iniciarLlamadaSimulada(false);
+            iniciarLlamadaSimulada();
         };
     }
 
-    const btnVideoLlamada = $("#wsBtnVideoLlamada");
-    if (btnVideoLlamada) {
-        btnVideoLlamada.onclick = () => {
-            iniciarLlamadaSimulada(true);
+    // Botón de Contestar Llamada Entrante
+    const btnIncomingContestar = $("#wsIncomingBtnContestar");
+    if (btnIncomingContestar) {
+        btnIncomingContestar.onclick = () => {
+            $("#wsModalLlamadaEntrante")?.classList.remove("activa");
+
+            const modal = $("#wsModalLlamada");
+            const name = $("#wsCallName");
+            const status = $("#wsCallStatus");
+            const avatarLetter = $("#wsCallAvatarLetter");
+            const muteBtn = $("#wsCallBtnMute");
+            const micMutedIcon = $("#wsCallMicMutedIcon");
+            const micUnmutedIcon = $("#wsCallMicUnmutedIcon");
+            const muteLabel = $("#wsCallMuteLabel");
+
+            if (name) name.textContent = "Juan (Nieto)";
+            if (status) status.textContent = "0:01";
+
+            if (avatarLetter) {
+                avatarLetter.textContent = "JN";
+                avatarLetter.className = "ws-avatar ws-call-avatar ws-avatar-color-4 ws-call-avatar-letter";
+            }
+
+            isMicMutedInCall = false;
+            if (muteBtn) muteBtn.classList.remove("muted");
+            if (micMutedIcon) micMutedIcon.style.display = "none";
+            if (micUnmutedIcon) micUnmutedIcon.style.display = "block";
+            if (muteLabel) muteLabel.textContent = "Silenciar";
+
+            modal?.classList.add("activa");
+
+            let segundos = 1;
+            if (callTimerInterval) clearInterval(callTimerInterval);
+            callTimerInterval = setInterval(() => {
+                segundos++;
+                const mins = Math.floor(segundos / 60).toString().padStart(2, "0");
+                const secs = (segundos % 60).toString().padStart(2, "0");
+                if (status) status.textContent = `${mins}:${secs}`;
+            }, 1000);
+
+            subPasoNivel3 = 8;
+            actualizarBarraInstrucciones(false);
+
+            stopSpeech();
+            speak("¡Hola abuelo! Olvidé preguntarte si nos vemos este fin de semana. ¡Cuídate mucho!", () => {
+                setTimeout(() => {
+                    if (subPasoNivel3 === 8) {
+                        subPasoNivel3 = 9;
+                        actualizarBarraInstrucciones(true); // "Muy bien, ahora presiona el botón rojo para colgar y finalizar el nivel."
+                    }
+                }, 1500);
+            });
         };
     }
 
+    // Botón de Rechazar Llamada Entrante (Si la cancela, repite la secuencia completa de llamada entrante)
+    const btnIncomingRechazar = $("#wsIncomingBtnRechazar");
+    if (btnIncomingRechazar) {
+        btnIncomingRechazar.onclick = () => {
+            $("#wsModalLlamadaEntrante")?.classList.remove("activa");
+            stopSpeech();
+
+            subPasoNivel3 = 6;
+            const textoRechazo = "Has rechazado la llamada. Espera un momento, estás a punto de recibirla de nuevo para contestarla.";
+            const textEl = $("#wsInstructionsText");
+            if (textEl) textEl.textContent = textoRechazo;
+            limpiarResaltados();
+
+            speak(textoRechazo, () => {
+                setTimeout(() => {
+                    const simulador = $("#pantallaWhatsappSimulador");
+                    if (simulador && simulador.classList.contains("activa") && subPasoNivel3 === 6) {
+                        const modalEntrante = $("#wsModalLlamadaEntrante");
+                        if (modalEntrante) {
+                            modalEntrante.classList.add("activa");
+                            subPasoNivel3 = 7;
+                            actualizarBarraInstrucciones(true); // "Tienes una llamada entrante de Juan. Toca el botón verde para contestar."
+                        }
+                    }
+                }, 1800);
+            });
+        };
+    }
+
+    // Botón de Silenciar Micrófono en Llamada (Dinámica Nivel 3)
+    const btnMute = $("#wsCallBtnMute");
+    if (btnMute) {
+        btnMute.onclick = () => {
+            alternarSilencioLlamada();
+        };
+    }
+
+    // Botón Colgar en Llamada de Voz
     const btnColgar = $("#wsCallBtnColgar");
     if (btnColgar) {
         btnColgar.onclick = () => {
@@ -1581,17 +2115,59 @@ function inicializarListeners() {
         };
     }
 
-    // Adjuntar / Cámara
+    const btnMinimizarLlamada = $("#wsCallBtnMinimizar");
+    if (btnMinimizarLlamada) {
+        btnMinimizarLlamada.onclick = () => {
+            finalizarLlamadaSimulada();
+        };
+    }
+
+    // Botón de Videollamada
+    const btnVideoLlamada = $("#wsBtnVideoLlamada");
+    if (btnVideoLlamada) {
+        btnVideoLlamada.onclick = () => {
+            iniciarVideollamadaSimulada();
+        };
+    }
+
+    // Botón de Cámara en Videollamada (Dinámica Nivel 4)
+    const btnVideoCamara = $("#wsVideoCallBtnVideo");
+    if (btnVideoCamara) {
+        btnVideoCamara.onclick = () => {
+            alternarCamaraVideoLlamada();
+        };
+    }
+
+    // Botón de Silenciar Micrófono en Videollamada (Dinámica Nivel 4)
+    const btnVideoMute = $("#wsVideoCallBtnMute");
+    if (btnVideoMute) {
+        btnVideoMute.onclick = () => {
+            alternarSilencioVideoLlamada();
+        };
+    }
+
+    // Botón Colgar en Videollamada
+    const btnVideoColgar = $("#wsVideoCallBtnColgar");
+    if (btnVideoColgar) {
+        btnVideoColgar.onclick = () => {
+            finalizarVideollamadaSimulada();
+        };
+    }
+
+    const btnMinimizarVideo = $("#wsVideoCallBtnMinimizar");
+    if (btnMinimizarVideo) {
+        btnMinimizarVideo.onclick = () => {
+            finalizarVideollamadaSimulada();
+        };
+    }
+
+    // Adjuntar / Galería
     const openGaleria = () => {
-        $("#wsModalGaleria").classList.add("activa");
-        const textEl = $("#wsInstructionsText");
-        if (textEl) {
-            const texto = "Toca una de las fotos para seleccionarla y enviarla.";
-            textEl.textContent = texto;
-            ultimaInstruccionHablada = texto;
-            speak(texto);
+        $("#wsModalGaleria")?.classList.add("activa");
+        if (nivelActual === "enviar-foto") {
+            subPasoNivel5 = 2;
         }
-        resaltarElemento(".ws-galeria-item");
+        actualizarBarraInstrucciones(true);
     };
 
     const btnAdjuntar = $("#wsBtnAdjuntar");
@@ -1603,24 +2179,92 @@ function inicializarListeners() {
     const btnCerrarGaleria = $("#wsGaleriaBtnCerrar");
     if (btnCerrarGaleria) {
         btnCerrarGaleria.onclick = () => {
-            $("#wsModalGaleria").classList.remove("activa");
+            $("#wsModalGaleria")?.classList.remove("activa");
+            if (nivelActual === "enviar-foto") subPasoNivel5 = 1;
             actualizarBarraInstrucciones(true);
         };
     }
 
-    const galeriaGrid = $("#wsModalGaleria").querySelector(".ws-galeria-grid");
-    if (galeriaGrid) {
-        galeriaGrid.onclick = (e) => {
+    // Click en fotos de la galería -> abre preview de WhatsApp
+    const galeriaContainer = $("#wsModalGaleria");
+    if (galeriaContainer) {
+        galeriaContainer.onclick = (e) => {
             const item = e.target.closest(".ws-galeria-item");
             if (!item) return;
-            const photoName = item.dataset.photoName;
-            const emoji = item.firstChild.textContent;
-            enviarFotoSimulada(photoName, emoji);
-            $("#wsModalGaleria").classList.remove("activa");
+            const photoPath = item.dataset.photoPath || "./assets/img/whatsapp/photo_mitad_mundo.jpg";
+            const photoCaption = item.dataset.photoCaption || "Paseo familiar Mitad del Mundo";
+
+            fotoSeleccionadaParaPreview = {
+                path: photoPath,
+                caption: photoCaption
+            };
+
+            const previewImg = $("#wsPhotoPreviewImg");
+            if (previewImg) previewImg.src = photoPath;
+
+            const captionInput = $("#wsPhotoPreviewCaption");
+            if (captionInput) captionInput.value = photoCaption;
+
+            $("#wsModalGaleria")?.classList.remove("activa");
+            $("#wsModalPreviewFoto")?.classList.add("activa");
+
+            if (nivelActual === "enviar-foto") {
+                subPasoNivel5 = 3;
+            }
+            actualizarBarraInstrucciones(true);
         };
     }
 
-    // Botón continuar en modal éxito
+    // Clic en fotos del chat para abrir visor en pantalla completa
+    if (chatBody) {
+        chatBody.addEventListener("click", (e) => {
+            const photoEl = e.target.closest(".ws-photo-msg-clickable");
+            if (photoEl) {
+                const photoUrl = photoEl.dataset.photoUrl;
+                const photoCaption = photoEl.dataset.photoCaption;
+                const photoSender = photoEl.dataset.photoSender;
+                const photoTime = photoEl.dataset.photoTime;
+                if (photoUrl) {
+                    abrirVisorFoto(photoUrl, photoCaption, photoSender, photoTime);
+                }
+            }
+        });
+    }
+
+    // Botón volver en el visor de fotos
+    const btnVisorVolver = $("#wsVisorBtnVolver");
+    if (btnVisorVolver) {
+        btnVisorVolver.onclick = () => {
+            cerrarVisorFoto();
+        };
+    }
+
+    // Cerrar preview de foto
+    const btnCerrarPreview = $("#wsPhotoPreviewBtnCerrar");
+    if (btnCerrarPreview) {
+        btnCerrarPreview.onclick = () => {
+            $("#wsModalPreviewFoto")?.classList.remove("activa");
+            if (nivelActual === "enviar-foto") subPasoNivel5 = 1;
+            actualizarBarraInstrucciones(true);
+        };
+    }
+
+    // Botón verde de enviar foto en el preview
+    const btnEnviarFotoPreview = $("#wsBtnEnviarFotoPreview");
+    if (btnEnviarFotoPreview) {
+        btnEnviarFotoPreview.onclick = () => {
+            const captionInput = $("#wsPhotoPreviewCaption");
+            const captionText = captionInput ? captionInput.value.trim() : "";
+            const photoPath = (fotoSeleccionadaParaPreview && fotoSeleccionadaParaPreview.path)
+                ? fotoSeleccionadaParaPreview.path
+                : "./assets/img/whatsapp/photo_mitad_mundo.jpg";
+
+            enviarFotoReal(photoPath, captionText);
+            $("#wsModalPreviewFoto")?.classList.remove("activa");
+        };
+    }
+
+    // Botón continuar en modal de éxito
     const btnContinuar = $("#wsSuccessBtnContinuar");
     if (btnContinuar) btnContinuar.onclick = retornarANiveles;
 }
@@ -1655,9 +2299,12 @@ function enviarMensajeTexto(texto) {
     moverChatAlTop(chatSeleccionado.id);
     guardar(`gz_whatsapp_chats_${nivelActual}`, listaChatsData);
 
-    $("#wsInputMensaje").value = "";
-    $("#wsMicIcon").style.display = "block";
-    $("#wsSendIcon").style.display = "none";
+    const campoTexto = $("#wsInputMensaje");
+    if (campoTexto) campoTexto.value = "";
+    const micIcon = $("#wsMicIcon");
+    const sendIcon = $("#wsSendIcon");
+    if (micIcon) micIcon.style.display = "block";
+    if (sendIcon) sendIcon.style.display = "none";
     renderizarMensajes();
 
     // Lógica del Nivel 1 (Enviar mensaje)
@@ -1675,7 +2322,7 @@ function enviarMensajeTexto(texto) {
             juanResponseTimeout = setTimeout(() => {
                 const conversacionEl = $("#wsChatConversation");
                 if (conversacionEl && conversacionEl.classList.contains("activa") && chatSeleccionado && chatSeleccionado.id === "juan-nieto" && subPasoNivel1 === 2) {
-                    
+
                     if (statusEl) {
                         statusEl.textContent = "en línea";
                     }
@@ -1709,10 +2356,13 @@ function enviarMensajeTexto(texto) {
 }
 
 /**
- * Envía una nota de voz real o simulada
+ * Envía una nota de voz real o simulada (corta voz de Nico inmediatamente)
  */
 async function enviarMensajeVoz() {
     if (!chatSeleccionado) return;
+
+    // Detener de inmediato cualquier voz de Nico al empezar a grabar
+    stopSpeech();
 
     const sendBtn = $("#wsEnviarMensajeBtn");
     const inputField = $("#wsInputMensaje");
@@ -1721,7 +2371,6 @@ async function enviarMensajeVoz() {
         recordingStartTime = Date.now();
         estaGrabandoAudio = true;
 
-        // Deshabilitar entrada de texto y arrancar temporizador visual
         if (inputField) {
             inputField.disabled = true;
             inputField.value = "Grabando... 0:00";
@@ -1742,14 +2391,10 @@ async function enviarMensajeVoz() {
             </svg>
         `;
 
-        if (exito) {
-            speak("Grabando tu voz. Presiona el botón rojo de nuevo para detener y enviar.");
-        } else {
-            // Fallback si no hay micrófono
-            speak("Simulando grabación de audio. Presiona el botón rojo de nuevo para enviar.");
+        if (!exito) {
+            console.warn("Simulando grabación de audio...");
         }
-        
-        // Refrescar barra para ocultar regresar
+
         actualizarBarraInstrucciones(false);
     } else {
         estaGrabandoAudio = false;
@@ -1759,7 +2404,6 @@ async function enviarMensajeVoz() {
             <svg id="wsSendIcon" class="ws-action-circle-icon" viewBox="0 0 24 24" style="display: none; fill: white;"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/></svg>
         `;
 
-        // Detener cronómetro y habilitar campo
         if (recordingDurationInterval) {
             clearInterval(recordingDurationInterval);
             recordingDurationInterval = null;
@@ -1772,7 +2416,6 @@ async function enviarMensajeVoz() {
         let audioUrl = await detenerGrabacionReal();
         const hora = obtenerHoraActual();
 
-        // Calcular duración real en segundos
         const recordingDurationSeconds = Math.round((Date.now() - recordingStartTime) / 1000) || 1;
         const mins = Math.floor(recordingDurationSeconds / 60);
         const secs = (recordingDurationSeconds % 60).toString().padStart(2, "0");
@@ -1797,15 +2440,15 @@ async function enviarMensajeVoz() {
         // Control de pasos de Nivel 2
         if (nivelActual === "grabar-audio") {
             if (chatSeleccionado.id === "juan-nieto") {
-                if (subPasoNivel2 === 1) {
+                if (subPasoNivel2 <= 2) {
                     subPasoNivel2 = 3;
                     actualizarBarraInstrucciones(true);
-                } else if (subPasoNivel2 === 6) {
+                } else if (subPasoNivel2 >= 5) {
                     subPasoNivel2 = 7;
                     actualizarBarraInstrucciones(true);
                 }
             } else if (chatSeleccionado.id === "dr-martinez") {
-                if (subPasoNivel2 === 10) {
+                if (subPasoNivel2 >= 9) {
                     completarNivelActual("¡Has grabado, enviado y escuchado notas de voz reales y confirmaste tu consulta médica!");
                 }
             }
@@ -1814,22 +2457,56 @@ async function enviarMensajeVoz() {
 }
 
 /**
- * Envía una foto simulada
+ * Abre el visor de fotos en pantalla completa
  */
-function enviarFotoSimulada(photoName, emoji) {
+function abrirVisorFoto(photoUrl, caption, senderName, time) {
+    const modalVisor = $("#wsModalVisorFoto");
+    const imgEl = $("#wsVisorImg");
+    const captionEl = $("#wsVisorCaption");
+    const senderEl = $("#wsVisorSenderName");
+    const dateEl = $("#wsVisorDate");
+
+    if (imgEl) imgEl.src = photoUrl;
+    if (captionEl) captionEl.textContent = caption || "";
+    if (senderEl) senderEl.textContent = senderName || (chatSeleccionado ? chatSeleccionado.nombre : "Foto");
+    if (dateEl) dateEl.textContent = time ? `Hoy a las ${time}` : "Hoy";
+
+    modalVisor?.classList.add("activa");
+
+    if (nivelActual === "enviar-foto" && subPasoNivel5 === 5) {
+        subPasoNivel5 = 6;
+        actualizarBarraInstrucciones(true); // "¡Excelente! Aquí puedes ver la foto en pantalla completa. Toca la flecha arriba a la izquierda para volver al chat."
+    }
+}
+
+/**
+ * Cierra el visor de fotos en pantalla completa
+ */
+function cerrarVisorFoto() {
+    $("#wsModalVisorFoto")?.classList.remove("activa");
+
+    if (nivelActual === "enviar-foto" && subPasoNivel5 === 6) {
+        completarNivelActual("¡Has aprendido a adjuntar, enviar, recibir y abrir fotos en pantalla completa en WhatsApp!");
+    }
+}
+
+/**
+ * Envía una foto real al chat con previsualización
+ */
+function enviarFotoReal(photoUrl, caption) {
     if (!chatSeleccionado) return;
 
     const hora = obtenerHoraActual();
     const nuevoMensaje = {
         sender: "enviada",
         type: "photo",
-        text: photoName,
-        photoEmoji: emoji,
+        photoUrl: photoUrl,
+        text: caption || "",
         time: hora
     };
 
     chatSeleccionado.mensajes.push(nuevoMensaje);
-    chatSeleccionado.preview = `📷 ${photoName}`;
+    chatSeleccionado.preview = `📷 ${caption || "Foto"}`;
     chatSeleccionado.hora = hora;
 
     moverChatAlTop(chatSeleccionado.id);
@@ -1837,79 +2514,372 @@ function enviarFotoSimulada(photoName, emoji) {
     renderizarMensajes();
 
     if (nivelActual === "enviar-foto" && chatSeleccionado.id === "juan-nieto") {
-        completarNivelActual("¡Has compartido una fotografía correctamente!");
+        subPasoNivel5 = 4;
+        actualizarBarraInstrucciones(false);
+
+        // Juan responde con mensaje y foto recibida
+        const statusEl = $("#wsChatStatus");
+        setTimeout(() => {
+            if (statusEl) statusEl.textContent = "escribiendo...";
+        }, 1200);
+
+        setTimeout(() => {
+            if (statusEl) statusEl.textContent = "en línea";
+
+            const horaResp = obtenerHoraActual();
+            const mensajeFotoJuan = {
+                sender: "recibida",
+                type: "photo",
+                photoUrl: "./assets/img/whatsapp/photo_parque.jpg",
+                text: "¡Qué hermosa foto abuelo! Mira este lindo perrito que vi en el parque 🐶",
+                time: horaResp
+            };
+
+            chatSeleccionado.mensajes.push(mensajeFotoJuan);
+            chatSeleccionado.preview = "📷 Foto recibida";
+            chatSeleccionado.hora = horaResp;
+
+            moverChatAlTop(chatSeleccionado.id);
+            guardar(`gz_whatsapp_chats_${nivelActual}`, listaChatsData);
+            renderizarMensajes();
+
+            subPasoNivel5 = 5;
+            actualizarBarraInstrucciones(true); // "¡Juan te ha respondido con una foto! Toca la foto del perrito para abrirla en grande."
+        }, 3000);
     }
 }
 
 /**
- * Inicia una pantalla de llamada simulada
+ * Inicia la pantalla de llamada de voz realista (Nivel 3)
  */
-function iniciarLlamadaSimulada(esVideo) {
+function iniciarLlamadaSimulada() {
     if (!chatSeleccionado) return;
 
     const modal = $("#wsModalLlamada");
-    const avatar = $("#wsCallAvatar");
     const name = $("#wsCallName");
     const status = $("#wsCallStatus");
+    const avatarLetter = $("#wsCallAvatarLetter");
+    const muteBtn = $("#wsCallBtnMute");
+    const micMutedIcon = $("#wsCallMicMutedIcon");
+    const micUnmutedIcon = $("#wsCallMicUnmutedIcon");
+    const muteLabel = $("#wsCallMuteLabel");
 
-    avatar.textContent = chatSeleccionado.iniciales;
-    avatar.className = `ws-avatar ws-call-avatar ${chatSeleccionado.avatarClass}`;
-    name.textContent = chatSeleccionado.nombre;
-    status.textContent = "Llamando...";
+    if (name) name.textContent = chatSeleccionado.nombre;
+    if (status) status.textContent = "Llamando...";
 
-    modal.classList.add("activa");
-
-    let textoVoz = "";
-    let textoBarra = "";
-    if (nivelActual === "hacer-llamada") {
-        textoBarra = "Presiona el botón rojo para colgar y finalizar la llamada.";
-        textoVoz = `Llamando a ${chatSeleccionado.nombre}. Cuando termines de hablar, presiona el botón rojo para colgar y finalizar la llamada.`;
-    } else if (nivelActual === "llamada-grupal") {
-        textoBarra = "Presiona el botón rojo para colgar y finalizar la llamada grupal.";
-        textoVoz = `Iniciando llamada grupal con la ${chatSeleccionado.nombre}. Cuando termines de hablar, presiona el botón rojo para colgar.`;
-    } else {
-        textoBarra = "Presiona el botón rojo para colgar.";
-        textoVoz = `Llamando a ${chatSeleccionado.nombre}. Presiona el botón rojo para colgar.`;
+    if (avatarLetter) {
+        avatarLetter.textContent = chatSeleccionado.iniciales || "JN";
+        avatarLetter.className = `ws-avatar ws-call-avatar ${chatSeleccionado.avatarClass || "ws-avatar-color-4"} ws-call-avatar-letter`;
     }
 
-    const textEl = $("#wsInstructionsText");
-    if (textEl) {
-        textEl.textContent = textoBarra;
-        ultimaInstruccionHablada = textoBarra;
-    }
+    // Inicialmente con micrófono encendido (normal)
+    isMicMutedInCall = false;
+    if (muteBtn) muteBtn.classList.remove("muted");
+    if (micMutedIcon) micMutedIcon.style.display = "none";
+    if (micUnmutedIcon) micUnmutedIcon.style.display = "block";
+    if (muteLabel) muteLabel.textContent = "Silenciar";
 
-    speak(textoVoz);
+    modal?.classList.add("activa");
+    subPasoNivel3 = 2;
+    actualizarBarraInstrucciones(false);
 
     let segundos = 0;
     setTimeout(() => {
-        status.textContent = "Conectando...";
-        setTimeout(() => {
-            callTimerInterval = setInterval(() => {
-                segundos++;
-                const mins = Math.floor(segundos / 60).toString().padStart(2, "0");
-                const secs = (segundos % 60).toString().padStart(2, "0");
-                status.textContent = `${mins}:${secs}`;
-            }, 1000);
+        if (status) status.textContent = "0:01";
+        if (callTimerInterval) clearInterval(callTimerInterval);
+
+        callTimerInterval = setInterval(() => {
+            segundos++;
+            const mins = Math.floor(segundos / 60).toString().padStart(2, "0");
+            const secs = (segundos % 60).toString().padStart(2, "0");
+            if (status) status.textContent = `${mins}:${secs}`;
         }, 1000);
-    }, 1500);
+
+        // 1. Juan saluda primero por voz
+        stopSpeech();
+        speak("¡Hola abuelo! Qué alegría escucharte, ¿cómo estás?", () => {
+            // 2. Dar 1.5 segundos de pausa natural antes de silenciar por error
+            setTimeout(() => {
+                if (subPasoNivel3 === 2) {
+                    isMicMutedInCall = true;
+                    if (muteBtn) muteBtn.classList.add("muted");
+                    if (micMutedIcon) micMutedIcon.style.display = "block";
+                    if (micUnmutedIcon) micUnmutedIcon.style.display = "none";
+                    if (muteLabel) muteLabel.textContent = "Silenciado";
+
+                    subPasoNivel3 = 3;
+                    actualizarBarraInstrucciones(true); // "Se ha silenciado tu micrófono. Toca el botón 'Silenciar' para activarlo de nuevo."
+                }
+            }, 1500);
+        });
+    }, 1000);
 }
 
 /**
- * Finaliza la llamada simulada y valida el nivel
+ * Alterna el estado del micrófono en la llamada de voz
+ */
+function alternarSilencioLlamada() {
+    const muteBtn = $("#wsCallBtnMute");
+    const micMutedIcon = $("#wsCallMicMutedIcon");
+    const micUnmutedIcon = $("#wsCallMicUnmutedIcon");
+    const muteLabel = $("#wsCallMuteLabel");
+
+    isMicMutedInCall = !isMicMutedInCall;
+
+    if (isMicMutedInCall) {
+        muteBtn?.classList.add("muted");
+        if (micMutedIcon) micMutedIcon.style.display = "block";
+        if (micUnmutedIcon) micUnmutedIcon.style.display = "none";
+        if (muteLabel) muteLabel.textContent = "Silenciado";
+    } else {
+        muteBtn?.classList.remove("muted");
+        if (micMutedIcon) micMutedIcon.style.display = "none";
+        if (micUnmutedIcon) micUnmutedIcon.style.display = "block";
+        if (muteLabel) muteLabel.textContent = "Silenciar";
+
+        // Dinámica Nivel 3: El contacto habla cariñosamente
+        if (subPasoNivel3 === 3) {
+            subPasoNivel3 = 4;
+            stopSpeech();
+            speak("¡Ahora sí te escucho abuelo! Te llamo luego que voy a almorzar, ¡un abrazo!", () => {
+                setTimeout(() => {
+                    if (subPasoNivel3 === 4) {
+                        subPasoNivel3 = 5;
+                        actualizarBarraInstrucciones(true); // "Presiona el botón rojo para colgar la llamada."
+                    }
+                }, 1000);
+            });
+        }
+    }
+}
+
+/**
+ * Finaliza la llamada de voz simulada (Maneja llamada 1 saliente y llamada 2 entrante)
  */
 function finalizarLlamadaSimulada() {
+    if (nivelActual === "hacer-llamada") {
+        // Impedir colgar antes de tiempo en llamada saliente
+        if (subPasoNivel3 < 5) {
+            mostrarAvisoBloqueado("Espera a terminar la conversación y reactivar tu micrófono antes de colgar.");
+            return;
+        }
+
+        // Impedir colgar antes de tiempo en llamada entrante
+        if (subPasoNivel3 === 8) {
+            mostrarAvisoBloqueado("Espera a que Juan termine de hablar antes de colgar.");
+            return;
+        }
+    }
+
     if (callTimerInterval) {
         clearInterval(callTimerInterval);
         callTimerInterval = null;
     }
 
-    $("#wsModalLlamada").classList.remove("activa");
+    $("#wsModalLlamada")?.classList.remove("activa");
     stopSpeech();
 
-    if (nivelActual === "hacer-llamada" && chatSeleccionado.id === "juan-nieto") {
-        completarNivelActual("¡Has realizado la llamada a tu nieto correctamente!");
-    } else if (nivelActual === "llamada-grupal" && chatSeleccionado.id === "familia-mendoza") {
-        completarNivelActual("¡Has realizado una llamada grupal correctamente!");
+    if (nivelActual === "hacer-llamada" && chatSeleccionado && chatSeleccionado.id === "juan-nieto") {
+        if (subPasoNivel3 === 5) {
+            // Terminó la primera llamada -> preparar llamada entrante
+            subPasoNivel3 = 6;
+            const textoEspera = "Espera un momento, estás a punto de recibir una llamada entrante.";
+            actualizarBarraInstrucciones(false);
+
+            speak(textoEspera, () => {
+                setTimeout(() => {
+                    const simulador = $("#pantallaWhatsappSimulador");
+                    if (simulador && simulador.classList.contains("activa") && subPasoNivel3 === 6) {
+                        const modalEntrante = $("#wsModalLlamadaEntrante");
+                        if (modalEntrante) {
+                            modalEntrante.classList.add("activa");
+                            subPasoNivel3 = 7;
+                            actualizarBarraInstrucciones(true); // "Tienes una llamada entrante de Juan. Toca el botón verde para contestar."
+                        }
+                    }
+                }, 1800);
+            });
+        } else if (subPasoNivel3 >= 9) {
+            // Terminó la segunda llamada (entrante) -> Completar nivel
+            completarNivelActual("¡Excelente! Has aprendido a realizar y recibir llamadas en WhatsApp.");
+        }
+    }
+}
+
+/**
+ * Inicia la pantalla de videollamada realista (Nivel 4)
+ */
+function iniciarVideollamadaSimulada() {
+    if (!chatSeleccionado) return;
+
+    const modal = $("#wsModalVideoLlamada");
+    const name = $("#wsVideoCallName");
+    const status = $("#wsVideoCallStatus");
+    const pipImg = $("#wsVideoCallPipImg");
+    const pipOff = $("#wsVideoCallPipOff");
+    const btnVideo = $("#wsVideoCallBtnVideo");
+    const camOnIcon = $("#wsVideoCamOnIcon");
+    const camOffIcon = $("#wsVideoCamOffIcon");
+    const btnMute = $("#wsVideoCallBtnMute");
+    const micUnmutedIcon = $("#wsVideoMicUnmutedIcon");
+    const micMutedIcon = $("#wsVideoMicMutedIcon");
+
+    if (name) name.textContent = chatSeleccionado.nombre;
+    if (status) status.textContent = "Conectando...";
+
+    isVideoCameraOn = true;
+    isVideoMicMuted = false;
+
+    if (pipImg) pipImg.style.display = "block";
+    if (pipOff) pipOff.style.display = "none";
+    if (btnVideo) btnVideo.classList.remove("off");
+    if (camOnIcon) camOnIcon.style.display = "block";
+    if (camOffIcon) camOffIcon.style.display = "none";
+
+    if (btnMute) btnMute.classList.remove("muted");
+    if (micUnmutedIcon) micUnmutedIcon.style.display = "block";
+    if (micMutedIcon) micMutedIcon.style.display = "none";
+
+    modal?.classList.add("activa");
+    subPasoNivel4 = 2;
+    actualizarBarraInstrucciones(false);
+
+    let segundos = 0;
+    setTimeout(() => {
+        if (status) status.textContent = "0:01";
+        if (videoCallTimerInterval) clearInterval(videoCallTimerInterval);
+
+        videoCallTimerInterval = setInterval(() => {
+            segundos++;
+            const mins = Math.floor(segundos / 60).toString().padStart(2, "0");
+            const secs = (segundos % 60).toString().padStart(2, "0");
+            if (status) status.textContent = `${mins}:${secs}`;
+        }, 1000);
+
+        // 1. Juan saluda alegremente por videollamada
+        stopSpeech();
+        speak("¡Hola abuelo! ¡Qué alegría verte por videollamada! Te veo súper bien.", () => {
+            // 2. Dar 1.5 segundos antes de que la cámara se apague por error
+            setTimeout(() => {
+                if (subPasoNivel4 === 2) {
+                    isVideoCameraOn = false;
+                    if (pipImg) pipImg.style.display = "none";
+                    if (pipOff) pipOff.style.display = "flex";
+                    if (btnVideo) btnVideo.classList.add("off");
+                    if (camOnIcon) camOnIcon.style.display = "none";
+                    if (camOffIcon) camOffIcon.style.display = "block";
+
+                    subPasoNivel4 = 3;
+                    actualizarBarraInstrucciones(true); // "Por error se apagó tu cámara. Toca el botón de la cámara para volver a encenderla."
+                }
+            }, 1500);
+        });
+    }, 1000);
+}
+
+/**
+ * Alterna el estado de la cámara en la videollamada
+ */
+function alternarCamaraVideoLlamada() {
+    isVideoCameraOn = !isVideoCameraOn;
+    const pipImg = $("#wsVideoCallPipImg");
+    const pipOff = $("#wsVideoCallPipOff");
+    const btnVideo = $("#wsVideoCallBtnVideo");
+    const camOnIcon = $("#wsVideoCamOnIcon");
+    const camOffIcon = $("#wsVideoCamOffIcon");
+
+    if (isVideoCameraOn) {
+        if (pipImg) pipImg.style.display = "block";
+        if (pipOff) pipOff.style.display = "none";
+        btnVideo?.classList.remove("off");
+        if (camOnIcon) camOnIcon.style.display = "block";
+        if (camOffIcon) camOffIcon.style.display = "none";
+
+        if (subPasoNivel4 === 3) {
+            subPasoNivel4 = 4;
+            stopSpeech();
+            speak("¡Eso, ya te veo clarito otra vez!", () => {
+                setTimeout(() => {
+                    if (subPasoNivel4 === 4) {
+                        // Siguiente reto: se silencia el micrófono
+                        isVideoMicMuted = true;
+                        const btnMute = $("#wsVideoCallBtnMute");
+                        const micUnmutedIcon = $("#wsVideoMicUnmutedIcon");
+                        const micMutedIcon = $("#wsVideoMicMutedIcon");
+
+                        if (btnMute) btnMute.classList.add("muted");
+                        if (micUnmutedIcon) micUnmutedIcon.style.display = "none";
+                        if (micMutedIcon) micMutedIcon.style.display = "block";
+
+                        subPasoNivel4 = 5;
+                        actualizarBarraInstrucciones(true); // "Se ha silenciado tu micrófono. Toca el botón del micrófono para activarlo."
+                    }
+                }, 1500);
+            });
+        }
+    } else {
+        if (pipImg) pipImg.style.display = "none";
+        if (pipOff) pipOff.style.display = "flex";
+        btnVideo?.classList.add("off");
+        if (camOnIcon) camOnIcon.style.display = "none";
+        if (camOffIcon) camOffIcon.style.display = "block";
+    }
+}
+
+/**
+ * Alterna el estado del micrófono en la videollamada
+ */
+function alternarSilencioVideoLlamada() {
+    isVideoMicMuted = !isVideoMicMuted;
+    const btnMute = $("#wsVideoCallBtnMute");
+    const micUnmutedIcon = $("#wsVideoMicUnmutedIcon");
+    const micMutedIcon = $("#wsVideoMicMutedIcon");
+
+    if (isVideoMicMuted) {
+        btnMute?.classList.add("muted");
+        if (micUnmutedIcon) micUnmutedIcon.style.display = "none";
+        if (micMutedIcon) micMutedIcon.style.display = "block";
+    } else {
+        btnMute?.classList.remove("muted");
+        if (micUnmutedIcon) micUnmutedIcon.style.display = "block";
+        if (micMutedIcon) micMutedIcon.style.display = "none";
+
+        if (subPasoNivel4 === 5) {
+            subPasoNivel4 = 6;
+            stopSpeech();
+            speak("¡Perfecto abuelo, ahora sí te escucho! Te mando un abrazo grande, hablamos luego.", () => {
+                setTimeout(() => {
+                    if (subPasoNivel4 === 6) {
+                        subPasoNivel4 = 7;
+                        actualizarBarraInstrucciones(true); // "Muy bien, ahora presiona el botón rojo para finalizar la videollamada."
+                    }
+                }, 1500);
+            });
+        }
+    }
+}
+
+/**
+ * Finaliza la videollamada simulada
+ */
+function finalizarVideollamadaSimulada() {
+    if (nivelActual === "videollamada" || nivelActual === "llamada-grupal") {
+        if (subPasoNivel4 < 7) {
+            mostrarAvisoBloqueado("Espera a completar la videollamada antes de colgar.");
+            return;
+        }
+    }
+
+    if (videoCallTimerInterval) {
+        clearInterval(videoCallTimerInterval);
+        videoCallTimerInterval = null;
+    }
+
+    $("#wsModalVideoLlamada")?.classList.remove("activa");
+    stopSpeech();
+
+    if ((nivelActual === "videollamada" || nivelActual === "llamada-grupal") && chatSeleccionado) {
+        completarNivelActual("¡Has aprendido a dominar la cámara y el micrófono en una videollamada de WhatsApp!");
     }
 }
 
@@ -1919,8 +2889,9 @@ function finalizarLlamadaSimulada() {
 function completarNivelActual(mensajeExito) {
     completarNivel("WhatsApp", nivelActual);
 
-    $("#wsSuccessMessage").textContent = mensajeExito;
-    $("#wsModalExito").classList.add("activa");
+    const msgEl = $("#wsSuccessMessage");
+    if (msgEl) msgEl.textContent = mensajeExito;
+    $("#wsModalExito")?.classList.add("activa");
 
     const mensajeVoz = `¡Excelente trabajo! Nivel completado con éxito. Presiona continuar para regresar a la lista de niveles.`;
     speak(mensajeVoz);

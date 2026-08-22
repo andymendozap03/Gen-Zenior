@@ -24,10 +24,10 @@ export const datosModulos = {
                 imagen: "./assets/img/levels/llamada.png"
             },
             {
-                id: "llamada-grupal",
-                titulo: "Llamada grupal",
-                descripcion: "Practica una llamada con varias personas.",
-                imagen: "./assets/img/levels/llamada-grupal.png"
+                id: "videollamada",
+                titulo: "Videollamada",
+                descripcion: "Aprende a realizar una videollamada paso a paso.",
+                imagen: "./assets/img/levels/videollamada.png"
             },
             {
                 id: "enviar-foto",

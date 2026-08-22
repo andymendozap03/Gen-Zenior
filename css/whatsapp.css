@@ -777,7 +777,34 @@
     line-height: 1.25;
 }
 
-/* --- MODAL DE LLAMADA SIMULADA --- */
+/* --- AVISO FLOTANTE DE ACCIÓN BLOQUEADA --- */
+.ws-toast-blocked {
+    position: absolute;
+    bottom: 80px;
+    left: 50%;
+    transform: translateX(-50%) translateY(20px);
+    background: rgba(17, 27, 33, 0.95);
+    color: #ffffff;
+    padding: 10px 18px;
+    border-radius: 24px;
+    font-size: 13.5px;
+    font-weight: 700;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.35);
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    z-index: 80;
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity 0.25s ease, transform 0.25s ease;
+    text-align: center;
+    max-width: 90%;
+}
+
+.ws-toast-blocked.mostrar {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+}
+
+/* --- MODAL DE LLAMADA DE VOZ REALISTA (WHATSAPP CALL) --- */
 .ws-modal-llamada {
     display: none;
     position: absolute;
@@ -786,67 +813,458 @@
     width: 100%;
     height: 100%;
     background-color: #0b141a;
-    color: white;
+    background-image: radial-gradient(#1f2c34 1px, transparent 1px);
+    background-size: 20px 20px;
+    color: #ffffff;
     z-index: 100;
-    align-items: center;
-    justify-content: center;
+    flex-direction: column;
+    justify-content: space-between;
+    padding: 16px 16px 24px;
+    overflow: hidden;
 }
 
 .ws-modal-llamada.activa {
     display: flex;
 }
 
-.ws-call-container {
+.ws-call-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    width: 100%;
+    padding: 4px 8px;
+}
+
+.ws-call-header-btn {
+    background: rgba(255, 255, 255, 0.12);
+    border: none;
+    border-radius: 50%;
+    width: 40px;
+    height: 40px;
+    display: grid;
+    place-items: center;
+    cursor: pointer;
+    color: #ffffff;
+    transition: background 0.2s;
+}
+
+.ws-call-header-btn:hover {
+    background: rgba(255, 255, 255, 0.22);
+}
+
+.ws-call-header-info {
+    text-align: center;
+}
+
+.ws-call-name {
+    font-size: 20px;
+    margin: 0;
+    font-weight: 700;
+    letter-spacing: 0.2px;
+}
+
+.ws-call-status {
+    font-size: 13.5px;
+    color: #8696a0;
+    margin: 2px 0 0;
+    font-weight: 600;
+}
+
+.ws-call-center-body {
     display: flex;
     flex-direction: column;
     align-items: center;
     gap: 16px;
+    margin: auto 0;
+}
+
+.ws-call-avatar-wrapper {
+    width: 140px;
+    height: 140px;
+    border-radius: 50%;
+    border: 3px solid rgba(255, 255, 255, 0.15);
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.6);
+    overflow: hidden;
+    display: grid;
+    place-items: center;
+    background: transparent;
+}
+
+.ws-call-avatar-letter {
     width: 100%;
-    max-width: 320px;
+    height: 100%;
+    border-radius: 50%;
+    display: grid;
+    place-items: center;
+    font-size: 52px;
+    font-weight: 700;
+    color: #ffffff;
+    letter-spacing: 1px;
+}
+
+/* Modal de Llamada Entrante Realista de WhatsApp */
+.ws-modal-llamada-entrante {
+    display: none;
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: radial-gradient(circle at center, #1b2831 0%, #0b141a 100%);
+    color: #ffffff;
+    z-index: 110;
+    flex-direction: column;
+    justify-content: space-between;
+    padding: 36px 24px 40px;
+    box-sizing: border-box;
+    animation: wsFadeIn 0.3s ease-out;
+}
+
+.ws-modal-llamada-entrante.activa {
+    display: flex;
+}
+
+.ws-incoming-header {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.ws-incoming-app-label {
+    display: inline-flex;
+    align-items: center;
+    background: rgba(255, 255, 255, 0.08);
+    padding: 6px 14px;
+    border-radius: 20px;
+    font-size: 13px;
+    font-weight: 600;
+    color: #e9edef;
+}
+
+.ws-incoming-body {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 12px;
+    margin: auto 0;
+}
+
+.ws-incoming-avatar {
+    width: 130px;
+    height: 130px;
+    border-radius: 50%;
+    font-size: 48px;
+    font-weight: 700;
+    display: grid;
+    place-items: center;
+    color: #ffffff;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.6);
+    border: 3px solid rgba(255, 255, 255, 0.15);
+}
+
+.ws-incoming-name {
+    font-size: 24px;
+    font-weight: 700;
+    margin: 8px 0 0;
+    color: #ffffff;
     text-align: center;
 }
 
-.ws-call-avatar {
-    width: 110px;
-    height: 110px;
-    font-size: 38px;
-    box-shadow: 0 0 20px rgba(255, 255, 255, 0.1);
-}
-
-.ws-call-name {
-    font-size: 26px;
+.ws-incoming-type {
+    font-size: 14.5px;
+    color: #25d366;
+    font-weight: 600;
     margin: 0;
-    font-weight: 700;
+    animation: wsIncomingBlink 1.5s infinite;
 }
 
-.ws-call-status {
-    font-size: 16px;
-    color: #8696a0;
-    margin: 0;
+@keyframes wsIncomingBlink {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.5; }
 }
 
-.ws-call-actions-container {
-    margin-top: 40px;
+.ws-incoming-actions {
+    display: flex;
+    justify-content: space-around;
+    align-items: center;
+    width: 100%;
+    max-width: 320px;
+    margin: 0 auto;
 }
 
-.ws-call-btn-colgar {
+.ws-incoming-btn {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+    background: none;
+    border: none;
+    cursor: pointer;
+    color: #ffffff;
+    font-size: 13px;
+    font-weight: 600;
+}
+
+.ws-incoming-btn-icon-wrapper {
     width: 64px;
     height: 64px;
     border-radius: 50%;
-    background-color: #ea0038;
+    display: grid;
+    place-items: center;
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.ws-incoming-btn.reject .ws-incoming-btn-icon-wrapper {
+    background: #ea0038;
+}
+
+.ws-incoming-btn.accept .ws-incoming-btn-icon-wrapper {
+    background: #25d366;
+}
+
+.ws-incoming-btn.accept:hover .ws-incoming-btn-icon-wrapper {
+    transform: scale(1.1);
+    box-shadow: 0 0 20px rgba(37, 211, 102, 0.6);
+}
+
+.ws-incoming-btn.reject:hover .ws-incoming-btn-icon-wrapper {
+    transform: scale(1.1);
+    box-shadow: 0 0 20px rgba(234, 0, 56, 0.6);
+}
+
+/* Panel inferior flotante de control de llamada (Bottom Sheet Card) */
+.ws-call-bottom-card {
+    background: #111b21;
+    border-radius: 28px;
+    padding: 20px 16px 16px;
+    width: 100%;
+    max-width: 360px;
+    margin: 0 auto;
+    box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.5);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.ws-call-controls-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 16px 12px;
+}
+
+.ws-call-control-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+}
+
+.ws-call-ctrl-btn {
+    width: 54px;
+    height: 54px;
+    border-radius: 50%;
+    background: #202c33;
     border: none;
+    color: #ffffff;
     display: grid;
     place-items: center;
     cursor: pointer;
-    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
-    transition: transform 0.2s;
+    transition: all 0.2s ease;
 }
 
-.ws-call-btn-colgar:active {
-    transform: scale(0.9);
+.ws-call-ctrl-btn:hover {
+    background: #2a3942;
+    transform: scale(1.05);
 }
 
-/* --- MODAL DE GALERÍA SIMULADA --- */
+.ws-call-ctrl-btn:active {
+    transform: scale(0.95);
+}
+
+.ws-call-ctrl-btn.muted {
+    background: #ea0038 !important;
+    color: #ffffff !important;
+}
+
+.ws-call-ctrl-btn.end-call {
+    background: #ea0038 !important;
+}
+
+.ws-call-ctrl-btn.end-call:hover {
+    background: #ff1744 !important;
+}
+
+.ws-call-ctrl-label {
+    font-size: 12px;
+    color: #aebac1;
+    font-weight: 600;
+}
+
+/* --- MODAL DE VIDEOLLAMADA REALISTA (WHATSAPP VIDEO CALL) --- */
+.ws-modal-videollamada {
+    display: none;
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: #0b141a;
+    color: #ffffff;
+    z-index: 100;
+    flex-direction: column;
+    justify-content: space-between;
+    overflow: hidden;
+}
+
+.ws-modal-videollamada.activa {
+    display: flex;
+}
+
+.ws-videocall-remote-bg {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-image: url("../assets/img/whatsapp/video_remote.jpg");
+    background-size: cover;
+    background-position: center;
+    z-index: 1;
+}
+
+.ws-videocall-overlay-gradient {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(180deg, rgba(0,0,0,0.6) 0%, rgba(0,0,0,0) 25%, rgba(0,0,0,0) 70%, rgba(0,0,0,0.75) 100%);
+    z-index: 2;
+    pointer-events: none;
+}
+
+.ws-videocall-content {
+    position: relative;
+    z-index: 3;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    height: 100%;
+    padding: 16px 16px 20px;
+}
+
+/* Ventana flotante PiP (Picture in Picture) propia */
+.ws-videocall-pip {
+    position: absolute;
+    right: 16px;
+    bottom: 96px;
+    width: 110px;
+    height: 175px;
+    border-radius: 16px;
+    overflow: hidden;
+    border: 2px solid rgba(255, 255, 255, 0.4);
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.6);
+    background: #111b21;
+    z-index: 10;
+}
+
+.ws-videocall-pip-img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    transition: opacity 0.2s ease;
+}
+
+.ws-videocall-pip-off {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: #111b21;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    color: rgba(255, 255, 255, 0.7);
+    font-size: 11px;
+    font-weight: 500;
+    text-align: center;
+    padding: 8px;
+}
+
+.ws-videocall-pip-actions {
+    position: absolute;
+    top: 6px;
+    right: 6px;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.ws-videocall-pip-btn {
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    background: rgba(0, 0, 0, 0.55);
+    border: none;
+    color: #ffffff;
+    display: grid;
+    place-items: center;
+    cursor: pointer;
+}
+
+/* Barra de control inferior en videollamada */
+.ws-videocall-bottom-bar {
+    background: rgba(18, 27, 34, 0.88);
+    backdrop-filter: blur(12px);
+    border-radius: 36px;
+    padding: 10px 18px;
+    display: flex;
+    justify-content: space-around;
+    align-items: center;
+    margin: 0 auto;
+    width: 100%;
+    max-width: 360px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.ws-videocall-bottom-btn {
+    width: 48px;
+    height: 48px;
+    border-radius: 50%;
+    background: transparent;
+    border: none;
+    color: #ffffff;
+    display: grid;
+    place-items: center;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.ws-videocall-bottom-btn:hover {
+    background: rgba(255, 255, 255, 0.15);
+    transform: scale(1.08);
+}
+
+.ws-videocall-bottom-btn.muted,
+.ws-videocall-bottom-btn.off {
+    background: #ea0038;
+}
+
+.ws-videocall-bottom-btn.muted:hover,
+.ws-videocall-bottom-btn.off:hover {
+    background: #ff1744;
+}
+
+.ws-videocall-bottom-btn.end-call {
+    background: #ea0038;
+}
+
+.ws-videocall-bottom-btn.end-call:hover {
+    background: #ff1744;
+}
+
+/* --- MODAL DE ADJUNTAR ARCHIVO (BOTTOM SHEET REALISTA) --- */
 .ws-modal-galeria {
     display: none;
     position: absolute;
@@ -854,7 +1272,8 @@
     left: 0;
     width: 100%;
     height: 100%;
-    background-color: rgba(0, 0, 0, 0.5);
+    background-color: rgba(0, 0, 0, 0.6);
+    backdrop-filter: blur(2px);
     z-index: 90;
     align-items: flex-end;
 }
@@ -866,69 +1285,343 @@
 .ws-galeria-container {
     background-color: #ffffff;
     width: 100%;
-    border-top-left-radius: 20px;
-    border-top-right-radius: 20px;
-    padding: 16px 20px 24px;
-    box-shadow: 0 -4px 15px rgba(0, 0, 0, 0.2);
+    border-top-left-radius: 24px;
+    border-top-right-radius: 24px;
+    padding: 16px 18px 24px;
+    box-shadow: 0 -6px 25px rgba(0, 0, 0, 0.3);
     display: flex;
     flex-direction: column;
     gap: 16px;
+    animation: wsSlideUp 0.25s ease-out;
+}
+
+@keyframes wsSlideUp {
+    from { transform: translateY(100%); }
+    to { transform: translateY(0); }
 }
 
 .ws-galeria-header {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    border-bottom: 1px solid #f2f2f2;
+    border-bottom: 1px solid #e9edef;
     padding-bottom: 10px;
 }
 
 .ws-galeria-header h3 {
     margin: 0;
-    font-size: 18px;
+    font-size: 17px;
     color: #111b21;
+    font-weight: 700;
 }
 
 .ws-galeria-close-btn {
     background: none;
     border: none;
-    font-size: 28px;
+    font-size: 26px;
     color: #8696a0;
     cursor: pointer;
     line-height: 1;
 }
 
+/* Rejilla de opciones de adjuntos de WhatsApp */
+.ws-attach-options-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 14px 8px;
+    text-align: center;
+}
+
+.ws-attach-option {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+    cursor: pointer;
+    background: none;
+    border: none;
+}
+
+.ws-attach-circle {
+    width: 52px;
+    height: 52px;
+    border-radius: 50%;
+    display: grid;
+    place-items: center;
+    color: #ffffff;
+    box-shadow: 0 3px 8px rgba(0, 0, 0, 0.15);
+    transition: transform 0.15s;
+}
+
+.ws-attach-circle:hover {
+    transform: scale(1.08);
+}
+
+.ws-attach-label {
+    font-size: 11.5px;
+    color: #54656f;
+    font-weight: 600;
+}
+
+/* Fila de galería de fotos recientes */
+.ws-galeria-recent-section {
+    border-top: 1px solid #f0f2f5;
+    padding-top: 12px;
+}
+
+.ws-galeria-recent-label {
+    font-size: 13px;
+    font-weight: 700;
+    color: #54656f;
+    margin: 0 0 10px;
+}
+
 .ws-galeria-grid {
     display: grid;
     grid-template-columns: repeat(4, 1fr);
-    gap: 12px;
+    gap: 10px;
 }
 
 .ws-galeria-item {
     aspect-ratio: 1;
     border-radius: 12px;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    font-size: 32px;
-    cursor: pointer;
-    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
-    transition: transform 0.2s;
+    overflow: hidden;
     position: relative;
-    padding-bottom: 12px;
+    cursor: pointer;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.12);
+    border: 2px solid transparent;
+    transition: transform 0.2s, border-color 0.2s;
 }
 
-.ws-galeria-item:active {
-    transform: scale(0.95);
+.ws-galeria-item:hover {
+    border-color: #00a884;
+    transform: scale(1.04);
+}
+
+.ws-galeria-item-img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
 }
 
 .ws-galeria-item small {
     position: absolute;
-    bottom: 2px;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    background: rgba(0, 0, 0, 0.65);
+    color: #ffffff;
     font-size: 9px;
-    color: #54656f;
-    font-weight: bold;
+    text-align: center;
+    padding: 2px 0;
+}
+
+/* --- MODAL DE PREVIEW DE ENVÍO DE FOTO --- */
+.ws-modal-preview-foto {
+    display: none;
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: #0b141a;
+    color: #ffffff;
+    z-index: 105;
+    flex-direction: column;
+    justify-content: space-between;
+}
+
+.ws-modal-preview-foto.activa {
+    display: flex;
+}
+
+.ws-photo-preview-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 14px 16px;
+    background: rgba(0, 0, 0, 0.4);
+    z-index: 5;
+}
+
+.ws-photo-preview-actions-top {
+    display: flex;
+    gap: 16px;
+    align-items: center;
+}
+
+.ws-photo-preview-main {
+    flex: 1;
+    display: grid;
+    place-items: center;
+    overflow: hidden;
+    padding: 10px;
+}
+
+.ws-photo-preview-img {
+    max-width: 100%;
+    max-height: 100%;
+    object-fit: contain;
+    border-radius: 8px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.6);
+}
+
+.ws-photo-preview-footer {
+    padding: 12px 16px 20px;
+    background: rgba(0, 0, 0, 0.6);
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    z-index: 5;
+}
+
+.ws-photo-preview-input-box {
+    flex: 1;
+    background: #1f2c34;
+    border-radius: 24px;
+    padding: 8px 16px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.ws-photo-preview-input {
+    flex: 1;
+    background: none;
+    border: none;
+    color: #ffffff;
+    font-size: 15px;
+    outline: none;
+}
+
+.ws-photo-preview-input::placeholder {
+    color: #8696a0;
+}
+
+.ws-photo-preview-send-btn {
+    width: 48px;
+    height: 48px;
+    border-radius: 50%;
+    background: #00a884;
+    border: none;
+    color: #ffffff;
+    display: grid;
+    place-items: center;
+    cursor: pointer;
+    box-shadow: 0 3px 10px rgba(0, 0, 0, 0.3);
+    transition: transform 0.2s;
+}
+
+.ws-photo-preview-send-btn:hover {
+    background: #06cf9c;
+    transform: scale(1.05);
+}
+
+.ws-photo-preview-send-btn:active {
+    transform: scale(0.95);
+}
+
+/* --- MODAL DE VISOR DE FOTO EN PANTALLA COMPLETA --- */
+.ws-modal-visor-foto {
+    display: none;
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: #0b141a;
+    color: #ffffff;
+    z-index: 98;
+    flex-direction: column;
+    justify-content: space-between;
+    overflow: hidden;
+}
+
+.ws-modal-visor-foto.activa {
+    display: flex;
+}
+
+.ws-visor-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 12px 14px;
+    background: rgba(11, 20, 26, 0.85);
+    backdrop-filter: blur(8px);
+    z-index: 2;
+}
+
+.ws-visor-header-info {
+    flex: 1;
+    margin-left: 12px;
+}
+
+.ws-visor-header-info h3 {
+    margin: 0;
+    font-size: 16px;
+    font-weight: 600;
+    color: #ffffff;
+}
+
+.ws-visor-header-info span {
+    font-size: 12px;
+    color: #8696a0;
+}
+
+.ws-visor-header-actions {
+    display: flex;
+    gap: 8px;
+}
+
+.ws-visor-main {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 10px;
+    overflow: hidden;
+}
+
+.ws-visor-img {
+    max-width: 100%;
+    max-height: 70vh;
+    object-fit: contain;
+    border-radius: 8px;
+    box-shadow: 0 6px 25px rgba(0, 0, 0, 0.7);
+    transition: transform 0.3s ease;
+}
+
+.ws-visor-footer {
+    padding: 14px 18px;
+    background: rgba(11, 20, 26, 0.85);
+    backdrop-filter: blur(8px);
+    text-align: center;
+    z-index: 2;
+}
+
+.ws-visor-caption {
+    margin: 0;
+    font-size: 15px;
+    color: #e9edef;
+    font-weight: 500;
+}
+
+/* Fotos clickeables en los mensajes del chat */
+.ws-photo-msg-clickable {
+    cursor: pointer;
+    border-radius: 10px;
+    overflow: hidden;
+    position: relative;
+    transition: filter 0.15s ease, transform 0.15s ease;
+}
+
+.ws-photo-msg-clickable:hover {
+    filter: brightness(1.05);
+    transform: scale(1.01);
+}
+
+.ws-photo-msg-clickable:active {
+    transform: scale(0.98);
 }
 
 /* --- MODAL DE ÉXITO --- */

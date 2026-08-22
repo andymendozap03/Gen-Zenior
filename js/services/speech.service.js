@@ -86,8 +86,9 @@ if ("speechSynthesis" in window) {
     };
 }
 
-function speakWithWebSpeech(text) {
+function speakWithWebSpeech(text, onEnd) {
     if (!("speechSynthesis" in window)) {
+        if (typeof onEnd === "function") onEnd();
         return;
     }
 
@@ -107,15 +108,29 @@ function speakWithWebSpeech(text) {
         voiceMessage.pitch = 0.9;
     }
 
+    let ended = false;
+    const triggerEnd = () => {
+        if (!ended) {
+            ended = true;
+            if (typeof onEnd === "function") onEnd();
+        }
+    };
+
+    voiceMessage.onend = triggerEnd;
+    voiceMessage.onerror = triggerEnd;
+
     speechSynthesis.speak(voiceMessage);
 }
 
-export async function speak(text) {
+export async function speak(text, onEnd) {
     await stopSpeech();
 
-    if (window.nicoVoiceEnabled === false) return;
+    if (window.nicoVoiceEnabled === false) {
+        if (typeof onEnd === "function") onEnd();
+        return;
+    }
 
-    speakWithWebSpeech(text);
+    speakWithWebSpeech(text, onEnd);
 }
 
 export async function stopSpeech() {
