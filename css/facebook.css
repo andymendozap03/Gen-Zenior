@@ -1215,6 +1215,7 @@
 }
 
 .fb-addon-icon-btn {
+    position: relative;
     width: 36px;
     height: 36px;
     border-radius: 50%;
@@ -1234,6 +1235,155 @@
 .fb-addon-icon-btn svg {
     width: 22px;
     height: 22px;
+}
+
+/* ---- POPUP SELECTOR DE FOTO (NIVEL 1) ---- */
+.fb-photo-picker-popup {
+    position: absolute;
+    top: 44px;
+    right: -8px;
+    background: #ffffff;
+    border-radius: 14px;
+    padding: 10px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.25);
+    display: none;
+    gap: 8px;
+    z-index: 200;
+    animation: fbReactionIn 0.2s ease;
+}
+
+.fb-photo-picker-popup.visible {
+    display: flex;
+}
+
+.fb-photo-picker-option {
+    width: 80px;
+    cursor: pointer;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+    transition: transform 0.15s;
+}
+
+.fb-photo-picker-option:hover {
+    transform: scale(1.05);
+}
+
+.fb-photo-picker-option img {
+    width: 80px;
+    height: 80px;
+    object-fit: cover;
+    border-radius: 10px;
+    border: 2px solid #ced0d4;
+}
+
+.fb-photo-picker-option span {
+    font-size: 12px;
+    font-weight: 600;
+    color: #050505;
+}
+
+/* ---- POPUP SELECTOR DE ETIQUETA (NIVEL 1) ---- */
+.fb-tag-picker-popup {
+    position: absolute;
+    top: 44px;
+    right: -8px;
+    background: #ffffff;
+    border-radius: 14px;
+    padding: 8px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.25);
+    display: none;
+    flex-direction: column;
+    gap: 2px;
+    min-width: 210px;
+    z-index: 200;
+    animation: fbReactionIn 0.2s ease;
+}
+
+.fb-tag-picker-popup.visible {
+    display: flex;
+}
+
+.fb-tag-option {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 8px;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: background 0.15s;
+    text-align: left;
+}
+
+.fb-tag-option:hover {
+    background: #f0f2f5;
+}
+
+.fb-tag-option span:last-child {
+    font-size: 14px;
+    font-weight: 600;
+    color: #050505;
+}
+
+.fb-tag-option-avatar {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #ffffff;
+    font-size: 12px;
+    font-weight: 700;
+    flex-shrink: 0;
+}
+
+/* ---- ADJUNTOS SELECCIONADOS (NIVEL 1) ---- */
+.fb-create-attachments {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    width: 100%;
+    margin-top: 8px;
+}
+
+.fb-attachment-chip {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    background: #e7f3ff;
+    border: 1px solid #cfe4ff;
+    border-radius: 16px;
+    padding: 4px 10px 4px 4px;
+    font-size: 13px;
+    font-weight: 600;
+    color: #1877f2;
+}
+
+.fb-attachment-thumb {
+    width: 26px;
+    height: 26px;
+    border-radius: 50%;
+    object-fit: cover;
+}
+
+.fb-attachment-tag-avatar {
+    width: 22px;
+    height: 22px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #ffffff;
+    font-size: 10px;
+    font-weight: 700;
+}
+
+/* ---- ETIQUETA EN LA PUBLICACIÓN DEL FEED ---- */
+.fb-post-etiqueta {
+    font-weight: 400;
+    color: #050505;
 }
 
 /* Botón Publicar */

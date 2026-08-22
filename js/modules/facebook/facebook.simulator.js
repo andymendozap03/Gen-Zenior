@@ -7,6 +7,9 @@ let simuladorInicializado = false;
 let nivelActual = null;
 let reaccionesEstado = {}; // postId -> { emoji, conteo }
 let subPasoNivel1 = 1;
+let rondaNivel1 = 1; // 1 = primera publicación (con foto y etiqueta), 2 = repaso rápido (solo texto)
+let fotoSeleccionadaNivel1 = null;
+let etiquetaSeleccionadaNivel1 = null;
 let subPasoNivel2 = 1;
 let subPasoNivel3 = 1;
 let subPasoNivel4 = 1;
@@ -348,10 +351,10 @@ function asegurarTemplateHTML() {
                 <div id="fbReelPlayer" class="fb-reel-player">
                     <!-- Video -->
                     <video id="fbReelVideo" class="fb-reel-video"
-                        autoplay loop playsinline
+                        autoplay muted loop playsinline
                         src="./assets/video/piolin.mp4">
                     </video>
-
+                    
                     <!-- Overlay de info -->
                     <div class="fb-reel-overlay">
 
@@ -447,16 +450,41 @@ function asegurarTemplateHTML() {
                 <div class="fb-create-addons">
                     <span class="fb-create-addons-label">Agregar a tu publicación</span>
                     <div class="fb-create-addons-icons">
-                        <button type="button" class="fb-addon-icon-btn" aria-label="Foto/video">
+                        <button type="button" id="fbAddonFotoBtn" class="fb-addon-icon-btn" aria-label="Foto/video">
                             <svg viewBox="0 0 24 24" style="fill:#45bd62;"><circle cx="12" cy="12" r="3.2"/><path d="M9 2L7.17 4H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2h-3.17L15 2H9zm3 15c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5z"/></svg>
+                            <div id="fbPhotoPickerPopup" class="fb-photo-picker-popup">
+                                <div class="fb-photo-picker-option" data-photo="mascota">
+                                    <img src="./assets/img/facebook/mascota.png" alt="Foto de mascota">
+                                    <span>Mascota</span>
+                                </div>
+                                <div class="fb-photo-picker-option" data-photo="vacaciones">
+                                    <img src="./assets/img/facebook/vacaciones.png" alt="Foto de vacaciones">
+                                    <span>Vacaciones</span>
+                                </div>
+                            </div>
                         </button>
-                        <button type="button" class="fb-addon-icon-btn" aria-label="Etiquetar personas">
+                        <button type="button" id="fbAddonTagBtn" class="fb-addon-icon-btn" aria-label="Etiquetar personas">
                             <svg viewBox="0 0 24 24" style="fill:#1877f2;"><path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/></svg>
+                            <div id="fbTagPickerPopup" class="fb-tag-picker-popup">
+                                <div class="fb-tag-option" data-nombre="María Fernanda López" data-iniciales="ML" data-color="#e91e8c">
+                                    <span class="fb-tag-option-avatar" style="background:#e91e8c;">ML</span>
+                                    <span>María Fernanda López</span>
+                                </div>
+                                <div class="fb-tag-option" data-nombre="Carmen Ruiz" data-iniciales="CR" data-color="#9c27b0">
+                                    <span class="fb-tag-option-avatar" style="background:#9c27b0;">CR</span>
+                                    <span>Carmen Ruiz</span>
+                                </div>
+                                <div class="fb-tag-option" data-nombre="Rosa Elena Morales" data-iniciales="RM" data-color="#2196f3">
+                                    <span class="fb-tag-option-avatar" style="background:#2196f3;">RM</span>
+                                    <span>Rosa Elena Morales</span>
+                                </div>
+                            </div>
                         </button>
                         <button type="button" class="fb-addon-icon-btn" aria-label="Sentimiento/actividad">
                             <svg viewBox="0 0 24 24" style="fill:#f7b928;"><circle cx="12" cy="12" r="10"/><path d="M12 16c2.2 0 4-1.8 4-4H8c0 2.2 1.8 4 4 4zm-3-6c.6 0 1-.4 1-1s-.4-1-1-1-1 .4-1 1 .4 1 1 1zm6 0c.6 0 1-.4 1-1s-.4-1-1-1-1 .4-1 1 .4 1 1 1z"/></svg>
                         </button>
                     </div>
+                    <div id="fbCreateAttachments" class="fb-create-attachments"></div>
                 </div>
 
                 <button id="fbCreatePostSubmitBtn" class="fb-create-submit-btn" disabled>Publicar</button>
@@ -542,7 +570,7 @@ function renderizarPublicaciones() {
                     </div>
                     <div>
                         <div class="fb-post-author-name">
-                            ${post.autor}${post.verificado ? ' <span class="fb-verified">✓</span>' : ""}
+                            ${post.autor}${post.verificado ? ' <span class="fb-verified">✓</span>' : ""}${post.etiqueta ? ` <span class="fb-post-etiqueta">está con <strong>${post.etiqueta}</strong></span>` : ""}
                         </div>
                         <div class="fb-post-meta">${post.tiempo} · 🌐</div>
                     </div>
@@ -755,6 +783,8 @@ function abrirModalCrearPublicacion() {
         textarea.focus();
     }
 
+    renderizarAdjuntosNivel1();
+
     if (nivelActual === "realizar-publicacion") {
         subPasoNivel1 = 2;
         actualizarBarraInstrucciones(true);
@@ -767,8 +797,90 @@ function cerrarModalCrearPublicacion() {
     modal.classList.remove("activa");
     modal.setAttribute("aria-hidden", "true");
 
+    const fotoPopup = $("#fbPhotoPickerPopup");
+    if (fotoPopup) fotoPopup.classList.remove("visible");
+    const tagPopup = $("#fbTagPickerPopup");
+    if (tagPopup) tagPopup.classList.remove("visible");
+
     if (nivelActual === "realizar-publicacion") {
         subPasoNivel1 = 1;
+        actualizarBarraInstrucciones(true);
+    }
+}
+
+// ---------- FOTO Y ETIQUETA (NIVEL 1 - RONDA 1) ----------
+function renderizarAdjuntosNivel1() {
+    const cont = $("#fbCreateAttachments");
+    if (!cont) return;
+
+    let html = "";
+    if (fotoSeleccionadaNivel1) {
+        html += `
+            <div class="fb-attachment-chip">
+                <img src="${fotoSeleccionadaNivel1.src}" alt="" class="fb-attachment-thumb">
+                <span>Foto agregada</span>
+            </div>`;
+    }
+    if (etiquetaSeleccionadaNivel1) {
+        html += `
+            <div class="fb-attachment-chip">
+                <span class="fb-attachment-tag-avatar" style="background:${etiquetaSeleccionadaNivel1.color};">${etiquetaSeleccionadaNivel1.iniciales}</span>
+                <span>Con ${etiquetaSeleccionadaNivel1.nombre}</span>
+            </div>`;
+    }
+    cont.innerHTML = html;
+}
+
+function abrirSelectorFoto() {
+    const tagPopup = $("#fbTagPickerPopup");
+    if (tagPopup) tagPopup.classList.remove("visible");
+    const popup = $("#fbPhotoPickerPopup");
+    if (popup) popup.classList.toggle("visible");
+
+    if (nivelActual === "realizar-publicacion" && rondaNivel1 === 1 && subPasoNivel1 === 3) {
+        subPasoNivel1 = 4;
+        actualizarBarraInstrucciones(true);
+    }
+}
+
+function seleccionarFoto(clave) {
+    const rutas = {
+        mascota: "./assets/img/facebook/mascota.png",
+        vacaciones: "./assets/img/facebook/vacaciones.png"
+    };
+    fotoSeleccionadaNivel1 = { src: rutas[clave] || rutas.mascota };
+
+    const popup = $("#fbPhotoPickerPopup");
+    if (popup) popup.classList.remove("visible");
+    renderizarAdjuntosNivel1();
+
+    if (nivelActual === "realizar-publicacion" && rondaNivel1 === 1 && subPasoNivel1 === 4) {
+        subPasoNivel1 = 5;
+        actualizarBarraInstrucciones(true);
+    }
+}
+
+function abrirSelectorEtiqueta() {
+    const fotoPopup = $("#fbPhotoPickerPopup");
+    if (fotoPopup) fotoPopup.classList.remove("visible");
+    const popup = $("#fbTagPickerPopup");
+    if (popup) popup.classList.toggle("visible");
+
+    if (nivelActual === "realizar-publicacion" && rondaNivel1 === 1 && subPasoNivel1 === 5) {
+        subPasoNivel1 = 6;
+        actualizarBarraInstrucciones(true);
+    }
+}
+
+function seleccionarEtiqueta(nombre, iniciales, color) {
+    etiquetaSeleccionadaNivel1 = { nombre, iniciales, color };
+
+    const popup = $("#fbTagPickerPopup");
+    if (popup) popup.classList.remove("visible");
+    renderizarAdjuntosNivel1();
+
+    if (nivelActual === "realizar-publicacion" && rondaNivel1 === 1 && subPasoNivel1 === 6) {
+        subPasoNivel1 = 7;
         actualizarBarraInstrucciones(true);
     }
 }
@@ -778,6 +890,7 @@ function publicarNuevoPost() {
     if (!textarea || !textarea.value.trim()) return;
 
     const texto = textarea.value.trim();
+    const esRonda1DeNivel1 = nivelActual === "realizar-publicacion" && rondaNivel1 === 1;
 
     const nuevoPost = {
         id: Date.now(),
@@ -793,6 +906,11 @@ function publicarNuevoPost() {
         reacciones: [],
         comentariosData: []
     };
+
+    if (esRonda1DeNivel1) {
+        if (fotoSeleccionadaNivel1) nuevoPost.imagen = fotoSeleccionadaNivel1.src;
+        if (etiquetaSeleccionadaNivel1) nuevoPost.etiqueta = etiquetaSeleccionadaNivel1.nombre;
+    }
 
     // Insertar al inicio del feed
     POSTS_DATA.unshift(nuevoPost);
@@ -814,8 +932,26 @@ function publicarNuevoPost() {
     if (feed) feed.scrollTop = 0;
 
     if (nivelActual === "realizar-publicacion") {
-        subPasoNivel1 = 3;
-        completarNivelActual("¡Excelente! Has creado y publicado tu primer mensaje en Facebook.");
+        if (rondaNivel1 === 1) {
+            subPasoNivel1 = 8;
+            actualizarBarraInstrucciones(true);
+
+            setTimeout(() => {
+                const sim = $("#pantallaFacebookSimulador");
+                const enPantalla = sim && sim.classList.contains("activa");
+                if (enPantalla && nivelActual === "realizar-publicacion" && rondaNivel1 === 1 && subPasoNivel1 === 8) {
+                    rondaNivel1 = 2;
+                    subPasoNivel1 = 1;
+                    fotoSeleccionadaNivel1 = null;
+                    etiquetaSeleccionadaNivel1 = null;
+                    renderizarAdjuntosNivel1();
+                    actualizarBarraInstrucciones(true);
+                }
+            }, 2600);
+        } else {
+            subPasoNivel1 = 3;
+            completarNivelActual("¡Excelente! Ya sabes crear publicaciones en Facebook, con foto y etiquetas incluidas.");
+        }
     }
 }
 
@@ -997,16 +1133,40 @@ function actualizarBarraInstrucciones(autoSpeak = true) {
         const estaModalAbierto = modalCrear && modalCrear.classList.contains("activa");
         const textareaVal = $("#fbCreatePostTextarea") ? $("#fbCreatePostTextarea").value.trim() : "";
 
-        if (subPasoNivel1 === 1) {
-            instruccion = estaModalAbierto
-                ? "Escribe un mensaje o toca una frase sugerida para tu publicación."
-                : "Toca en '¿Qué estás pensando?' para escribir una nueva publicación.";
-        } else if (subPasoNivel1 === 2) {
-            instruccion = textareaVal.length > 0
-                ? "Toca el botón azul 'Publicar' para compartir tu mensaje."
-                : "Escribe lo que deseas compartir o toca una de las frases sugeridas.";
-        } else if (subPasoNivel1 === 3) {
-            instruccion = "Toca el botón azul 'Publicar' para compartir tu mensaje.";
+        if (rondaNivel1 === 1) {
+            // Ronda 1: flujo completo guiado (texto + foto + etiqueta)
+            if (subPasoNivel1 === 1) {
+                instruccion = "Toca en '¿Qué estás pensando?' para escribir una nueva publicación.";
+            } else if (subPasoNivel1 === 2) {
+                instruccion = "Toca el cuadro de texto para empezar a escribir.";
+            } else if (subPasoNivel1 === 3) {
+                instruccion = textareaVal.length > 0
+                    ? "Muy bien. Ahora toca el ícono verde de 'Foto/video' para agregar una imagen."
+                    : "Escribe tu mensaje o toca una de las frases sugeridas.";
+            } else if (subPasoNivel1 === 4) {
+                instruccion = "Elige una foto para tu publicación.";
+            } else if (subPasoNivel1 === 5) {
+                instruccion = "Ahora toca el ícono azul de 'Etiquetar personas'.";
+            } else if (subPasoNivel1 === 6) {
+                instruccion = "Elige a quién quieres etiquetar.";
+            } else if (subPasoNivel1 === 7) {
+                instruccion = "Revisa tu publicación. Cuando estés listo, toca el botón azul 'Publicar'.";
+            } else if (subPasoNivel1 === 8) {
+                instruccion = "¡Publicado! Mira tu mensaje arriba en el feed, con tu foto y tu etiqueta.";
+            }
+        } else {
+            // Ronda 2: repaso rápido, solo texto
+            if (subPasoNivel1 === 1) {
+                instruccion = estaModalAbierto
+                    ? "Escribe un mensaje distinto o toca otra frase sugerida."
+                    : "¡Vamos a practicarlo una vez más! Toca en '¿Qué estás pensando?' otra vez.";
+            } else if (subPasoNivel1 === 2) {
+                instruccion = textareaVal.length > 0
+                    ? "Toca el botón azul 'Publicar' para compartir tu segundo mensaje."
+                    : "Escribe lo que deseas compartir o toca una de las frases sugeridas.";
+            } else if (subPasoNivel1 === 3) {
+                instruccion = "¡Excelente! Ya sabes crear publicaciones en Facebook.";
+            }
         }
     } else if (nivelActual === "reaccionar-foto") {
         if (subPasoNivel2 === 1) {
@@ -1079,11 +1239,27 @@ function actualizarGuiaVisualFacebook(idNivel) {
     if (idNivel === "realizar-publicacion") {
         const modal = $("#fbCreatePostModal");
         const estaAbierto = modal && modal.classList.contains("activa");
+        const textareaVal = $("#fbCreatePostTextarea") ? $("#fbCreatePostTextarea").value.trim() : "";
 
         if (!estaAbierto) {
             resaltarElemento(".fb-create-post");
+        } else if (rondaNivel1 === 1) {
+            if (subPasoNivel1 === 2) {
+                resaltarElemento("#fbCreatePostTextarea");
+            } else if (subPasoNivel1 === 3) {
+                resaltarElemento(textareaVal.length > 0 ? "#fbAddonFotoBtn" : "#fbCreatePostTextarea");
+            } else if (subPasoNivel1 === 4) {
+                resaltarElemento("#fbPhotoPickerPopup .fb-photo-picker-option");
+            } else if (subPasoNivel1 === 5) {
+                resaltarElemento("#fbAddonTagBtn");
+            } else if (subPasoNivel1 === 6) {
+                resaltarElemento("#fbTagPickerPopup .fb-tag-option");
+            } else if (subPasoNivel1 === 7) {
+                resaltarElemento("#fbCreatePostSubmitBtn");
+            } else if (subPasoNivel1 === 8) {
+                resaltarElemento("#fbPostsContainer .fb-post:first-child", { scroll: true });
+            }
         } else {
-            const textareaVal = $("#fbCreatePostTextarea") ? $("#fbCreatePostTextarea").value.trim() : "";
             if (textareaVal.length > 0) {
                 resaltarElemento("#fbCreatePostSubmitBtn");
             } else {
@@ -1249,14 +1425,54 @@ function inicializarListeners() {
         btnCerrarCrear.onclick = cerrarModalCrearPublicacion;
     }
 
+    // ---- Nivel 1: Foto y etiquetar personas ----
+    const addonFotoBtn = $("#fbAddonFotoBtn");
+    if (addonFotoBtn) {
+        addonFotoBtn.onclick = (e) => {
+            e.stopPropagation();
+            abrirSelectorFoto();
+        };
+    }
+
+    document.querySelectorAll(".fb-photo-picker-option").forEach(opt => {
+        opt.onclick = (e) => {
+            e.stopPropagation();
+            seleccionarFoto(opt.dataset.photo);
+        };
+    });
+
+    const addonTagBtn = $("#fbAddonTagBtn");
+    if (addonTagBtn) {
+        addonTagBtn.onclick = (e) => {
+            e.stopPropagation();
+            abrirSelectorEtiqueta();
+        };
+    }
+
+    document.querySelectorAll(".fb-tag-option").forEach(opt => {
+        opt.onclick = (e) => {
+            e.stopPropagation();
+            seleccionarEtiqueta(opt.dataset.nombre, opt.dataset.iniciales, opt.dataset.color);
+        };
+    });
+
     // Campo textarea de publicación
     const textarea = $("#fbCreatePostTextarea");
     const submitBtn = $("#fbCreatePostSubmitBtn");
     if (textarea) {
+        textarea.onfocus = () => {
+            if (nivelActual === "realizar-publicacion" && rondaNivel1 === 1 && subPasoNivel1 === 2) {
+                subPasoNivel1 = 3;
+                actualizarBarraInstrucciones(true);
+            }
+        };
         textarea.oninput = () => {
             const val = textarea.value.trim();
             if (submitBtn) {
                 submitBtn.disabled = val.length === 0;
+            }
+            if (nivelActual === "realizar-publicacion" && rondaNivel1 === 1 && subPasoNivel1 === 2) {
+                subPasoNivel1 = 3;
             }
             if (nivelActual === "realizar-publicacion") {
                 actualizarBarraInstrucciones(false);
@@ -1275,6 +1491,9 @@ function inicializarListeners() {
             if (textarea) {
                 textarea.value = texto;
                 if (submitBtn) submitBtn.disabled = false;
+                if (nivelActual === "realizar-publicacion" && rondaNivel1 === 1 && subPasoNivel1 === 2) {
+                    subPasoNivel1 = 3;
+                }
                 if (nivelActual === "realizar-publicacion") {
                     actualizarBarraInstrucciones(true);
                 } else {
@@ -1483,6 +1702,9 @@ function enviarComentario() {
 export function iniciarSimulador(idNivel) {
     nivelActual = idNivel;
     subPasoNivel1 = 1;
+    rondaNivel1 = 1;
+    fotoSeleccionadaNivel1 = null;
+    etiquetaSeleccionadaNivel1 = null;
     subPasoNivel2 = 1;
     subPasoNivel3 = 1;
     subPasoNivel4 = 1;
@@ -1514,6 +1736,7 @@ export function iniciarSimulador(idNivel) {
     }
 
     renderizarPublicaciones();
+    renderizarAdjuntosNivel1();
 
     actualizarBarraInstrucciones(true);
 
