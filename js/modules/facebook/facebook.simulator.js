@@ -2014,7 +2014,11 @@ function renderizarComentariosReel() {
 
     lista.innerHTML = reel.comentarios.map((c, i) => `
         <div class="fb-reel-comment${c.esMio ? " mio" : ""}${c.esRespuesta ? " respuesta" : ""}" data-indice="${i}">
-            <div class="fb-reel-comment-avatar" style="background:${c.color};">${c.inicial}</div>
+            <div class="fb-reel-comment-avatar" style="background:${c.color};">
+                ${c.avatar
+                    ? `<img src="${c.avatar}" alt="${c.autor}" class="fb-avatar-img" onerror="this.style.display='none'; this.parentElement.innerText='${c.inicial}'">`
+                    : c.inicial}
+            </div>
             <div class="fb-reel-comment-cuerpo">
                 <div class="fb-reel-comment-autor">${c.autor} <span class="fb-reel-comment-tiempo">${c.tiempo}</span></div>
                 <div class="fb-reel-comment-texto">${c.texto}</div>
@@ -2122,6 +2126,7 @@ function enviarComentarioReel() {
         esMio: true,
         autor: "Ramona Pico",
         inicial: "R",
+        avatar: "./assets/img/facebook/user_profile.png",
         color: "#1877f2",
         texto: input.value.trim(),
         tiempo: "Ahora",
@@ -2399,7 +2404,10 @@ function completarNivelActual(mensajeExito) {
 
     // Prioritario: corta cualquier frase pendiente para que la felicitación
     // se escuche completa y no la pise la instrucción anterior
-    speakPrioritario(`¡Excelente trabajo! ${limpiarEmojisFb(mensajeExito)} Presiona el botón azul de continuar para regresar a la lista de niveles.`);
+    // Sin prefijo fijo: cada mensaje ya empieza con su propia felicitación
+    // ("¡Excelente!", "¡Muy bien!"...), y antes se oía "Excelente trabajo,
+    // excelente...".
+    speakPrioritario(`${limpiarEmojisFb(mensajeExito)} Presiona el botón azul de continuar para regresar a la lista de niveles.`);
 
     // Nada debe hablar después de la felicitación
     ultimaInstruccionHablada = "";

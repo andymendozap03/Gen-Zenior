@@ -2385,6 +2385,8 @@
     align-items: center;
     justify-content: center;
     flex-shrink: 0;
+    /* Para que la foto de perfil quede recortada en círculo */
+    overflow: hidden;
 }
 
 .fb-reel-comment-autor {

@@ -1975,7 +1975,8 @@ function completarNivelActual(mensajeExito) {
 
     // Prioritario: corta cualquier frase pendiente para que la felicitación
     // se escuche completa y no la pise la instrucción anterior
-    speakPrioritario(`¡Excelente trabajo! ${limpiarEmojis(mensajeExito)} Presiona el botón verde de continuar para regresar a la lista de niveles.`);
+    // Sin prefijo fijo: cada mensaje ya empieza con su propia felicitación
+    speakPrioritario(`${limpiarEmojis(mensajeExito)} Presiona el botón rojo de continuar para regresar a la lista de niveles.`);
 }
 
 function limpiarTodo() {
