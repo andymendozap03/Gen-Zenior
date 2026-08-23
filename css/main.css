@@ -22,6 +22,9 @@ body {
     max-width: 480px;
     min-height: 100vh;
     min-height: 100svh;
+    /* dvh sigue a las barras del navegador cuando aparecen y desaparecen, así
+       la aplicación no queda cortada en el móvil */
+    min-height: 100dvh;
     background: #efe3c9;
     margin: 0 auto;
     box-shadow: 0 0 30px rgba(75, 46, 34, 0.18);
@@ -34,6 +37,7 @@ body {
     width: 100%;
     min-height: 100vh;
     min-height: 100svh;
+    min-height: 100dvh;
     padding: 16px 20px;
 }
 
@@ -130,4 +134,93 @@ button {
 .ct-key-btn.nico-highlight-target,
 .yt-like-btn.nico-highlight-target {
     outline-offset: 4px !important;
+}
+/* ======================================================
+   PANTALLA DE CARGA
+   Se muestra mientras se preparan iconos, fichas de video y voces.
+   ====================================================== */
+.pantalla-carga {
+    position: fixed;
+    inset: 0;
+    z-index: 9999;
+    background: #ddd0ba;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 22px;
+    padding: 24px;
+    transition: opacity 0.35s ease;
+}
+
+.pantalla-carga.oculta {
+    opacity: 0;
+    pointer-events: none;
+}
+
+.carga-logo {
+    width: 190px;
+    max-width: 70%;
+    height: auto;
+    animation: cargaLatido 1.6s ease-in-out infinite;
+}
+
+@keyframes cargaLatido {
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(1.05); }
+}
+
+.carga-barra {
+    width: 220px;
+    max-width: 80%;
+    height: 14px;
+    background: #c4b295;
+    border: 2px solid #6b4a3a;
+    border-radius: 10px;
+    overflow: hidden;
+}
+
+.carga-progreso {
+    width: 0;
+    height: 100%;
+    background: #7b9f42;
+    border-radius: 8px;
+    transition: width 0.3s ease;
+}
+
+.carga-texto {
+    margin: 0;
+    font-size: 17px;
+    font-weight: 700;
+    color: #4b2e22;
+    text-align: center;
+}
+
+/* Botón de entrada: es el toque real que autoriza la voz de Nico */
+.carga-boton {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    background: #7b9f42;
+    color: #ffffff;
+    border: none;
+    border-bottom: 6px solid #5c7a2e;
+    border-radius: 16px;
+    padding: 16px 38px;
+    font-size: 22px;
+    font-weight: 800;
+    font-family: inherit;
+    cursor: pointer;
+    animation: cargaLatido 1.6s ease-in-out infinite;
+}
+
+.carga-boton:active {
+    transform: translateY(4px);
+    border-bottom-width: 2px;
+}
+
+.carga-boton-icono {
+    width: 26px;
+    height: 26px;
+    filter: brightness(0) invert(1);
 }

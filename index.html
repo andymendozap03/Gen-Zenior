@@ -3,7 +3,19 @@
 
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <!-- viewport-fit=cover: aprovecha toda la pantalla del iPhone, incluida la
+         zona de la muesca. user-scalable=no evita que se descoloque al hacer
+         doble toque sin querer, algo habitual en adultos mayores. -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=no">
+
+    <!-- Al añadirla a la pantalla de inicio del iPhone se abre sin las barras
+         de Safari, que es lo que hace que ahora se vea cortada. -->
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <meta name="apple-mobile-web-app-title" content="Gen-Zénior">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="theme-color" content="#ddd0ba">
+    <link rel="apple-touch-icon" href="./assets/img/icono.png">
     <title>Gen-Zénior</title>
     <link rel="icon" type="image/png" href="./assets/img/icono.png">
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -22,6 +34,24 @@
 </head>
 
 <body>
+    <!-- Pantalla de carga: se queda hasta que estén listos los iconos, las
+         fichas de los videos y la lista de voces del sistema -->
+    <div id="pantallaCarga" class="pantalla-carga">
+        <img src="./assets/img/Logo.webp" alt="Gen-Zénior" class="carga-logo">
+        <div class="carga-barra" id="cargaBarra">
+            <div id="cargaProgreso" class="carga-progreso"></div>
+        </div>
+        <p class="carga-texto" id="cargaTexto">Preparando la aplicación...</p>
+
+        <!-- El primer toque del usuario es imprescindible: los navegadores solo
+             autorizan la voz si arranca desde un toque de verdad, y uno hecho
+             por código no les vale. Este botón es ese toque. -->
+        <button id="btnComenzar" class="carga-boton" type="button" style="display:none;">
+            <img src="./assets/img/icons/voz.svg" alt="" class="carga-boton-icono">
+            Comenzar
+        </button>
+    </div>
+
     <main class="app">
         <section id="pantallaMenu" class="pantalla activa">
             <div class="encabezado-menu">

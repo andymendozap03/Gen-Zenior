@@ -86,7 +86,11 @@ if ("speechSynthesis" in window) {
     };
 }
 
-function speakWithWebSpeech(text, onEnd) {
+/**
+ * @param {Function} sigueVigente devuelve false si el usuario ya avanzó y esta
+ *        frase quedó obsoleta mientras esperaba su turno para sonar.
+ */
+function speakWithWebSpeech(text, onEnd, sigueVigente) {
     if (!("speechSynthesis" in window)) {
         if (typeof onEnd === "function") onEnd();
         return;
@@ -96,25 +100,15 @@ function speakWithWebSpeech(text, onEnd) {
         loadSpanishMaleVoice();
     }
 
-    const voiceMessage = new SpeechSynthesisUtterance(text);
-    voiceMessage.rate = 0.95;
-
-    if (selectedVoice) {
-        voiceMessage.voice = selectedVoice;
-        voiceMessage.lang = selectedVoice.lang;
-        voiceMessage.pitch = isFemaleVoice(selectedVoice) ? 0.8 : 1.0;
-    } else {
-        voiceMessage.lang = "es-ES";
-        voiceMessage.pitch = 0.9;
-    }
-
     let ended = false;
+    let comenzo = false;
     let vigilante = null;
     let mantenerVivo = null;
 
     const triggerEnd = () => {
         if (ended) return;
         ended = true;
+        if (comenzo) yaSonoAlguna = true;
 
         if (vigilante) clearTimeout(vigilante);
         if (mantenerVivo) clearInterval(mantenerVivo);
@@ -122,10 +116,65 @@ function speakWithWebSpeech(text, onEnd) {
         if (typeof onEnd === "function") onEnd();
     };
 
-    voiceMessage.onend = triggerEnd;
-    voiceMessage.onerror = triggerEnd;
+    // Se crea una frase nueva en cada intento: algunos motores no aceptan
+    // reutilizar el mismo objeto después de descartarlo.
+    const crearFrase = () => {
+        const frase = new SpeechSynthesisUtterance(text);
+        frase.rate = 0.95;
 
-    speechSynthesis.speak(voiceMessage);
+        if (selectedVoice) {
+            frase.voice = selectedVoice;
+            frase.lang = selectedVoice.lang;
+            frase.pitch = isFemaleVoice(selectedVoice) ? 0.8 : 1.0;
+        } else {
+            frase.lang = "es-ES";
+            frase.pitch = 0.9;
+        }
+
+        frase.onstart = () => { comenzo = true; yaSonoAlguna = true; };
+        frase.onend = triggerEnd;
+        frase.onerror = triggerEnd;
+        return frase;
+    };
+
+    const lanzar = (esReintento) => {
+        // El usuario ya avanzó mientras esperábamos: esta frase ya no toca
+        if (typeof sigueVigente === "function" && !sigueVigente()) {
+            triggerEnd();
+            return;
+        }
+
+        try {
+            // resume() saca al motor de un estado pausado, en el que a veces
+            // se queda tras un cancel()
+            speechSynthesis.resume();
+        } catch (e) { /* no todos los motores lo permiten */ }
+
+        // Mientras no se haya oído ninguna frase, se quema un turno antes de
+        // cada intento: si el navegador va a descartar una, que descarte el cebo.
+        if (!yaSonoAlguna && !esReintento) cebarMotor();
+
+        try {
+            speechSynthesis.speak(crearFrase());
+        } catch (e) {
+            triggerEnd();
+            return;
+        }
+
+        if (esReintento) return;
+
+        // Chrome y Safari se tragan la primera frase de la sesión: si a los
+        // 350 ms no ha empezado a sonar, se vuelve a pedir una vez. Es
+        // exactamente el caso de "la primera no suena, la segunda sí".
+        setTimeout(() => {
+            if (ended || comenzo || speechSynthesis.speaking) return;
+            lanzar(true);
+        }, 350);
+    };
+
+    // Se lanza AHORA, sin esperar: si se retrasa, iOS ya no lo considera parte
+    // del toque del usuario y no deja sonar la primera frase.
+    lanzar(false);
 
     // Chrome corta las frases largas pasados unos segundos si no se le insiste
     mantenerVivo = setInterval(() => {
@@ -134,75 +183,313 @@ function speakWithWebSpeech(text, onEnd) {
         speechSynthesis.resume();
     }, 8000);
 
-    // Red de seguridad: si el navegador nunca avisa de que terminó, la cola
+    // Red de seguridad: si el navegador nunca avisa de que terminó, la guía
     // no se puede quedar bloqueada. Se calcula por longitud del texto.
-    const duracionEstimada = 2500 + text.length * 110;
+    const duracionEstimada = 3000 + text.length * 110;
     vigilante = setTimeout(triggerEnd, duracionEstimada);
 }
 
 /* ----------------------------------------------------------------------
-   COLA DE VOZ
-   Antes cada frase nueva cancelaba la anterior, así que Nico se cortaba a
-   media frase cada vez que la guía avanzaba de paso. Ahora las frases se
-   encolan y se dicen enteras, una detrás de otra.
+   ARRANQUE DE LA VOZ
+
+   Dos motivos por los que Nico se quedaba mudo al entrar al primer nivel:
+
+   1. Safari en iOS (y Chrome en móvil) solo permiten que el motor de voz
+      arranque desde un toque directo del usuario. La primera frase de un nivel
+      no sale del toque, sino un instante después, así que la bloqueaban.
+      Se resuelve "despertando" el motor con una frase vacía en el primer
+      toque que el usuario haga en cualquier parte de la aplicación.
+
+   2. La lista de voces del sistema se carga aparte y tarda un poco. Si se
+      habla antes, sale sin voz elegida.
    ---------------------------------------------------------------------- */
-let colaVoz = [];
-let hablando = false;
+let vozDespierta = false;
 
-function procesarColaVoz() {
-    if (colaVoz.length === 0) {
-        hablando = false;
-        return;
+// Se pone a true en cuanto una frase empieza a sonar de verdad
+let yaSonoAlguna = false;
+
+/**
+ * "Quema" el primer turno del motor de voz.
+ *
+ * Chrome y Safari descartan la primera frase que reciben, sin avisar: por eso
+ * la primera instrucción de Nico no se oía y la segunda sí. Una frase en
+ * blanco no sirve, porque el navegador ni la cuenta. Tiene que ser una frase
+ * de verdad, pero a volumen cero para que nadie la oiga: así la que se traga
+ * es esta y la siguiente, la que importa, suena.
+ */
+function cebarMotor() {
+    if (!("speechSynthesis" in window)) return;
+
+    try {
+        const cebo = new SpeechSynthesisUtterance("Hola");
+        cebo.volume = 0;
+        cebo.rate = 2;
+        cebo.lang = "es-ES";
+        if (selectedVoice) cebo.voice = selectedVoice;
+        speechSynthesis.speak(cebo);
+    } catch (e) {
+        // Si el navegador no lo permite, se reintentará con la siguiente frase
     }
+}
 
-    hablando = true;
-    const item = colaVoz.shift();
+function despertarVoz() {
+    if (vozDespierta || !("speechSynthesis" in window)) return;
+    vozDespierta = true;
 
-    speakWithWebSpeech(item.text, () => {
-        if (typeof item.onEnd === "function") item.onEnd();
-        procesarColaVoz();
+    cebarMotor();
+
+    // Aprovechamos el toque para pedir la lista de voces
+    loadSpanishMaleVoice();
+}
+
+if (typeof document !== "undefined") {
+    ["pointerdown", "touchstart", "mousedown", "keydown"].forEach(evento => {
+        document.addEventListener(evento, despertarVoz, { capture: true, once: true });
     });
 }
 
 /**
- * Encola una frase. Se dirá completa, después de las que ya estén esperando.
+ * Espera a que el navegador tenga lista la lista de voces, sin quedarse
+ * colgado si nunca llega.
+ */
+let promesaVoces = null;
+
+function vocesListas() {
+    // Se espera UNA sola vez por sesión: si no, cada frase pagaría la espera
+    if (promesaVoces) return promesaVoces;
+
+    promesaVoces = new Promise(resolve => {
+        if (!("speechSynthesis" in window)) return resolve();
+        if (speechSynthesis.getVoices().length > 0) return resolve();
+
+        let resuelto = false;
+        const terminar = () => {
+            if (resuelto) return;
+            resuelto = true;
+            loadSpanishMaleVoice();
+            resolve();
+        };
+
+        if (typeof speechSynthesis.addEventListener === "function") {
+            speechSynthesis.addEventListener("voiceschanged", terminar, { once: true });
+        } else {
+            // Navegadores antiguos solo ofrecen la propiedad
+            const anterior = speechSynthesis.onvoiceschanged;
+            speechSynthesis.onvoiceschanged = () => {
+                if (typeof anterior === "function") anterior();
+                terminar();
+            };
+        }
+
+        setTimeout(terminar, 900);
+    });
+
+    return promesaVoces;
+}
+
+/**
+ * Precarga que usa la pantalla de carga: deja las voces listas antes de que
+ * el usuario llegue al primer nivel.
+ */
+export function prepararVoz() {
+    return vocesListas().then(() => {
+        // Se ceba ya durante la pantalla de carga: así, cuando el usuario
+        // llegue al primer nivel, el turno descartado ya está gastado.
+        cebarMotor();
+    });
+}
+
+/* ----------------------------------------------------------------------
+   VOZ DE NICO
+
+   Comportamiento normal: cada frase nueva reemplaza a la anterior. Si el
+   usuario se adelanta, Nico deja de decir lo viejo y pasa a lo nuevo.
+
+   Excepción: las frases protegidas (por ejemplo "¡Nivel completado!") se
+   dicen enteras; mientras suenan se descarta cualquier otra.
+
+   Si existe js/data/voz.config.js con una clave de ElevenLabs, se usa esa voz.
+   Si no existe, falla o no hay internet, se usa la voz del navegador.
+   ---------------------------------------------------------------------- */
+let fraseProtegida = false;
+
+// Cada frase nueva sube el turno: lo que llegue tarde (audio descargado
+// después de que el usuario ya avanzó) se descarta.
+let turnoVoz = 0;
+
+// ---------- ELEVENLABS (opcional) ----------
+let configEleven;                 // undefined = sin comprobar, null = no disponible
+const audiosEleven = new Map();   // frase -> URL del audio ya descargado
+
+async function obtenerConfigEleven() {
+    if (configEleven !== undefined) return configEleven;
+
+    try {
+        const mod = await import("../data/voz.config.js");
+        const cfg = mod.VOZ_ELEVENLABS || mod.default;
+
+        // Las claves buenas de ElevenLabs empiezan por "sk_". El identificador
+        // de la clave (que es otra cosa) no sirve para autenticarse.
+        configEleven = (cfg && typeof cfg.apiKey === "string" && cfg.apiKey.startsWith("sk_") && cfg.voiceId)
+            ? cfg
+            : null;
+
+        if (cfg && configEleven === null) {
+            console.warn("Voz de ElevenLabs desactivada: la clave debe empezar por 'sk_'. Se usa la voz del navegador.");
+        }
+    } catch (e) {
+        configEleven = null; // no hay archivo de configuración: voz del navegador
+    }
+
+    return configEleven;
+}
+
+async function obtenerAudioEleven(texto, cfg) {
+    if (audiosEleven.has(texto)) return audiosEleven.get(texto);
+
+    const respuesta = await fetch(`https://api.elevenlabs.io/v1/text-to-speech/${cfg.voiceId}`, {
+        method: "POST",
+        headers: {
+            "xi-api-key": cfg.apiKey,
+            "Content-Type": "application/json",
+            "Accept": "audio/mpeg"
+        },
+        body: JSON.stringify({
+            text: texto,
+            model_id: cfg.modelId || "eleven_multilingual_v2",
+            voice_settings: {
+                stability: 0.5,
+                similarity_boost: 0.8,
+                speed: cfg.velocidad || 0.9
+            }
+        })
+    });
+
+    if (!respuesta.ok) throw new Error("ElevenLabs respondió " + respuesta.status);
+
+    // Se guarda la frase ya descargada: la guía repite mucho las mismas y así
+    // no se gastan créditos ni se espera dos veces por lo mismo.
+    const url = URL.createObjectURL(await respuesta.blob());
+    audiosEleven.set(texto, url);
+    return url;
+}
+
+function reproducirAudio(url, texto, onEnd, miTurno) {
+    const audio = new Audio(url);
+    currentAudio = audio;
+
+    let terminado = false;
+    const terminar = () => {
+        if (terminado) return;
+        terminado = true;
+        if (currentAudio === audio) currentAudio = null;
+        if (typeof onEnd === "function") onEnd();
+    };
+
+    audio.onended = terminar;
+    audio.onerror = terminar;
+
+    audio.play().catch(() => {
+        // El navegador bloqueó el audio (suele pasar si aún no ha habido
+        // ningún toque en la página): se recurre a la voz del sistema
+        if (currentAudio === audio) currentAudio = null;
+        if (turnoVoz === miTurno) {
+            speakWithWebSpeech(texto, onEnd, () => turnoVoz === miTurno);
+        } else {
+            terminar();
+        }
+        terminado = true;
+    });
+}
+
+/**
+ * Dice una frase con la mejor voz disponible. Corta la que estuviera sonando.
  */
 export function speak(text, onEnd) {
-    if (window.nicoVoiceEnabled === false || !text || !String(text).trim()) {
+    if (fraseProtegida) {
+        if (typeof onEnd === "function") onEnd();
+        return;
+    }
+    decir(String(text || ""), onEnd, false);
+}
+
+/**
+ * Dice una frase que no se puede cortar: hasta que termine se descarta el
+ * resto de avisos. Para el mensaje de nivel completado.
+ */
+export function speakPrioritario(text, onEnd) {
+    fraseProtegida = false;
+    decir(String(text || ""), () => {
+        fraseProtegida = false;
+        if (typeof onEnd === "function") onEnd();
+    }, true);
+}
+
+function decir(texto, onEnd, protegida) {
+    if (window.nicoVoiceEnabled === false || !texto.trim()) {
         if (typeof onEnd === "function") onEnd();
         return;
     }
 
-    colaVoz.push({ text: String(text), onEnd });
-    if (!hablando) procesarColaVoz();
-}
+    callar();
+    const miTurno = ++turnoVoz;
+    if (protegida) fraseProtegida = true;
+    const vigente = () => turnoVoz === miTurno;
 
-/**
- * Corta lo que se esté diciendo y dice esta frase enseguida. Para avisos que
- * no pueden esperar, como "¡Nivel completado!".
- */
-export function speakPrioritario(text, onEnd) {
-    colaVoz = [];
-    hablando = false;
+    // Por si el motor sigue dormido (primera frase de la sesión)
+    despertarVoz();
 
-    if ("speechSynthesis" in window) {
-        speechSynthesis.cancel();
+    /* IMPORTANTE: aquí NO se puede esperar a ninguna promesa.
+       Safari en iOS solo deja arrancar la voz si speechSynthesis.speak() se
+       llama dentro del mismo toque del usuario. Antes se esperaba a la lista
+       de voces y a la configuración de ElevenLabs, y para cuando se hablaba el
+       toque ya había pasado: por eso la primera frase nunca se oía y la
+       segunda sí (el intento fallido desbloqueaba el motor). */
+    if (configEleven === undefined) {
+        // Todavía no sabemos si hay ElevenLabs configurado. No se espera: se
+        // habla ya con la voz del navegador y se averigua para las siguientes.
+        obtenerConfigEleven();
+        speakWithWebSpeech(texto, onEnd, vigente);
+        return;
     }
 
-    speak(text, onEnd);
+    if (!configEleven) {
+        // Caso normal: voz del navegador, dicha en el acto
+        speakWithWebSpeech(texto, onEnd, vigente);
+        return;
+    }
+
+    // Con ElevenLabs sí hay que esperar a que baje el audio
+    obtenerAudioEleven(texto, configEleven)
+        .then(url => {
+            if (turnoVoz !== miTurno) return;
+            reproducirAudio(url, texto, onEnd, miTurno);
+        })
+        .catch(err => {
+            console.warn("ElevenLabs no disponible, se usa la voz del navegador:", err.message);
+            if (turnoVoz === miTurno) speakWithWebSpeech(texto, onEnd, vigente);
+        });
 }
 
-export async function stopSpeech() {
-    colaVoz = [];
-    hablando = false;
-
+function callar() {
     if (currentAudio) {
+        currentAudio.onended = null;
+        currentAudio.onerror = null;
         currentAudio.pause();
         currentAudio.currentTime = 0;
         currentAudio = null;
     }
 
-    if ("speechSynthesis" in window) {
+    // Solo se cancela si hay algo sonando o en cola: pedir cancel() y speak()
+    // seguidos hace que Chrome descarte la frase nueva.
+    if ("speechSynthesis" in window && (speechSynthesis.speaking || speechSynthesis.pending)) {
         speechSynthesis.cancel();
     }
+}
+
+export async function stopSpeech() {
+    // Salir de la pantalla o pulsar a Nico siempre puede callarlo
+    fraseProtegida = false;
+    turnoVoz++;
+    callar();
 }

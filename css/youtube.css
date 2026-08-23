@@ -7,6 +7,7 @@
     background: #ffffff;
     height: 100vh;
     height: 100svh;
+    height: 100dvh;
     display: none;
     flex-direction: column;
     font-family: "Roboto", "Nunito Sans", Arial, sans-serif;
@@ -447,11 +448,17 @@
     display: flex;
     flex-direction: column;
     transform: translateY(100%);
-    transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1), visibility 0s linear 0.3s;
+
+    /* Igual que en Facebook: Safari en iOS deja asomar los paneles
+       desplazados si solo se confía en el recorte del contenedor. */
+    visibility: hidden;
     overflow: hidden;
 }
 
 .yt-comments-drawer.activa {
+    visibility: visible;
+    transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1), visibility 0s;
     transform: translateY(0);
 }
 
@@ -924,10 +931,6 @@
     fill: #ffffff;
 }
 
-#ytVolUpBtn svg {
-    width: 26px;
-    height: 26px;
-}
 
 .yt-time-label {
     color: #ffffff;
@@ -954,24 +957,8 @@
     transition: width 0.35s linear;
 }
 
-.yt-vol-bars {
-    display: flex;
-    align-items: flex-end;
-    gap: 3px;
-    height: 18px;
-    flex-shrink: 0;
-}
 
-.yt-vol-bar {
-    width: 4px;
-    height: 100%;
-    border-radius: 2px;
-    background: rgba(255, 255, 255, 0.3);
-}
 
-.yt-vol-bar.activa {
-    background: #ffffff;
-}
 
 /* ========================================================
    DETALLES DEL VIDEO: VOLVER, CANAL, ACCIONES
@@ -1215,9 +1202,18 @@
 }
 
 .yt-success-trophy {
-    width: 72px;
-    height: 72px;
-    margin-bottom: 12px;
+    width: 80px;
+    height: 80px;
+    margin-bottom: 16px;
+    /* Mismo rebote y brillo dorado que en Facebook, para que la felicitación
+       se sienta igual de festiva en los tres módulos */
+    filter: drop-shadow(0 6px 12px rgba(255, 193, 7, 0.45));
+    animation: ytTrophyBounce 1s infinite alternate ease-in-out;
+}
+
+@keyframes ytTrophyBounce {
+    from { transform: translateY(0); }
+    to { transform: translateY(-8px); }
 }
 
 .yt-success-container h2 {
@@ -1534,4 +1530,143 @@
     width: 100%;
     height: 100%;
     object-fit: cover;
+}
+
+/* Igual que en Facebook: con el simulador abierto la app no se desplaza */
+.app:has(.pantalla-youtube.activa) {
+    overflow: hidden;
+}
+
+/* ======================================================
+   TARJETA: EL VOLUMEN SE SUBE CON EL TELÉFONO
+   En un móvil real el volumen no está en la pantalla, sino en los botones
+   del borde. Esta tarjeta lo explica y muestra dónde suelen estar.
+   ====================================================== */
+.yt-volumen-card {
+    display: none;
+    position: absolute;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.6);
+    z-index: 390;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+}
+
+.yt-volumen-card.activa {
+    display: flex;
+}
+
+.yt-volumen-panel {
+    background: #ffffff;
+    border: 3px solid #ff0000;
+    border-radius: 18px;
+    padding: 20px;
+    max-width: 340px;
+    width: 100%;
+    max-height: 100%;
+    overflow-y: auto;
+    text-align: center;
+}
+
+.yt-volumen-titulo {
+    margin: 0 0 12px;
+    font-size: 20px;
+    font-weight: 800;
+    color: #ff0000;
+}
+
+
+.yt-volumen-texto {
+    margin: 0 0 12px;
+    font-size: 16px;
+    line-height: 1.45;
+    color: #0f0f0f;
+    text-align: left;
+}
+
+.yt-volumen-btn {
+    width: 100%;
+    background: #ff0000;
+    color: #ffffff;
+    border: none;
+    border-bottom: 5px solid #b71c1c;
+    border-radius: 14px;
+    padding: 14px;
+    font-size: 17px;
+    font-weight: 800;
+    font-family: inherit;
+    cursor: pointer;
+}
+
+.yt-volumen-btn:active {
+    transform: translateY(3px);
+    border-bottom-width: 2px;
+}
+
+/* Los dos teléfonos de la tarjeta de volumen: derecha e izquierda */
+.yt-volumen-dibujos {
+    display: flex;
+    gap: 14px;
+    justify-content: center;
+    margin-bottom: 14px;
+}
+
+.yt-volumen-figura {
+    margin: 0;
+    flex: 1;
+    max-width: 130px;
+}
+
+.yt-volumen-figura svg {
+    width: 100%;
+    height: auto;
+    max-height: 150px;
+    filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.25));
+}
+
+.yt-volumen-figura figcaption {
+    margin-top: 6px;
+    font-size: 12px;
+    font-weight: 700;
+    color: #606060;
+    line-height: 1.3;
+}
+
+/* ======================================================
+   RUEDA DE CARGA DEL REPRODUCTOR
+   ====================================================== */
+.yt-cargando {
+    display: none;
+    position: absolute;
+    inset: 0;
+    background: rgba(15, 15, 15, 0.72);
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    z-index: 3;
+}
+
+.yt-cargando.activa {
+    display: flex;
+}
+
+.yt-cargando-rueda {
+    width: 46px;
+    height: 46px;
+    border: 5px solid rgba(255, 255, 255, 0.25);
+    border-top-color: #ff0000;
+    border-radius: 50%;
+    animation: ytGirar 0.9s linear infinite;
+}
+
+@keyframes ytGirar {
+    to { transform: rotate(360deg); }
+}
+
+.yt-cargando-texto {
+    color: #ffffff;
+    font-size: 14px;
+    font-weight: 600;
 }

@@ -18,12 +18,16 @@ let nivelActual = null;
 let subPaso = 1;
 let ultimaInstruccionHablada = "";
 
+// Ritmo de la guía: pausa tras la voz antes de pasar de paso, y espera
+// equivalente cuando Nico no llegó a hablar.
+const PAUSA_TRAS_VOZ = 900;
+const ESPERA_SIN_VOZ = 2200;
+
 // Estado del reproductor simulado
 let videoActual = null;
 let reproduciendo = false;
 let progresoSegundos = 0;
 let progresoInterval = null;
-let volumenActual = 2; // 0 a 5
 
 // true cuando el archivo de video cargó bien; si es false el reproductor
 // funciona en modo animación (fondo de color con emoji)
@@ -153,38 +157,40 @@ const VIDEOS_DATA = [
     }
 ];
 
-const COMENTARIOS_BASE = [
-    {
-        id: 1,
-        autor: "Carmen Villacís",
-        avatarLetter: "C",
-        avatarBg: "#ec407a",
-        texto: "Muchas gracias por explicar tan despacio, así sí puedo seguir los pasos. ¡Bendiciones!",
-        tiempo: "hace 2 semanas",
-        likes: 342,
-        corazonCanal: true
-    },
-    {
-        id: 2,
-        autor: "Jorge Andrade",
-        avatarLetter: "J",
-        avatarBg: "#26a69a",
-        texto: "Lo vi con mi esposa y nos encantó. Saludos desde Quevedo.",
-        tiempo: "hace 1 mes",
-        likes: 118,
-        corazonCanal: false
-    },
-    {
-        id: 3,
-        autor: "Marta Cedeño",
-        avatarLetter: "M",
-        avatarBg: "#5c6bc0",
-        texto: "Qué bonito video, me trajo muchos recuerdos de mi juventud.",
-        tiempo: "hace 3 meses",
-        likes: 54,
-        corazonCanal: false
-    }
-];
+// Cada video tiene sus propios comentarios: antes eran los mismos en todos,
+// y se notaba que estaban puestos a mano.
+const COMENTARIOS_POR_VIDEO = {
+    1: [
+        { id: 1, autor: "Carmen Villacís", avatarLetter: "C", avatarBg: "#ec407a", texto: "Gracias por explicar tan despacio. La hice ayer y me quedó igualita a la de mi mamá.", tiempo: "hace 2 semanas", likes: 342, corazonCanal: true },
+        { id: 2, autor: "Jorge Andrade", avatarLetter: "J", avatarBg: "#26a69a", texto: "¿El pollo se pone entero o en presas? Perdón, apenas estoy aprendiendo a cocinar.", tiempo: "hace 1 mes", likes: 118, corazonCanal: false },
+        { id: 3, autor: "Marta Cedeño", avatarLetter: "M", avatarBg: "#5c6bc0", texto: "El secreto está en el apio, mi abuela hacía lo mismo 🥰", tiempo: "hace 3 meses", likes: 54, corazonCanal: false }
+    ],
+    2: [
+        { id: 1, autor: "Ernesto Campos", avatarLetter: "E", avatarBg: "#7e57c2", texto: "Esta canción la bailé con mi esposa en el 78. Qué recuerdos.", tiempo: "hace 1 semana", likes: 521, corazonCanal: true },
+        { id: 2, autor: "Gloria Castro", avatarLetter: "G", avatarBg: "#ef6c00", texto: "La pongo todas las tardes mientras tiendo la ropa 🎶", tiempo: "hace 2 meses", likes: 203, corazonCanal: false },
+        { id: 3, autor: "Luis Chávez", avatarLetter: "L", avatarBg: "#00897b", texto: "¿Alguien sabe cómo se llama la segunda canción? Es preciosa.", tiempo: "hace 3 meses", likes: 47, corazonCanal: false }
+    ],
+    3: [
+        { id: 1, autor: "Dolores Pérez", avatarLetter: "D", avatarBg: "#8bc34a", texto: "Las hago sentada porque me duelen las rodillas y me funcionan igual. Gracias.", tiempo: "hace 5 días", likes: 289, corazonCanal: true },
+        { id: 2, autor: "Ramón Flores", avatarLetter: "R", avatarBg: "#039be5", texto: "Mi doctor me mandó justo estos. Muy bien explicados.", tiempo: "hace 3 semanas", likes: 96, corazonCanal: false },
+        { id: 3, autor: "Patricia Mora", avatarLetter: "P", avatarBg: "#d81b60", texto: "Empecé hace un mes y ya subo las escaleras sin cansarme tanto 💪", tiempo: "hace 1 mes", likes: 134, corazonCanal: false }
+    ],
+    4: [
+        { id: 1, autor: "Elena Vargas", avatarLetter: "E", avatarBg: "#43a047", texto: "¿Cada cuánto se riegan? Se me secan siempre las mías 😔", tiempo: "hace 4 días", likes: 178, corazonCanal: true },
+        { id: 2, autor: "Tomás Herrera", avatarLetter: "T", avatarBg: "#795548", texto: "El truco del dedo en la tierra me cambió la vida, gracias.", tiempo: "hace 2 semanas", likes: 92, corazonCanal: false },
+        { id: 3, autor: "Rosario Delgado", avatarLetter: "R", avatarBg: "#8e24aa", texto: "Mi balcón está precioso desde que sigo este canal 🌷", tiempo: "hace 1 mes", likes: 61, corazonCanal: false }
+    ],
+    5: [
+        { id: 1, autor: "Miguel Ponce", avatarLetter: "M", avatarBg: "#00838f", texto: "Qué hermoso está el Ecuador. Yo soy de Quevedo y no conocía ese lugar.", tiempo: "hace 6 días", likes: 412, corazonCanal: true },
+        { id: 2, autor: "Ana Belén Rodríguez", avatarLetter: "A", avatarBg: "#3949ab", texto: "Se lo mandé a mi hijo que vive afuera y se puso a llorar 🇪🇨", tiempo: "hace 3 semanas", likes: 267, corazonCanal: false },
+        { id: 3, autor: "Pedro Sánchez", avatarLetter: "P", avatarBg: "#f4511e", texto: "¿En qué mes es mejor ir? Estoy planeando el viaje con mis nietos.", tiempo: "hace 1 mes", likes: 58, corazonCanal: false }
+    ],
+    6: [
+        { id: 1, autor: "Josefina Bravo", avatarLetter: "J", avatarBg: "#ec407a", texto: "Sin amasadora de verdad funciona. Salió esponjadito 🍞", tiempo: "hace 1 semana", likes: 356, corazonCanal: true },
+        { id: 2, autor: "Juan Carlos Macías", avatarLetter: "J", avatarBg: "#00acc1", texto: "¿Se puede dejar la masa toda la noche en la refrigeradora?", tiempo: "hace 2 semanas", likes: 121, corazonCanal: false },
+        { id: 3, autor: "Carmen Villacís", avatarLetter: "C", avatarBg: "#ec407a", texto: "Ya van tres veces que lo hago. Mis nietos me lo piden 😄", tiempo: "hace 1 mes", likes: 88, corazonCanal: false }
+    ]
+};
 
 const SUGERENCIAS_BUSQUEDA = ["recetas de sopa", "música del recuerdo", "ejercicios en casa"];
 
@@ -306,6 +312,12 @@ function asegurarTemplateHTML() {
             <div class="yt-player-screen" id="ytPlayerScreen">
                 <span class="yt-player-emoji" id="ytPlayerEmoji">🎬</span>
 
+                <!-- Rueda de carga mientras el video se prepara -->
+                <div class="yt-cargando" id="ytCargando">
+                    <div class="yt-cargando-rueda"></div>
+                    <span class="yt-cargando-texto">Cargando video...</span>
+                </div>
+
                 <video id="ytPlayerVideo" class="yt-player-video" playsinline loop preload="metadata"></video>
 
                 <button class="yt-big-play-btn" id="ytBigPlayBtn" aria-label="Reproducir video">
@@ -318,13 +330,6 @@ function asegurarTemplateHTML() {
                     </button>
                     <span class="yt-time-label" id="ytTimeLabel">0:00 / 0:00</span>
                     <div class="yt-progress-track"><div class="yt-progress-fill" id="ytProgressFill"></div></div>
-                    <button class="yt-ctrl-btn" id="ytVolDownBtn" aria-label="Bajar volumen">
-                        <svg viewBox="0 0 24 24"><path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02z"/></svg>
-                    </button>
-                    <div class="yt-vol-bars" id="ytVolBars"></div>
-                    <button class="yt-ctrl-btn" id="ytVolUpBtn" aria-label="Subir volumen">
-                        <svg viewBox="0 0 24 24"><path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02zM14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77s-2.99-7.86-7-8.77z"/></svg>
-                    </button>
                 </div>
             </div>
 
@@ -516,6 +521,61 @@ function asegurarTemplateHTML() {
         <!-- ======= AVISO FLOTANTE ======= -->
         <div id="ytToast" class="yt-toast"></div>
 
+        <!-- ======= AVISO: EL VOLUMEN SE SUBE CON EL TELÉFONO ======= -->
+        <div id="ytVolumenCard" class="yt-volumen-card">
+            <div class="yt-volumen-panel">
+                <h3 class="yt-volumen-titulo">Sube el volumen con tu teléfono</h3>
+
+                <div class="yt-volumen-dibujos">
+                    <figure class="yt-volumen-figura">
+                        <svg viewBox="0 0 130 210" aria-hidden="true">
+                            <defs>
+                                <linearGradient id="ytPantalla" x1="0" y1="0" x2="0" y2="1">
+                                    <stop offset="0%" stop-color="#4a4a6a"/>
+                                    <stop offset="100%" stop-color="#22223b"/>
+                                </linearGradient>
+                            </defs>
+                            <rect x="25" y="6" width="80" height="198" rx="16" fill="#2b2b35"/>
+                            <rect x="29" y="10" width="72" height="190" rx="13" fill="url(#ytPantalla)"/>
+                            <rect x="52" y="14" width="26" height="5" rx="2.5" fill="#15151c"/>
+                            <rect x="47" y="192" width="36" height="4" rx="2" fill="#ffffff" opacity="0.5"/>
+                            <rect x="105" y="52" width="8" height="30" rx="4" fill="#ff0000"/>
+                            <rect x="105" y="88" width="8" height="30" rx="4" fill="#8a8a99"/>
+                            <text x="117" y="72" font-size="16" font-weight="bold" fill="#ff0000">+</text>
+                            <text x="117" y="108" font-size="16" font-weight="bold" fill="#5f5f6d">−</text>
+                        </svg>
+                        <figcaption>Casi siempre, a la derecha</figcaption>
+                    </figure>
+
+                    <figure class="yt-volumen-figura">
+                        <svg viewBox="0 0 130 210" aria-hidden="true">
+                            <rect x="25" y="6" width="80" height="198" rx="16" fill="#2b2b35"/>
+                            <rect x="29" y="10" width="72" height="190" rx="13" fill="url(#ytPantalla)"/>
+                            <rect x="52" y="14" width="26" height="5" rx="2.5" fill="#15151c"/>
+                            <rect x="47" y="192" width="36" height="4" rx="2" fill="#ffffff" opacity="0.5"/>
+                            <rect x="17" y="52" width="8" height="30" rx="4" fill="#ff0000"/>
+                            <rect x="17" y="88" width="8" height="30" rx="4" fill="#8a8a99"/>
+                            <text x="4" y="72" font-size="16" font-weight="bold" fill="#ff0000">+</text>
+                            <text x="4" y="108" font-size="16" font-weight="bold" fill="#5f5f6d">−</text>
+                        </svg>
+                        <figcaption>En algunos, a la izquierda</figcaption>
+                    </figure>
+                </div>
+
+                <p class="yt-volumen-texto">
+                    Los botones del volumen están en el <strong>borde del teléfono</strong>, no en la pantalla.
+                    Suelen ir en el <strong>lado derecho</strong>, cerca de la parte de arriba; en algunos
+                    teléfonos están en el <strong>lado izquierdo</strong>.
+                </p>
+                <p class="yt-volumen-texto">
+                    Son dos botones alargados: el <strong>de arriba sube</strong> el volumen y el
+                    <strong>de abajo lo baja</strong>. Pruébalos ahora mientras suena el video.
+                </p>
+
+                <button id="ytVolumenListo" class="yt-volumen-btn">Ya lo escucho más fuerte</button>
+            </div>
+        </div>
+
         <!-- ======= MODAL DE ÉXITO ======= -->
         <div id="ytModalExito" class="yt-modal-exito">
             <div class="yt-success-container">
@@ -567,8 +627,13 @@ const PASOS = {
             requierePlayer: true
         },
         8: {
-            texto: "Por último sube el volumen: toca la bocina grande, la que está abajo a la derecha del video.",
-            objetivo: "#ytVolUpBtn",
+            texto: "El volumen no se sube desde la pantalla: se sube con los botones del borde de tu teléfono. Mira el dibujo y pruébalos ahora.",
+            objetivo: "#ytVolumenListo",
+            requierePlayer: true
+        },
+        9: {
+            texto: "¡Eso es! Esos botones suben y bajan el volumen de todo lo que suena en el teléfono, no solo de este video.",
+            objetivo: null,
             requierePlayer: true
         }
     },
@@ -690,6 +755,11 @@ const PASOS = {
         6: {
             texto: "¡Ahí está tu video guardado! Tócalo para abrirlo y verlo cuando quieras.",
             objetivo: "#ytLibSavedList .yt-video-card:first-child"
+        },
+        7: {
+            texto: "Y ya está andando. Así puedes guardar los videos que te gusten y verlos con calma más tarde.",
+            objetivo: null,
+            requierePlayer: true
         }
     }
 };
@@ -697,7 +767,12 @@ const PASOS = {
 // ---------------------------------------------------------------------
 // BARRA DE INSTRUCCIONES + GUÍA VISUAL
 // ---------------------------------------------------------------------
-function actualizarBarraInstrucciones(autoSpeak = true) {
+/**
+ * @param {boolean} autoSpeak  Si Nico debe leer la instrucción.
+ * @param {Function|null} alTerminarVoz  Acción que se ejecuta al terminar la
+ *        frase. Los avances automáticos la usan para no cortarle la voz.
+ */
+function actualizarBarraInstrucciones(autoSpeak = true, alTerminarVoz = null) {
     const textEl = $("#ytInstructionsText");
     if (!textEl) return;
 
@@ -729,7 +804,15 @@ function actualizarBarraInstrucciones(autoSpeak = true) {
 
     if (autoSpeak && texto !== ultimaInstruccionHablada) {
         ultimaInstruccionHablada = texto;
-        speak(limpiarEmojis(texto));
+
+        // Se guarda el valor antes de vaciar la variable: si no, el callback
+        // capturaría la variable ya puesta a null y fallaría al dispararse.
+        const accionFinal = alTerminarVoz;
+        alTerminarVoz = null;
+
+        speak(limpiarEmojis(texto), accionFinal
+            ? () => setTimeout(accionFinal, PAUSA_TRAS_VOZ)
+            : undefined);
     }
 
     if (objetivo) {
@@ -737,14 +820,17 @@ function actualizarBarraInstrucciones(autoSpeak = true) {
     } else {
         limpiarResaltados();
     }
+
+    // No llegó a hablar: se espera igualmente para dar tiempo a leer
+    if (alTerminarVoz) setTimeout(alTerminarVoz, ESPERA_SIN_VOZ);
 }
 
 /**
  * Avanza al sub-paso indicado y actualiza la guía de Nico.
  */
-function irAPaso(numeroPaso) {
+function irAPaso(numeroPaso, alTerminarVoz = null) {
     subPaso = numeroPaso;
-    actualizarBarraInstrucciones(true);
+    actualizarBarraInstrucciones(true, alTerminarVoz);
 }
 
 /**
@@ -932,9 +1018,10 @@ function abrirVideo(videoId) {
         }
 
         if (video.archivo) {
+            mostrarCargando(true);
             elVideo.src = video.archivo;
-            elVideo.volume = volumenActual / 5;
-            elVideo.muted = volumenActual === 0;
+            elVideo.volume = 1;      // el volumen lo manda el teléfono
+            elVideo.muted = false;
             elVideo.load();
 
             // Mostramos el elemento desde ya: la portada hace de imagen
@@ -973,8 +1060,11 @@ function abrirVideo(videoId) {
     // Guardar
     actualizarBotonGuardar();
 
+    // Los comentarios de este video en concreto
+    comentarios = JSON.parse(JSON.stringify(COMENTARIOS_POR_VIDEO[video.id] || []));
+
     actualizarProgresoUI();
-    actualizarVolumenUI();
+    ajustarVolumenVideo();
     renderizarComentarios();
 
     cambiarVista("ytViewPlayer");
@@ -1128,33 +1218,38 @@ function alternarReproduccion() {
             irAPaso(6); // primera reproducción
         } else if (esPaso("buscar-video", 7)) {
             irAPaso(8); // reanudó tras la pausa
+            mostrarTarjetaVolumen(true);
         }
     }
 }
 
-function actualizarVolumenUI() {
-    const cont = $("#ytVolBars");
-    if (!cont) return;
-
-    cont.innerHTML = Array.from({ length: 5 }, (_, i) =>
-        `<span class="yt-vol-bar${i < volumenActual ? " activa" : ""}"></span>`
-    ).join("");
-}
-
-function cambiarVolumen(delta) {
-    volumenActual = Math.max(0, Math.min(5, volumenActual + delta));
-    actualizarVolumenUI();
-
-    // Volumen real del archivo: las 5 barritas equivalen a 0 % - 100 %
+/**
+ * El volumen real lo maneja el teléfono con sus botones físicos, así que el
+ * video se deja al máximo: lo que el usuario suba o baje con el teléfono es
+ * lo que se oye. Antes había unos botones en pantalla que no existen en la
+ * aplicación real de YouTube y enseñaban algo que no es cierto.
+ */
+function ajustarVolumenVideo() {
     const el = $("#ytPlayerVideo");
     if (el) {
-        el.volume = volumenActual / 5;
-        el.muted = volumenActual === 0;
+        el.volume = 1;
+        el.muted = false;
     }
+}
 
-    if (delta > 0 && esPaso("buscar-video", 8) && volumenActual >= 3) {
-        completarNivelActual("¡Muy bien! Buscaste un video, lo pusiste, lo pausaste y le subiste el volumen.");
-    }
+/**
+ * Rueda de carga sobre el reproductor. Antes se quedaba el emoji del catálogo,
+ * que parecía parte del video en vez de un aviso de que estaba cargando.
+ */
+function mostrarCargando(visible) {
+    const el = $("#ytCargando");
+    if (el) el.classList.toggle("activa", !!visible);
+}
+
+function mostrarTarjetaVolumen(visible) {
+    const card = $("#ytVolumenCard");
+    if (!card) return;
+    card.classList.toggle("activa", !!visible);
 }
 
 // ---------------------------------------------------------------------
@@ -1362,11 +1457,9 @@ function enviarComentario() {
     renderizarComentarios();
 
     if (esPaso("comentar-video", 5) || esPaso("comentar-video", 6)) {
-        irAPaso(7);
-
-        // El canal reacciona a tu comentario, igual que en la vida real
-        respuestaCanalTimeout = setTimeout(() => {
-            if (nivelActual !== "comentar-video") return;
+        // El canal reacciona cuando Nico termina de decir que espere
+        irAPaso(7, () => {
+            if (nivelActual !== "comentar-video" || subPaso !== 7) return;
 
             const mio = comentarios.find(c => c.esMio);
             if (mio) {
@@ -1376,7 +1469,7 @@ function enviarComentario() {
             }
             mostrarToast("Al canal le gustó tu comentario ❤️");
             irAPaso(8);
-        }, 2800);
+        });
     }
 }
 
@@ -1521,9 +1614,14 @@ function inicializarListeners() {
                 return;
             }
 
-            // Final del nivel de guardar: abre el video que había guardado
+            // Final del nivel de guardar: abre el video que había guardado y
+            // se le deja verlo un momento antes de dar el nivel por terminado
             if (selector === "#ytLibSavedList" && esPaso("guardar-video", 6)) {
-                completarNivelActual("¡Lo lograste! Guardaste un video, lo volviste a encontrar en Ver más tarde y lo abriste para verlo.");
+                iniciarReproduccion();
+                irAPaso(7, () => {
+                    if (!esPaso("guardar-video", 7)) return;
+                    completarNivelActual("¡Lo lograste! Guardaste un video, lo volviste a encontrar en Ver más tarde y lo abriste para verlo.");
+                });
                 return;
             }
 
@@ -1547,7 +1645,12 @@ function inicializarListeners() {
     // de los pasos del nivel lo maneja el clic del usuario, no el video.
     const elVideo = $("#ytPlayerVideo");
     if (elVideo) {
+        elVideo.addEventListener("canplay", () => mostrarCargando(false));
+        elVideo.addEventListener("playing", () => mostrarCargando(false));
+        elVideo.addEventListener("waiting", () => mostrarCargando(true));
+
         elVideo.addEventListener("loadedmetadata", () => {
+            mostrarCargando(false);
             usandoVideoReal = true;
             const pantalla = $("#ytPlayerScreen");
             if (pantalla) pantalla.classList.add("con-video");
@@ -1564,6 +1667,7 @@ function inicializarListeners() {
 
         // Falta el archivo o está dañado: seguimos con el fondo de color
         elVideo.addEventListener("error", () => {
+            mostrarCargando(false);
             desactivarVideoReal();
             console.warn("No se pudo cargar el video del simulador de YouTube.");
         });
@@ -1577,11 +1681,20 @@ function inicializarListeners() {
         });
     }
 
-    const volUp = $("#ytVolUpBtn");
-    if (volUp) volUp.onclick = () => cambiarVolumen(1);
+    // "Ya lo escucho más fuerte": el usuario confirma que encontró los botones
+    const volumenListo = $("#ytVolumenListo");
+    if (volumenListo) {
+        volumenListo.onclick = () => {
+            mostrarTarjetaVolumen(false);
+    mostrarCargando(false);
+            if (!esPaso("buscar-video", 8)) return;
 
-    const volDown = $("#ytVolDownBtn");
-    if (volDown) volDown.onclick = () => cambiarVolumen(-1);
+            irAPaso(9, () => {
+                if (!esPaso("buscar-video", 9)) return;
+                completarNivelActual("¡Muy bien! Buscaste un video, lo pusiste, lo pausaste y aprendiste a subirle el volumen con tu teléfono.");
+            });
+        };
+    }
 
     const volverBtn = $("#ytPlayerVolverBtn");
     if (volverBtn) {
@@ -1687,7 +1800,12 @@ function inicializarListeners() {
             actualizarBotonGuardar();
             renderizarBiblioteca();
 
-            if (!yaEstaba && esPaso("guardar-video", 2)) irAPaso(3);
+            // Guardar más videos no rompe el nivel: solo avanza el primero
+            if (!yaEstaba && esPaso("guardar-video", 2)) {
+                irAPaso(3);
+            } else {
+                actualizarBarraInstrucciones(false);
+            }
         };
     }
 
@@ -1786,8 +1904,11 @@ function inicializarListeners() {
             const seccion = $("#ytLibSavedSection");
             if (seccion) seccion.style.display = "block";
 
-            if (esPaso("guardar-video", 5) && videosGuardados.length > 0) {
+            // Vale desde cualquier paso: si ya guardó algo, se le lleva al final
+            if (nivelActual === "guardar-video" && videosGuardados.length > 0 && subPaso < 6) {
                 irAPaso(6);
+            } else {
+                actualizarBarraInstrucciones(false);
             }
         };
     }
@@ -1908,17 +2029,16 @@ export function iniciarSimulador(idNivel) {
     // Estado limpio en cada intento del nivel
     videoActual = null;
     progresoSegundos = 0;
-    volumenActual = 2;
     yaLiked = false;
     yaSubscrito = false;
     campanaActiva = false;
     videosGuardados = [];
     appCompartir = "WhatsApp";
-    comentarios = JSON.parse(JSON.stringify(COMENTARIOS_BASE));
+    comentarios = [];
 
     renderizarFeed();
     renderizarBiblioteca();
-    actualizarVolumenUI();
+    mostrarTarjetaVolumen(false);
 
     const modal = $("#ytModalExito");
     if (modal) modal.classList.remove("activa");

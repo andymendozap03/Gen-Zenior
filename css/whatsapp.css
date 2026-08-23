@@ -1672,10 +1672,12 @@
 }
 
 .ws-success-trophy {
-    width: 72px;
-    height: 72px;
+    width: 80px;
+    height: 80px;
     margin-bottom: 16px;
-    animation: trophyBounce 1s infinite alternate;
+    /* Brillo dorado igual que en Facebook y YouTube */
+    filter: drop-shadow(0 6px 12px rgba(255, 193, 7, 0.45));
+    animation: trophyBounce 1s infinite alternate ease-in-out;
 }
 
 @keyframes trophyBounce {

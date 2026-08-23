@@ -8,6 +8,7 @@
     background: #f0f2f5;
     height: 100vh;
     height: 100svh;
+    height: 100dvh;
     display: none;
     flex-direction: column;
     font-family: "Nunito Sans", "Helvetica Neue", Helvetica, Arial, sans-serif;
@@ -19,8 +20,6 @@
 .pantalla-facebook.activa {
     display: flex;
 }
-
-
 
 /* ---- HEADER PRINCIPAL ---- */
 .fb-header {
@@ -696,12 +695,19 @@
     flex-direction: column;
     background: #ffffff;
     transform: translateY(100%);
-    transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1), visibility 0s linear 0.3s;
     overflow: hidden;
+
+    /* Safari en iOS no recorta bien los elementos desplazados fuera del
+       contenedor, y el panel se quedaba asomando por debajo. Ocultarlo de
+       forma explícita no depende de ese recorte. */
+    visibility: hidden;
 }
 
 .fb-comments-modal.activa {
     transform: translateY(0);
+    visibility: visible;
+    transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1), visibility 0s;
 }
 
 .fb-comments-header {
@@ -2082,64 +2088,8 @@
     z-index: 10;
 }
 
-/* Aviso visual del gesto de deslizar (Nivel 5 guiado) — misma escala/lenguaje visual
-   que .fb-hold-hint del Nivel 2: etiqueta pequeña, no un banner grande centrado.
-   "Desliza hacia arriba" se ancla dentro de la franja SIEMPRE vacía que garantiza
-   el padding-bottom:80px de .fb-reel-overlay (info/acciones se anclan con
-   align-items:flex-end a esos 80px, así que nunca invaden esta franja). "Desliza
-   hacia abajo" se ancla cerca del borde SUPERIOR, debajo del contador de reel, zona
-   que info/acciones no ocupan porque están ancladas abajo. Ninguna de las dos tapa
-   el centro del video. pointer-events:none para no interferir con el gesto. */
-.fb-reel-swipe-hint {
-    position: absolute;
-    bottom: 16px;
-    left: 50%;
-    transform: translateX(-50%);
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    background: #1877f2;
-    color: #ffffff;
-    font-size: 12px;
-    font-weight: 800;
-    padding: 6px 12px;
-    border-radius: 14px;
-    white-space: nowrap;
-    box-shadow: 0 4px 12px rgba(24, 119, 242, 0.5);
-    pointer-events: none;
-    z-index: 20;
-    animation: fbReelSwipeHintBounce 0.9s infinite alternate ease-in-out;
-}
 
-.fb-reel-swipe-hint span:first-child {
-    font-size: 15px;
-}
 
-@keyframes fbReelSwipeHintBounce {
-    from {
-        transform: translateX(-50%) translateY(0);
-    }
-
-    to {
-        transform: translateX(-50%) translateY(-6px);
-    }
-}
-
-.fb-reel-swipe-hint-abajo {
-    bottom: auto;
-    top: 100px;
-    animation-name: fbReelSwipeHintBounceAbajo;
-}
-
-@keyframes fbReelSwipeHintBounceAbajo {
-    from {
-        transform: translateX(-50%) translateY(0);
-    }
-
-    to {
-        transform: translateX(-50%) translateY(6px);
-    }
-}
 /* Flechas de respaldo del Nivel 5: alternativa al gesto de deslizar para quien
    no consiga el arrastre. Discretas, para que el gesto siga siendo lo principal. */
 .fb-reel-fallback-nav {
@@ -2524,7 +2474,15 @@
     z-index: 600;
 }
 
-.fb-comments-modal,
+/* Los paneles que se ocultan deslizándose hacia abajo NO pueden llevar "top":
+   al desplazarse el 100% de su alto quedaba asomando por abajo justo esa
+   franja. Se quedan cubriendo toda la pantalla y se les mete el contenido
+   hacia abajo con padding, que Nico ya se pinta por encima. */
+.fb-comments-modal {
+    padding-top: var(--fb-nico-h, 0px);
+}
+
+/* Estos otros se ocultan con display:none, así que no se asoman */
 .fb-reel-sheet,
 .fb-comment-menu {
     top: var(--fb-nico-h, 0px);
@@ -2720,4 +2678,216 @@
 .fb-reels-view {
     touch-action: none;
     overscroll-behavior: none;
+}
+
+/* Con un simulador abierto la aplicación no debe desplazarse: .app tiene
+   overflow-x:hidden, y eso hace que el eje vertical pase a "auto", con lo que
+   cualquier desplazamiento arrastraba la barra de Nico fuera de la pantalla. */
+.app:has(.pantalla-facebook.activa) {
+    overflow: hidden;
+}
+
+/* ======================================================
+   BUSCADOR DE PERSONAS (Nivel 4)
+   ====================================================== */
+.fb-search-view {
+    flex: 1;
+    min-height: 0;
+    overflow-y: auto;
+    background: #f0f2f5;
+    flex-direction: column;
+}
+
+.fb-search-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 12px;
+    background: #ffffff;
+    border-bottom: 1px solid #e4e6eb;
+    flex-shrink: 0;
+}
+
+.fb-search-input {
+    flex: 1;
+    min-width: 0;
+    border: 1px solid #d0d3d8;
+    border-radius: 20px;
+    background: #f0f2f5;
+    padding: 10px 16px;
+    font-size: 16px;
+    font-family: inherit;
+    color: #050505;
+    outline: none;
+}
+
+.fb-search-input:focus {
+    border-color: #1877f2;
+    background: #ffffff;
+}
+
+.fb-search-go {
+    width: 42px;
+    height: 42px;
+    flex-shrink: 0;
+    border: none;
+    border-radius: 50%;
+    background: #1877f2;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.fb-search-go svg {
+    width: 20px;
+    height: 20px;
+    fill: #ffffff;
+}
+
+.fb-search-sugerencias {
+    background: #ffffff;
+    padding: 14px 16px;
+    margin-bottom: 8px;
+}
+
+.fb-search-sugerencias-titulo {
+    margin: 0 0 10px;
+    font-size: 13px;
+    font-weight: 700;
+    color: #65676b;
+}
+
+.fb-search-chip {
+    display: inline-block;
+    background: #f0f2f5;
+    border: 1px solid #d0d3d8;
+    border-radius: 18px;
+    padding: 8px 16px;
+    margin: 0 8px 8px 0;
+    font-size: 15px;
+    font-family: inherit;
+    font-weight: 600;
+    color: #050505;
+    cursor: pointer;
+}
+
+.fb-search-resultados {
+    background: #ffffff;
+}
+
+.fb-search-card {
+    padding: 12px;
+}
+
+/* ======================================================
+   ENSEÑAR EL GESTO DE DESLIZAR (Nivel 5)
+   En vez de dar un zoom intermitente al video, que no explicaba nada, se
+   dibuja el propio gesto: un dedo que recorre la pantalla en la dirección
+   correcta y tres flechas que marcan el camino.
+   ====================================================== */
+.fb-reel-swipe-hint {
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    transform: translate(-50%, -50%);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
+    pointer-events: none;
+    z-index: 20;
+}
+
+.fb-swipe-pista {
+    position: relative;
+    width: 60px;
+    height: 130px;
+}
+
+/* Las tres flechas apuntan hacia arriba y se encienden en cadena */
+.fb-swipe-flecha {
+    position: absolute;
+    left: 50%;
+    width: 26px;
+    height: 26px;
+    margin-left: -13px;
+    border-left: 5px solid #ffffff;
+    border-top: 5px solid #ffffff;
+    border-radius: 4px;
+    transform: rotate(45deg);
+    opacity: 0;
+    animation: fbSwipeFlecha 1.6s infinite ease-out;
+    filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.6));
+}
+
+.fb-swipe-flecha.f1 { top: 4px;  animation-delay: 0.5s; }
+.fb-swipe-flecha.f2 { top: 34px; animation-delay: 0.3s; }
+.fb-swipe-flecha.f3 { top: 64px; animation-delay: 0.1s; }
+
+@keyframes fbSwipeFlecha {
+    0%   { opacity: 0; }
+    35%  { opacity: 1; }
+    70%  { opacity: 0; }
+    100% { opacity: 0; }
+}
+
+/* El dedo sube por la pista, se levanta y vuelve a empezar */
+.fb-swipe-dedo {
+    position: absolute;
+    left: 50%;
+    bottom: -6px;
+    margin-left: -16px;
+    font-size: 32px;
+    animation: fbSwipeDedo 1.6s infinite ease-in-out;
+    filter: drop-shadow(0 3px 5px rgba(0, 0, 0, 0.5));
+}
+
+@keyframes fbSwipeDedo {
+    0%   { transform: translateY(0);      opacity: 0; }
+    15%  { transform: translateY(0);      opacity: 1; }
+    65%  { transform: translateY(-92px);  opacity: 1; }
+    85%  { transform: translateY(-92px);  opacity: 0; }
+    100% { transform: translateY(0);      opacity: 0; }
+}
+
+.fb-swipe-texto {
+    background: rgba(0, 0, 0, 0.65);
+    color: #ffffff;
+    font-size: 15px;
+    font-weight: 800;
+    padding: 8px 16px;
+    border-radius: 18px;
+    white-space: nowrap;
+    backdrop-filter: blur(3px);
+}
+
+/* Hacia abajo: se da la vuelta a la pista y el texto se queda derecho */
+.fb-reel-swipe-hint.hacia-abajo .fb-swipe-pista {
+    transform: rotate(180deg);
+}
+
+.fb-reel-swipe-hint.hacia-abajo .fb-swipe-dedo {
+    transform-origin: center;
+}
+
+/* ======================================================
+   PASAR DE UN REEL A OTRO CON SUAVIDAD
+   ====================================================== */
+.fb-reel-player.entra-desde-abajo {
+    animation: fbReelEntraAbajo 380ms cubic-bezier(0.22, 0.61, 0.36, 1);
+}
+
+.fb-reel-player.entra-desde-arriba {
+    animation: fbReelEntraArriba 380ms cubic-bezier(0.22, 0.61, 0.36, 1);
+}
+
+@keyframes fbReelEntraAbajo {
+    from { transform: translateY(100%); opacity: 0.35; }
+    to   { transform: translateY(0);    opacity: 1; }
+}
+
+@keyframes fbReelEntraArriba {
+    from { transform: translateY(-100%); opacity: 0.35; }
+    to   { transform: translateY(0);     opacity: 1; }
 }

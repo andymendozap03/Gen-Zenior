@@ -18,11 +18,23 @@ let subPasoNivel3 = 1;
 let rondaNivel3 = 1; // 1 = primer comentario (María), 2 = repaso en otra publicación (Club de Adultos Activos)
 let postObjetivoNivel3 = 1; // id del post donde se guía el comentario (1 en ronda 1, 4 en ronda 2)
 let subPasoNivel4 = 1;
-let rondaNivel4 = 1; // 1 = primera solicitud (Rosa Elena), 2 = repaso con Carlos Méndez o Beatriz Soto
+let rondaNivel4 = 1;
+let solicitudConfirmada = false;   // ya practicó aceptar
+let solicitudEliminada = false;    // ya practicó rechazar // 1 = primera solicitud (Rosa Elena), 2 = repaso con Carlos Méndez o Beatriz Soto
 let subPasoNivel5 = 1;
 let rondaNivel5 = 1; // 1 y 2 = deslizar hacia arriba (siguiente, dos veces), 3 = deslizar hacia abajo (anterior)
 let reelActualIdx = 0;
 let reelLikeYaDado = false;
+// Ritmo de la guía: pausa tras la voz de Nico antes de pasar al siguiente
+// paso, y espera equivalente cuando no llegó a hablar.
+// Volumen de los Reels: bajo a propósito, para que la voz de Nico se
+// entienda por encima del video.
+const VOLUMEN_REEL = 0.22;
+let esperandoToqueParaSonido = false;
+
+const PAUSA_TRAS_VOZ = 900;
+const ESPERA_SIN_VOZ = 2200;
+
 let respondiendoAComentarioReel = null; // índice del comentario del Reel al que se responde
 let respondiendoAComentario = null;     // índice del comentario del muro al que se responde
 let reelSwipeStartY = null;
@@ -395,6 +407,28 @@ function asegurarTemplateHTML() {
             </div>
         </div>
 
+        <!-- Buscador de personas (Nivel 4, ronda 2) -->
+        <div id="fbSearchView" class="fb-search-view" style="display:none;">
+            <div class="fb-search-header">
+                <button id="fbSearchVolver" class="fb-messenger-volver" type="button" aria-label="Volver">
+                    <svg viewBox="0 0 24 24"><path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z"/></svg>
+                </button>
+                <input type="text" id="fbSearchInput" class="fb-search-input" placeholder="Buscar personas" autocomplete="off">
+                <button id="fbSearchGo" class="fb-search-go" type="button" aria-label="Buscar">
+                    <svg viewBox="0 0 24 24"><path d="M15.5 14h-.79l-.28-.27C15.41 12.59 16 11.11 16 9.5 16 5.91 13.09 3 9.5 3S3 5.91 3 9.5 5.91 16 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/></svg>
+                </button>
+            </div>
+
+            <div id="fbSearchSugerencias" class="fb-search-sugerencias">
+                <p class="fb-search-sugerencias-titulo">Prueba a buscar por nombre</p>
+                <button class="fb-search-chip" data-nombre="Rafael" type="button">Rafael</button>
+                <button class="fb-search-chip" data-nombre="María" type="button">María</button>
+                <button class="fb-search-chip" data-nombre="Carlos" type="button">Carlos</button>
+            </div>
+
+            <div id="fbSearchResultados" class="fb-search-resultados"></div>
+        </div>
+
         <!-- Vista de Reels / Video (Nivel 5) -->
         <div id="fbReelsView" class="fb-reels-view" style="display:none;">
 
@@ -416,8 +450,8 @@ function asegurarTemplateHTML() {
                 <div id="fbReelPlayer" class="fb-reel-player">
                     <!-- Video -->
                     <video id="fbReelVideo" class="fb-reel-video"
-                        autoplay muted loop playsinline
-                        src="./assets/video/piolin.mp4">
+                        loop playsinline preload="none"
+                        poster="./assets/img/reels/piolin.jpg">
                     </video>
                     
                     <!-- Overlay de info -->
@@ -463,9 +497,17 @@ function asegurarTemplateHTML() {
                     <div class="fb-reel-counter" id="fbReelCounter">1 / 6</div>
 
                     <!-- Aviso visual del gesto de deslizar (solo durante el paso guiado del Nivel 5) -->
+                    <!-- Enseña el gesto en vez de dar un zoom al video: un dedo
+                         recorre la pantalla en la dirección que toca, con tres
+                         flechas encadenadas marcando el camino. -->
                     <div id="fbReelSwipeHint" class="fb-reel-swipe-hint" style="display:none;">
-                        <span id="fbReelSwipeHintIcon">☝️</span>
-                        <span id="fbReelSwipeHintText">Desliza hacia arriba</span>
+                        <div class="fb-swipe-pista">
+                            <span class="fb-swipe-flecha f1"></span>
+                            <span class="fb-swipe-flecha f2"></span>
+                            <span class="fb-swipe-flecha f3"></span>
+                            <span class="fb-swipe-dedo">👆</span>
+                        </div>
+                        <span id="fbReelSwipeHintText" class="fb-swipe-texto">Desliza hacia arriba</span>
                     </div>
 
                     <!-- Respaldo del gesto: mismas acciones que deslizar, para quien no
@@ -1020,8 +1062,12 @@ function eliminarComentarioPropio() {
     renderizarPublicaciones();
 
     if (nivelActual === "comentar-publicacion" && rondaNivel3 === 2 && subPasoNivel3 === 6) {
+        // Se le deja ver que su comentario ya no está antes de cerrar el nivel
         subPasoNivel3 = 7;
-        completarNivelActual("¡Excelente! Ya sabes comentar, dar Me gusta, responder a otras personas y borrar lo que tú escribes.");
+        actualizarBarraInstrucciones(true, () => {
+            if (nivelActual !== "comentar-publicacion" || subPasoNivel3 !== 7) return;
+            completarNivelActual("¡Excelente! Ya sabes comentar, dar Me gusta, responder a otras personas y borrar lo que tú escribes.");
+        });
     } else {
         actualizarBarraInstrucciones(false);
     }
@@ -1129,9 +1175,7 @@ function aplicarReaccion(emoji, postId) {
     if (nivelActual === "reaccionar-foto" && postId === postObjetivoNivel2 && subPasoNivel2 === 2) {
         subPasoNivel2 = 3;
         ultimaReaccionElegidaNivel2 = emoji;
-        actualizarBarraInstrucciones(true);
-
-        setTimeout(() => {
+        actualizarBarraInstrucciones(true, () => {
             const sim = $("#pantallaFacebookSimulador");
             const enPantalla = sim && sim.classList.contains("activa");
             if (!enPantalla || nivelActual !== "reaccionar-foto" || subPasoNivel2 !== 3) return;
@@ -1145,7 +1189,7 @@ function aplicarReaccion(emoji, postId) {
             } else {
                 completarNivelActual("¡Excelente! Aprendiste a expresar tus emociones reaccionando a las fotos de tus amigos.");
             }
-        }, 2600);
+        });
     }
 }
 
@@ -1340,9 +1384,7 @@ function publicarNuevoPost() {
     if (nivelActual === "realizar-publicacion") {
         if (rondaNivel1 === 1) {
             subPasoNivel1 = 8;
-            actualizarBarraInstrucciones(true);
-
-            setTimeout(() => {
+            actualizarBarraInstrucciones(true, () => {
                 const sim = $("#pantallaFacebookSimulador");
                 const enPantalla = sim && sim.classList.contains("activa");
                 if (enPantalla && nivelActual === "realizar-publicacion" && rondaNivel1 === 1 && subPasoNivel1 === 8) {
@@ -1353,10 +1395,14 @@ function publicarNuevoPost() {
                     renderizarAdjuntosNivel1();
                     actualizarBarraInstrucciones(true);
                 }
-            }, 2600);
+            });
         } else {
+            // Se le deja ver su segunda publicación antes de cerrar el nivel
             subPasoNivel1 = 3;
-            completarNivelActual("¡Excelente! Ya sabes crear publicaciones en Facebook, con foto y etiquetas incluidas.");
+            actualizarBarraInstrucciones(true, () => {
+                if (nivelActual !== "realizar-publicacion" || subPasoNivel1 !== 3) return;
+                completarNivelActual("¡Excelente! Ya sabes crear publicaciones en Facebook, con foto y etiquetas incluidas.");
+            });
         }
     }
 }
@@ -1364,6 +1410,10 @@ function publicarNuevoPost() {
 // ---------- NAVEGACIÓN DE PESTAÑAS (NIVEL 4) ----------
 function cambiarPestana(tabName) {
     pestanaActiva = tabName;
+
+    // El buscador es una vista aparte: se cierra al tocar cualquier pestaña
+    const buscador = $("#fbSearchView");
+    if (buscador) buscador.style.display = "none";
     const tabs = document.querySelectorAll(".fb-nav-tab");
     tabs.forEach(t => {
         t.classList.toggle("activa", t.dataset.tab === tabName);
@@ -1410,12 +1460,72 @@ function cambiarPestana(tabName) {
 }
 
 // ---------- DATOS Y RENDERIZADO DE REELS (NIVEL 5) ----------
+// Personas que aparecen al buscar por nombre (Nivel 4, ronda 2)
+const PERSONAS_BUSCABLES = [
+    { nombre: "Rafael Moreira", ciudad: "Quevedo", comunes: 4 },
+    { nombre: "Rafael Zambrano", ciudad: "Babahoyo", comunes: 1 },
+    { nombre: "María Elena Vera", ciudad: "Quevedo", comunes: 7 },
+    { nombre: "María José Cedeño", ciudad: "Guayaquil", comunes: 2 },
+    { nombre: "José Luis Andrade", ciudad: "Quito", comunes: 3 },
+    { nombre: "Josefina Bravo", ciudad: "Quevedo", comunes: 5 },
+    { nombre: "Carmen Villacís", ciudad: "Manta", comunes: 6 },
+    { nombre: "Carlos Mendoza", ciudad: "Quevedo", comunes: 8 },
+    { nombre: "Carlota Pinargote", ciudad: "Portoviejo", comunes: 1 },
+    { nombre: "Teresa Andrade", ciudad: "Quevedo", comunes: 3 },
+    { nombre: "Teresa Bravo", ciudad: "Guayaquil", comunes: 5 },
+    { nombre: "Miguel Ponce", ciudad: "Quevedo", comunes: 1 },
+    { nombre: "Miguel Ángel Solís", ciudad: "Ambato", comunes: 2 },
+    { nombre: "Rosa Elena Morales", ciudad: "Quevedo", comunes: 2 },
+    { nombre: "Rosario Delgado", ciudad: "Loja", comunes: 4 },
+    { nombre: "Luis Alberto Chávez", ciudad: "Quevedo", comunes: 9 },
+    { nombre: "Luisa Fernanda Ortiz", ciudad: "Guayaquil", comunes: 3 },
+    { nombre: "Ana Belén Rodríguez", ciudad: "Quevedo", comunes: 5 },
+    { nombre: "Anabel Suárez", ciudad: "Machala", comunes: 1 },
+    { nombre: "Pedro Sánchez Loor", ciudad: "Quevedo", comunes: 6 },
+    { nombre: "Pedro Pablo Mera", ciudad: "Esmeraldas", comunes: 2 },
+    { nombre: "Juan Carlos Macías", ciudad: "Quevedo", comunes: 4 },
+    { nombre: "Juana Alarcón", ciudad: "Riobamba", comunes: 1 },
+    { nombre: "Gloria Castro", ciudad: "Quevedo", comunes: 7 },
+    { nombre: "Dolores Pérez", ciudad: "Quevedo", comunes: 3 },
+    { nombre: "Ramón Flores", ciudad: "Guayaquil", comunes: 2 },
+    { nombre: "Elena Vargas", ciudad: "Quevedo", comunes: 5 },
+    { nombre: "Ernesto Campos", ciudad: "Quito", comunes: 1 },
+    { nombre: "Patricia Mora", ciudad: "Quevedo", comunes: 4 },
+    { nombre: "Jorge Andrade", ciudad: "Quevedo", comunes: 6 }
+];
+
+// Se muestran pocos resultados a propósito: una lista larga abruma
+const MAX_RESULTADOS_BUSQUEDA = 4;
+
+// Colores para el círculo con las iniciales de cada persona
+const COLORES_PERSONA = ["#8e24aa", "#00838f", "#ef6c00", "#3949ab", "#43a047", "#d81b60", "#5d4037", "#00897b"];
+
+function inicialesDe(nombre) {
+    const partes = nombre.split(" ").filter(Boolean);
+    return ((partes[0] || "")[0] + (partes[1] || "")[0] || "?").toUpperCase();
+}
+
+function colorDe(nombre) {
+    let suma = 0;
+    for (let i = 0; i < nombre.length; i++) suma += nombre.charCodeAt(i);
+    return COLORES_PERSONA[suma % COLORES_PERSONA.length];
+}
+
+/**
+ * Busca por nombre sin exigir tildes ni mayúsculas: quien escribe "rafael"
+ * debe encontrar a "Rafael Moreira".
+ */
+function normalizar(texto) {
+    return String(texto).toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "");
+}
+
 // Cada Reel tiene su propia gente comentando y su propio estado de "Seguir".
 // Antes se compartían: seguir a uno seguía a todos y los comentarios eran los
 // mismos en los seis videos.
 const REELS_ORIGINAL = [
     {
         emoji: "🙏", autor: "@BendicionesDiarias", video: "./assets/video/piolin.mp4",
+        portada: "./assets/img/reels/piolin.jpg",
         desc: "Que la paz de Dios te cubra esta noche 🙏", likes: 847, siguiendo: false,
         comentarios: [
             { autor: "Marta Ruiz", inicial: "M", color: "#e91e8c", texto: "Amén, qué bonito mensaje 🙏", tiempo: "2 h", likes: 24 },
@@ -1423,7 +1533,8 @@ const REELS_ORIGINAL = [
         ]
     },
     {
-        emoji: "🍞", autor: "@PanCasero", video: "./assets/video/panes.mp4",
+        emoji: "🍞", autor: "@PanCasero", video: "./assets/video/panrico.mp4",
+        portada: "./assets/img/reels/panrico.jpg",
         desc: "Pan casero recien horneado, que delicia 🍞", likes: 1203, siguiendo: false,
         comentarios: [
             { autor: "Dolores Pérez", inicial: "D", color: "#8bc34a", texto: "¡Se ve riquísimo! ¿Con harina normal queda igual?", tiempo: "1 h", likes: 41 },
@@ -1432,6 +1543,7 @@ const REELS_ORIGINAL = [
     },
     {
         emoji: "🎤", autor: "@NilaStone", video: "./assets/video/nilastone.mp4",
+        portada: "./assets/img/reels/nilastone.jpg",
         desc: "Ahora soy mi prioridad 🎤✨", likes: 532, siguiendo: false,
         comentarios: [
             { autor: "Gloria Castro", inicial: "G", color: "#9c27b0", texto: "Qué voz tan bonita, me puso la piel de gallina", tiempo: "3 h", likes: 33 },
@@ -1439,7 +1551,8 @@ const REELS_ORIGINAL = [
         ]
     },
     {
-        emoji: "💧", autor: "@NaturalezaViva", video: "./assets/video/cascada.mp4",
+        emoji: "💧", autor: "@NaturalezaViva", video: "./assets/video/cascadas.mp4",
+        portada: "./assets/img/reels/cascadas.jpg",
         desc: "Un lugar hermoso para relajar la mente 💧", likes: 2148, siguiendo: false,
         comentarios: [
             { autor: "Consuelo Reyes", inicial: "C", color: "#00bcd4", texto: "Qué paz da verlo. ¿Dónde queda ese lugar?", tiempo: "4 h", likes: 57 },
@@ -1447,16 +1560,18 @@ const REELS_ORIGINAL = [
         ]
     },
     {
-        emoji: "🍰", autor: "@RecetasSaludables", video: "./assets/video/minicake.mp4",
-        desc: "Mini pastel saludable, facil y delicioso 🍰", likes: 918, siguiendo: false,
+        emoji: "🍫", autor: "@ReposteriaCasera", video: "./assets/video/panchocolate.mp4",
+        portada: "./assets/img/reels/panchocolate.jpg",
+        desc: "Pan de chocolate recien hecho, para el cafe de la tarde 🍫", likes: 918, siguiendo: false,
         comentarios: [
             { autor: "Sandra López", inicial: "S", color: "#ff5722", texto: "¿Se puede hacer sin azúcar? Soy diabética", tiempo: "2 h", likes: 62 },
             { autor: "Patricia Mora", inicial: "P", color: "#ff9800", texto: "Lo hice el domingo con mis nietas 🎂", tiempo: "1 d", likes: 18 }
         ]
     },
     {
-        emoji: "🌱", autor: "@MiJardin", video: "./assets/video/monte.mp4",
-        desc: "Sembrando con cariño en casa 🌱", likes: 3052, siguiendo: false,
+        emoji: "🌱", autor: "@MiJardin", video: "./assets/video/plantas.mp4",
+        portada: "./assets/img/reels/plantas.jpg",
+        desc: "Mis plantas de casa, cuidadas con cariño 🌱", likes: 3052, siguiendo: false,
         comentarios: [
             { autor: "Luis García", inicial: "L", color: "#4caf50", texto: "Mis plantas se secan siempre, ¿algún consejo?", tiempo: "30 min", likes: 9 },
             { autor: "Elena Vargas", inicial: "E", color: "#673ab7", texto: "Qué bien te quedó el huerto, felicidades", tiempo: "7 h", likes: 27 }
@@ -1466,15 +1581,57 @@ const REELS_ORIGINAL = [
 
 let REELS_DATA = JSON.parse(JSON.stringify(REELS_ORIGINAL));
 
-function renderizarReel(idx) {
+/**
+ * @param {number} idx      Reel a mostrar.
+ * @param {string} entrada  "arriba" si el nuevo entra desde abajo (pasar al
+ *                          siguiente), "abajo" si entra desde arriba (volver
+ *                          al anterior). Sin valor, aparece sin animación.
+ */
+function renderizarReel(idx, entrada) {
     const data = REELS_DATA[idx];
     if (!data) return;
 
     const video = $("#fbReelVideo");
     if (video) {
+        // La portada evita el rectángulo negro mientras el video carga
+        if (data.portada) {
+            video.poster = data.portada;
+        } else {
+            video.removeAttribute("poster");
+        }
+
         video.src = data.video;
+
+        // Los Reels suenan, pero bajito: Nico tiene que oírse por encima
+        video.muted = false;
+        video.volume = VOLUMEN_REEL;
+
         video.load();
-        video.play().catch(() => { });
+
+        // Solo suena si los Reels están de verdad a la vista: si no, el video
+        // se oía nada más entrar a cualquier nivel con la pestaña oculta.
+        const reelsView = $("#fbReelsView");
+        const aLaVista = reelsView && reelsView.style.display !== "none";
+
+        if (!aLaVista) {
+            video.pause();
+        } else {
+            video.play().catch((err) => {
+                // Si el fallo es porque nosotros mismos lo pausamos al salir de
+                // Reels, el navegador aborta la reproducción: no hay nada que
+                // reintentar. Sin esta comprobación el video se volvía a poner
+                // en marcha (silenciado) al cambiar de pestaña.
+                if (err && err.name === "AbortError") return;
+                if (!reelsView || reelsView.style.display === "none") return;
+
+                // Algunos navegadores no dejan reproducir con sonido hasta que
+                // haya habido un toque en la página. En ese caso se reproduce sin
+                // sonido para que al menos se vea, y se recupera al primer toque.
+                video.muted = true;
+                video.play().catch(() => { });
+                esperandoToqueParaSonido = true;
+            });
+        }
     }
 
     const avatar = $("#fbReelAvatar");
@@ -1506,6 +1663,23 @@ function renderizarReel(idx) {
     actualizarBotonSeguirReel();
     cancelarRespuestaReel();
     renderizarComentariosReel();
+
+    animarEntradaReel(entrada);
+}
+
+/**
+ * Hace que el Reel nuevo entre deslizándose, en lugar de aparecer de golpe.
+ */
+function animarEntradaReel(entrada) {
+    const player = $("#fbReelPlayer");
+    if (!player || !entrada) return;
+
+    player.classList.remove("entra-desde-abajo", "entra-desde-arriba");
+
+    // Forzar el recálculo para poder repetir la misma animación seguida
+    void player.offsetWidth;
+
+    player.classList.add(entrada === "arriba" ? "entra-desde-abajo" : "entra-desde-arriba");
 }
 
 // ---------- NAVEGACIÓN POR GESTO DE DESLIZAR (NIVEL 5) ----------
@@ -1538,7 +1712,7 @@ function irReelSiguiente() {
         return;
     }
     reelActualIdx++;
-    renderizarReel(reelActualIdx);
+    renderizarReel(reelActualIdx, "arriba");
     actualizarBotonesRespaldoReel();
     manejarProgresoNivel5("arriba");
 }
@@ -1549,7 +1723,7 @@ function irReelAnterior() {
         return;
     }
     reelActualIdx--;
-    renderizarReel(reelActualIdx);
+    renderizarReel(reelActualIdx, "abajo");
     actualizarBotonesRespaldoReel();
     manejarProgresoNivel5("abajo");
 }
@@ -1584,9 +1758,7 @@ function manejarProgresoNivel5(direccion) {
     }
 
     subPasoNivel5 = 3;
-    actualizarBarraInstrucciones(true);
-
-    setTimeout(() => {
+    actualizarBarraInstrucciones(true, () => {
         const sim = $("#pantallaFacebookSimulador");
         const enPantalla = sim && sim.classList.contains("activa");
         if (!enPantalla || nivelActual !== "ver-reels" || subPasoNivel5 !== 3) return;
@@ -1600,7 +1772,7 @@ function manejarProgresoNivel5(direccion) {
             subPasoNivel5 = 4;
             actualizarBarraInstrucciones(true);
         }
-    }, 2600);
+    });
 }
 
 // Actualiza el aviso visual de "desliza hacia arriba/abajo" durante el paso guiado
@@ -1618,18 +1790,14 @@ function actualizarSwipeHintReel() {
     }
 
     hint.style.display = "flex";
-    const textoHint = $("#fbReelSwipeHintText");
-    const iconoHint = $("#fbReelSwipeHintIcon");
 
-    if (direccionEsperadaNivel5() === "arriba") {
-        if (textoHint) textoHint.textContent = "Desliza hacia arriba";
-        if (iconoHint) iconoHint.textContent = "☝️";
-        hint.classList.remove("fb-reel-swipe-hint-abajo");
-    } else {
-        if (textoHint) textoHint.textContent = "Desliza hacia abajo";
-        if (iconoHint) iconoHint.textContent = "👇";
-        hint.classList.add("fb-reel-swipe-hint-abajo");
+    const haciaArriba = direccionEsperadaNivel5() === "arriba";
+    const textoHint = $("#fbReelSwipeHintText");
+    if (textoHint) {
+        textoHint.textContent = haciaArriba ? "Desliza hacia arriba" : "Desliza hacia abajo";
     }
+
+    hint.classList.toggle("hacia-abajo", !haciaArriba);
 }
 
 /**
@@ -1637,6 +1805,117 @@ function actualizarSwipeHintReel() {
  * Es la otra mitad de la amistad en Facebook: además de enviar solicitudes,
  * también hay que saber responder a las que llegan.
  */
+/**
+ * Abre el buscador de personas (Nivel 4, ronda 2).
+ */
+function abrirBuscadorFb() {
+    const vista = $("#fbSearchView");
+    const feed = $("#fbFeed");
+    const amigos = $("#fbFriendsView");
+    const reels = $("#fbReelsView");
+    if (!vista) return;
+
+    if (feed) feed.style.display = "none";
+    if (amigos) amigos.style.display = "none";
+    if (reels) reels.style.display = "none";
+    vista.style.display = "flex";
+
+    const input = $("#fbSearchInput");
+    if (input) input.value = "";
+    const sug = $("#fbSearchSugerencias");
+    if (sug) sug.style.display = "block";
+    const res = $("#fbSearchResultados");
+    if (res) res.innerHTML = "";
+
+    if (nivelActual === "agregar-amigo" && rondaNivel4 === 2 && subPasoNivel4 === 1) {
+        subPasoNivel4 = 2;
+    }
+    actualizarBarraInstrucciones(true);
+}
+
+function cerrarBuscadorFb() {
+    const vista = $("#fbSearchView");
+    if (vista) vista.style.display = "none";
+    cambiarPestana(pestanaActiva === "amigos" ? "amigos" : "inicio");
+
+    if (nivelActual === "agregar-amigo" && rondaNivel4 === 2) {
+        subPasoNivel4 = 1;
+    }
+    actualizarBarraInstrucciones(true);
+}
+
+function ejecutarBusquedaFb() {
+    const input = $("#fbSearchInput");
+    const cont = $("#fbSearchResultados");
+    if (!input || !cont) return;
+
+    const termino = input.value.trim().toLowerCase();
+    if (termino.length < 3) return;
+
+    const buscado = normalizar(termino);
+    const encontrados = PERSONAS_BUSCABLES.filter(p => normalizar(p.nombre).includes(buscado));
+    const lista = (encontrados.length > 0 ? encontrados : PERSONAS_BUSCABLES).slice(0, MAX_RESULTADOS_BUSQUEDA);
+
+    const sug = $("#fbSearchSugerencias");
+    if (sug) sug.style.display = "none";
+
+    cont.innerHTML = `
+        <div class="fb-friends-section-title"><span>Personas</span></div>
+        ${lista.map((p, i) => `
+            <div class="fb-friend-card fb-search-card">
+                <div class="fb-friend-avatar" style="background:${colorDe(p.nombre)};"><span>${inicialesDe(p.nombre)}</span></div>
+                <div class="fb-friend-info">
+                    <div class="fb-friend-name">${p.nombre}</div>
+                    <div class="fb-friend-mutual"><span class="fb-mutual-icon">👥</span> Vive en ${p.ciudad} · ${p.comunes} ${p.comunes === 1 ? "amigo" : "amigos"} en común</div>
+                    <div class="fb-friend-actions">
+                        <button class="fb-btn-add-friend" data-friend="buscado-${i}" type="button">
+                            <svg viewBox="0 0 24 24"><path d="M15 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm-9-2V7H4v3H1v2h3v3h2v-3h3v-2H6zm9 4c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/></svg>
+                            Agregar a amigos
+                        </button>
+                    </div>
+                </div>
+            </div>
+        `).join("")}
+    `;
+
+    if (nivelActual === "agregar-amigo" && rondaNivel4 === 2 && subPasoNivel4 === 3) {
+        subPasoNivel4 = 4;
+    }
+    actualizarBarraInstrucciones(true);
+}
+
+/**
+ * Devuelve las solicitudes recibidas que siguen sin contestar, y las repone si
+ * el usuario ya las había contestado antes de llegar a esa parte del nivel.
+ */
+function solicitudPendiente() {
+    let pendientes = document.querySelectorAll(".fb-request-card .fb-btn-confirm-request");
+    if (pendientes.length === 0) {
+        reponerSolicitudesRecibidas();
+        pendientes = document.querySelectorAll(".fb-request-card .fb-btn-confirm-request");
+    }
+    return pendientes[0] || null;
+}
+
+function reponerSolicitudesRecibidas() {
+    document.querySelectorAll(".fb-request-card").forEach(card => {
+        const id = card.dataset.request;
+        const acciones = card.querySelector(".fb-friend-actions");
+        if (acciones) {
+            acciones.innerHTML = `
+                <button class="fb-btn-confirm-request" data-request="${id}" type="button">Confirmar</button>
+                <button class="fb-btn-delete-request" data-request="${id}" type="button">Eliminar</button>
+            `;
+        }
+    });
+
+    const contador = $("#fbSolicitudesCount");
+    if (contador) {
+        contador.textContent = "2";
+        contador.style.display = "";
+    }
+}
+
 function responderSolicitud(requestId, aceptada) {
     const tarjeta = document.querySelector(`.fb-request-card[data-request="${requestId}"]`);
     if (!tarjeta) return;
@@ -1663,10 +1942,33 @@ function responderSolicitud(requestId, aceptada) {
         if (restantes === 0) badge.style.display = "none";
     }
 
-    if (nivelActual === "agregar-amigo" && rondaNivel4 === 2 && subPasoNivel4 === 2 && aceptada) {
-        subPasoNivel4 = 3;
-        completarNivelActual("¡Excelente! Ya sabes enviar solicitudes de amistad y aceptar las que te llegan.");
+    if (nivelActual !== "agregar-amigo" || rondaNivel4 !== 3) return;
+
+    if (aceptada) solicitudConfirmada = true;
+    else solicitudEliminada = true;
+
+    // Hay que practicar las dos respuestas: aceptar una y rechazar otra.
+    // El orden da igual, y entre una y otra se deja ver el resultado.
+    if (solicitudConfirmada && solicitudEliminada) {
+        subPasoNivel4 = 4;
+        actualizarBarraInstrucciones(true, () => {
+            if (nivelActual !== "agregar-amigo" || subPasoNivel4 !== 4) return;
+            completarNivelActual("¡Excelente! Ya sabes enviar solicitudes, buscar a alguien por su nombre, cancelar lo enviado y responder a las que te llegan.");
+        });
+        return;
     }
+
+    subPasoNivel4 = 3;
+    actualizarBarraInstrucciones(true, () => {
+        if (nivelActual !== "agregar-amigo" || subPasoNivel4 !== 3) return;
+
+        // Si ya no queda ninguna sin contestar, se repone una para la otra acción
+        if (!document.querySelector(".fb-request-card .fb-btn-confirm-request")) {
+            reponerSolicitudesRecibidas();
+        }
+        subPasoNivel4 = 2;
+        actualizarBarraInstrucciones(true);
+    });
 }
 
 // ---------- ACCIONES SOBRE UN REEL (NIVEL 5) ----------
@@ -1968,18 +2270,16 @@ function mostrarSolicitudAceptada() {
     if (badge) badge.textContent = (parseInt(badge.textContent, 10) || 3) + 1;
 
     subPasoNivel4 = 6;
-    actualizarBarraInstrucciones(true);
-
-    setTimeout(() => {
+    actualizarBarraInstrucciones(true, () => {
         const sim = $("#pantallaFacebookSimulador");
         const enPantalla = sim && sim.classList.contains("activa");
         if (!enPantalla || nivelActual !== "agregar-amigo" || subPasoNivel4 !== 6) return;
 
-        // Ronda 2: el lado contrario, aceptar una solicitud que te llega a ti
+        // Ronda 2: enviar una solicitud buscando a la persona por su nombre
         rondaNivel4 = 2;
-        subPasoNivel4 = 2;
+        subPasoNivel4 = 1;
         actualizarBarraInstrucciones(true);
-    }, 3600);
+    });
 }
 
 function cancelarSolicitudEnviada(friendId, btnElement) {
@@ -2035,6 +2335,28 @@ function manejarAgregarAmigo(friendId, btnElement) {
 
     if (nivelActual === "agregar-amigo") {
         // Ronda 1: solo Rosa Elena es válida. Ronda 2: cualquiera de los dos perfiles restantes.
+        const esBuscado = String(friendId || "").startsWith("buscado-");
+
+        // Ronda 2: vale cualquier persona encontrada en el buscador
+        if (rondaNivel4 === 2 && esBuscado && subPasoNivel4 === 4) {
+            subPasoNivel4 = 5;
+            actualizarBarraInstrucciones(true, () => {
+                const sim = $("#pantallaFacebookSimulador");
+                if (!sim || !sim.classList.contains("activa")) return;
+                if (nivelActual !== "agregar-amigo" || rondaNivel4 !== 2 || subPasoNivel4 !== 5) return;
+
+                // Ronda 3: el lado contrario, responder a una solicitud recibida
+                rondaNivel4 = 3;
+                subPasoNivel4 = 1;
+                cerrarBuscadorFb();
+                cambiarPestana("amigos");
+                reponerSolicitudesRecibidas();
+                subPasoNivel4 = 2;
+                actualizarBarraInstrucciones(true);
+            });
+            return;
+        }
+
         const esObjetivoValido = rondaNivel4 === 1 && friendId === "rosa";
 
         if (esObjetivoValido && subPasoNivel4 === 2) {
@@ -2044,15 +2366,13 @@ function manejarAgregarAmigo(friendId, btnElement) {
         } else if (esObjetivoValido && subPasoNivel4 === 4) {
             // La volvió a enviar tras cancelarla: Rosa la acepta al rato
             subPasoNivel4 = 5;
-            actualizarBarraInstrucciones(true);
-
-            setTimeout(() => {
+            actualizarBarraInstrucciones(true, () => {
                 const sim = $("#pantallaFacebookSimulador");
                 const enPantalla = sim && sim.classList.contains("activa");
                 if (!enPantalla || nivelActual !== "agregar-amigo" || subPasoNivel4 !== 5) return;
 
                 mostrarSolicitudAceptada();
-            }, 3000);
+            });
         }
     }
 }
@@ -2124,7 +2444,13 @@ function ajustarAlturaNico() {
     pantalla.style.setProperty("--fb-nico-h", barra.offsetHeight + "px");
 }
 
-function actualizarBarraInstrucciones(autoSpeak = true) {
+/**
+ * @param {boolean} autoSpeak  Si Nico debe leer la instrucción.
+ * @param {Function|null} alTerminarVoz  Acción que se ejecuta cuando Nico
+ *        termina la frase. Los avances automáticos de la guía la usan para no
+ *        pisarle la voz a mitad de la explicación.
+ */
+function actualizarBarraInstrucciones(autoSpeak = true, alTerminarVoz = null) {
     const textEl = $("#fbInstructionsText");
     if (!textEl) return;
 
@@ -2167,7 +2493,7 @@ function actualizarBarraInstrucciones(autoSpeak = true) {
                     ? "Toca el botón azul 'Publicar' para compartir tu segundo mensaje."
                     : "Escribe lo que deseas compartir o toca una de las frases sugeridas.";
             } else if (subPasoNivel1 === 3) {
-                instruccion = "¡Excelente! Ya sabes crear publicaciones en Facebook.";
+                instruccion = "Ahí está tu segunda publicación, arriba del todo. Mira cómo las tuyas van quedando por encima de las demás.";
             }
         }
     } else if (nivelActual === "reaccionar-foto") {
@@ -2230,7 +2556,7 @@ function actualizarBarraInstrucciones(autoSpeak = true) {
                     ? "Toca 'Eliminar', la opción roja, para borrar tu comentario."
                     : "¿Te arrepentiste de lo que escribiste? Toca los tres puntitos que hay a la derecha de tu propio comentario.";
             } else if (subPasoNivel3 === 7) {
-                instruccion = "¡Excelente! Ya sabes comentar, reaccionar, responder y borrar lo que escribes.";
+                instruccion = "Tu comentario ya desapareció de la lista. Fíjate: los de las otras personas siguen ahí, porque cada quien borra solo lo suyo.";
             }
         }
     } else if (nivelActual === "agregar-amigo") {
@@ -2254,15 +2580,42 @@ function actualizarBarraInstrucciones(autoSpeak = true) {
             } else if (subPasoNivel4 === 6) {
                 instruccion = "¡Rosa aceptó tu solicitud! Mira su tarjeta: ya son amigos. Así te enteras, y también te llega un aviso en la campana de arriba.";
             }
-        } else {
-            // Ronda 2: el otro lado de la amistad. Arriba, en 'Solicitudes de
-            // amistad', están las personas que te han pedido ser tus amigos.
+        } else if (rondaNivel4 === 2) {
+            // Ronda 2: encontrar a alguien por su nombre y enviarle la solicitud
+            const buscadorAbierto = $("#fbSearchView") && $("#fbSearchView").style.display !== "none";
+            const valorBusqueda = $("#fbSearchInput") ? $("#fbSearchInput").value.trim() : "";
+
             if (subPasoNivel4 === 1) {
-                instruccion = "Toca el icono de 'Amigos' en la barra superior (el que tiene dos personas).";
+                instruccion = "¿Y si la persona no sale en la lista? Se la busca por su nombre. Toca la lupa de arriba a la derecha.";
             } else if (subPasoNivel4 === 2) {
-                instruccion = "Tu solicitud ya salió. Ahora mira arriba: Lucía te envió una a ti. Toca 'Confirmar' para aceptarla.";
+                instruccion = valorBusqueda.length >= 3
+                    ? "Muy bien. Ahora toca el botón azul de la lupa, a la derecha, para buscar."
+                    : "Escribe el nombre de la persona en el cuadro de arriba, o toca una de las sugerencias.";
             } else if (subPasoNivel4 === 3) {
-                instruccion = "¡Excelente! Ya sabes enviar solicitudes y aceptar las que te llegan.";
+                instruccion = "Toca el botón azul de la lupa, a la derecha del cuadro, para buscar.";
+            } else if (subPasoNivel4 === 4) {
+                instruccion = "Estas son las personas que se llaman así. Toca 'Agregar a amigos' en la que quieras.";
+            } else if (subPasoNivel4 === 5) {
+                instruccion = "¡Enviada! Así puedes encontrar a cualquier persona aunque no aparezca en las sugerencias.";
+            }
+        } else {
+            // Ronda 3: responder a una solicitud que te han enviado a ti
+            if (subPasoNivel4 === 1) {
+                instruccion = "Toca el icono de 'Amigos' en la barra de arriba, el de las dos personitas.";
+            } else if (subPasoNivel4 === 2) {
+                if (!solicitudConfirmada && !solicitudEliminada) {
+                    instruccion = "Arriba, en 'Solicitudes de amistad', están las personas que quieren ser tus amigas. Tienes dos opciones: 'Confirmar' para aceptar, o 'Eliminar' para decir que no. Empieza tocando 'Confirmar' en la primera.";
+                } else if (solicitudConfirmada) {
+                    instruccion = "Ahora practica la otra opción: si no conoces a esa persona, no tienes por qué aceptarla. Toca 'Eliminar' en la solicitud que queda.";
+                } else {
+                    instruccion = "Ahora practica aceptar: toca 'Confirmar' en la solicitud que queda.";
+                }
+            } else if (subPasoNivel4 === 3) {
+                instruccion = solicitudConfirmada && !solicitudEliminada
+                    ? "Mira su tarjeta: ya son amigos. Fíjate también en que el número rojo de solicitudes bajó."
+                    : "Esa quedó rechazada, y eso está perfectamente bien: no tienes por qué aceptar a quien no conozcas.";
+            } else if (subPasoNivel4 === 4) {
+                instruccion = "Ya practicaste las dos: aceptar a quien conoces y rechazar a quien no.";
             }
         }
     } else if (nivelActual === "ver-reels") {
@@ -2321,10 +2674,22 @@ function actualizarBarraInstrucciones(autoSpeak = true) {
 
     if (autoSpeak && instruccion !== ultimaInstruccionHablada) {
         ultimaInstruccionHablada = instruccion;
-        speak(limpiarEmojisFb(instruccion));
+
+        // Se guarda el valor antes de vaciar la variable: si no, el callback
+        // capturaría la variable ya puesta a null y fallaría al dispararse.
+        const accionFinal = alTerminarVoz;
+        alTerminarVoz = null;
+
+        speak(limpiarEmojisFb(instruccion), accionFinal
+            ? () => setTimeout(accionFinal, PAUSA_TRAS_VOZ)
+            : undefined);
     }
 
     actualizarGuiaVisualFacebook();
+
+    // No habló (era la misma frase o la voz está apagada): se espera un poco
+    // igualmente para que dé tiempo a leer el mensaje en pantalla
+    if (alTerminarVoz) setTimeout(alTerminarVoz, ESPERA_SIN_VOZ);
 }
 
 /**
@@ -2338,13 +2703,40 @@ function enfocarObjetivo(selector, opciones = {}) {
     const el = document.querySelector(selector);
     if (!el) return;
 
-    // scrollIntoView fuerza el cálculo de posiciones, así que no hace falta
-    // esperar a un fotograma para que mida bien
+    // OJO: no se usa scrollIntoView. Ese método desplaza TODOS los contenedores
+    // con scroll que haya por encima, incluido .app, y eso empujaba la app
+    // entera hacia arriba dejando la barra de Nico fuera de la pantalla.
+    // Aquí se desplaza únicamente el contenedor propio del simulador.
+    const cont = contenedorDesplazable(el);
+    if (!cont) return;
+
+    const rEl = el.getBoundingClientRect();
+    const rCont = cont.getBoundingClientRect();
+    const destino = cont.scrollTop + (rEl.top - rCont.top) - (rCont.height - rEl.height) / 2;
+
     try {
-        el.scrollIntoView({ behavior: "smooth", block: "center", inline: "nearest" });
+        cont.scrollTo({ top: Math.max(0, destino), behavior: "smooth" });
     } catch (e) {
-        el.scrollIntoView(false);
+        cont.scrollTop = Math.max(0, destino);
     }
+}
+
+/**
+ * Busca el contenedor con scroll que contiene al elemento, sin salirse nunca
+ * de la pantalla del simulador.
+ */
+function contenedorDesplazable(el) {
+    const limite = $("#pantallaFacebookSimulador");
+    let nodo = el.parentElement;
+
+    while (nodo && nodo !== limite) {
+        const estilo = getComputedStyle(nodo);
+        const desplazable = /(auto|scroll)/.test(estilo.overflowY);
+        if (desplazable && nodo.scrollHeight > nodo.clientHeight + 4) return nodo;
+        nodo = nodo.parentElement;
+    }
+
+    return null;
 }
 
 function actualizarGuiaVisualFacebook(idNivel) {
@@ -2432,15 +2824,42 @@ function actualizarGuiaVisualFacebook(idNivel) {
         const friendsView = $("#fbFriendsView");
         const estaEnAmigos = friendsView && friendsView.style.display !== "none";
 
-        if (!estaEnAmigos || (rondaNivel4 === 1 && subPasoNivel4 === 1)) {
+        const enBuscador = $("#fbSearchView") && $("#fbSearchView").style.display !== "none";
+
+        if (rondaNivel4 !== 2 && (!estaEnAmigos || (rondaNivel4 === 1 && subPasoNivel4 === 1)) && !enBuscador) {
             enfocarObjetivo(".fb-nav-tab[data-tab='amigos']");
         } else if (rondaNivel4 === 1 && (subPasoNivel4 === 5 || subPasoNivel4 === 6)) {
             // Esperando respuesta o ya aceptada: se mira la tarjeta completa
             enfocarObjetivo("#fbFriendCardRosa");
         } else if (rondaNivel4 === 1) {
             enfocarObjetivo("#fbAddFriendBtn-rosa");
+        } else if (rondaNivel4 === 2) {
+            const buscadorAbierto = $("#fbSearchView") && $("#fbSearchView").style.display !== "none";
+            const valorBusqueda = $("#fbSearchInput") ? $("#fbSearchInput").value.trim() : "";
+
+            if (!buscadorAbierto) {
+                enfocarObjetivo('.fb-header-btn[aria-label="Buscar"]');
+            } else if (subPasoNivel4 === 2) {
+                enfocarObjetivo(valorBusqueda.length >= 3 ? "#fbSearchGo" : "#fbSearchInput, .fb-search-chip");
+            } else if (subPasoNivel4 === 3) {
+                enfocarObjetivo("#fbSearchGo");
+            } else if (subPasoNivel4 === 4) {
+                enfocarObjetivo("#fbSearchResultados .fb-btn-add-friend");
+            } else {
+                limpiarResaltados();
+            }
         } else if (subPasoNivel4 === 2) {
-            enfocarObjetivo(".fb-request-card[data-request='lucia'] .fb-btn-confirm-request");
+            // Ronda 3: se resalta la acción que aún no ha practicado
+            const selector = solicitudConfirmada
+                ? ".fb-request-card .fb-btn-delete-request"
+                : ".fb-request-card .fb-btn-confirm-request";
+            if (document.querySelector(selector)) {
+                enfocarObjetivo(selector);
+            } else {
+                limpiarResaltados();
+            }
+        } else {
+            limpiarResaltados();
         }
     } else if (idNivel === "ver-reels") {
         const reelsView = $("#fbReelsView");
@@ -2449,9 +2868,9 @@ function actualizarGuiaVisualFacebook(idNivel) {
         if (subPasoNivel5 === 1 || !estaEnReels) {
             enfocarObjetivo(".fb-nav-tab[data-tab='video']");
         } else if (subPasoNivel5 === 2 || subPasoNivel5 === 3) {
-            // Aquí la interacción es el gesto de deslizar, señalado además por
-            // el aviso #fbReelSwipeHint
-            resaltarElemento("#fbReelPlayer");
+            // Sin resaltado: el zoom intermitente sobre el video molestaba y no
+            // explicaba nada. El gesto se enseña con la animación del dedo.
+            limpiarResaltados();
         } else if (subPasoNivel5 === 4) {
             resaltarElemento("#fbReelLikeBtn");
         } else if (subPasoNivel5 === 5) {
@@ -2894,6 +3313,70 @@ function inicializarListeners() {
         });
     }
 
+    // Si el navegador bloqueó el sonido al entrar, se recupera en cuanto el
+    // usuario toca cualquier cosa (que es cuando el navegador ya lo permite).
+    const pantallaFb = $("#pantallaFacebookSimulador");
+    if (pantallaFb) {
+        pantallaFb.addEventListener("pointerdown", () => {
+            if (!esperandoToqueParaSonido) return;
+            esperandoToqueParaSonido = false;
+
+            const video = $("#fbReelVideo");
+            if (video) {
+                video.muted = false;
+                video.volume = VOLUMEN_REEL;
+            }
+        }, { capture: true });
+    }
+
+    // ---- Nivel 4: buscador de personas ----
+    const btnBuscar = document.querySelector('.fb-header-btn[aria-label="Buscar"]');
+    if (btnBuscar) btnBuscar.onclick = abrirBuscadorFb;
+
+    const searchVolver = $("#fbSearchVolver");
+    if (searchVolver) searchVolver.onclick = cerrarBuscadorFb;
+
+    const searchGo = $("#fbSearchGo");
+    if (searchGo) searchGo.onclick = ejecutarBusquedaFb;
+
+    const searchInput = $("#fbSearchInput");
+    if (searchInput) {
+        searchInput.oninput = () => {
+            if (nivelActual === "agregar-amigo" && rondaNivel4 === 2 && subPasoNivel4 === 2 && searchInput.value.trim().length >= 3) {
+                subPasoNivel4 = 3;
+                actualizarBarraInstrucciones(true);
+            } else {
+                actualizarGuiaVisualFacebook();
+            }
+        };
+        searchInput.onkeypress = (e) => { if (e.key === "Enter") ejecutarBusquedaFb(); };
+    }
+
+    const searchSug = $("#fbSearchSugerencias");
+    if (searchSug) {
+        searchSug.addEventListener("click", (e) => {
+            const chip = e.target.closest(".fb-search-chip");
+            if (!chip) return;
+
+            const input = $("#fbSearchInput");
+            if (input) input.value = chip.dataset.nombre;
+
+            if (nivelActual === "agregar-amigo" && rondaNivel4 === 2 && subPasoNivel4 === 2) {
+                subPasoNivel4 = 3;
+            }
+            actualizarBarraInstrucciones(true);
+        });
+    }
+
+    // Los resultados se dibujan al vuelo, así que van por delegación
+    const searchRes = $("#fbSearchResultados");
+    if (searchRes) {
+        searchRes.addEventListener("click", (e) => {
+            const agregar = e.target.closest(".fb-btn-add-friend");
+            if (agregar) manejarAgregarAmigo(agregar.dataset.friend, agregar);
+        });
+    }
+
     // ---- Nivel 4: solicitudes de amistad recibidas ----
     const listaSolicitudes = $("#fbRequestsList");
     if (listaSolicitudes) {
@@ -3089,9 +3572,7 @@ function enviarComentario() {
     if (nivelActual === "comentar-publicacion" && activeCommentsPostId === postObjetivoNivel3) {
         if (rondaNivel3 === 1 && subPasoNivel3 === 3) {
             subPasoNivel3 = 4;
-            actualizarBarraInstrucciones(true);
-
-            setTimeout(() => {
+            actualizarBarraInstrucciones(true, () => {
                 const sim = $("#pantallaFacebookSimulador");
                 const enPantalla = sim && sim.classList.contains("activa");
                 if (!enPantalla || nivelActual !== "comentar-publicacion" || subPasoNivel3 !== 4) return;
@@ -3100,7 +3581,7 @@ function enviarComentario() {
                 postObjetivoNivel3 = 4;
                 subPasoNivel3 = 1; // la ronda 2 empieza otra vez por tocar 'Comentar'
                 cerrarComentarios();
-            }, 2600);
+            });
         } else if (rondaNivel3 === 2 && subPasoNivel3 === 2 && !eraRespuesta) {
             subPasoNivel3 = 3;
             actualizarBarraInstrucciones(true);
@@ -3127,6 +3608,8 @@ export function iniciarSimulador(idNivel) {
     postObjetivoNivel3 = 1;
     subPasoNivel4 = 1;
     rondaNivel4 = 1;
+    solicitudConfirmada = false;
+    solicitudEliminada = false;
     subPasoNivel5 = 1;
     rondaNivel5 = 1;
     reelActualIdx = 0;

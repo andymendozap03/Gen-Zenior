@@ -1,0 +1,9 @@
+# Dependencias
+node_modules/
+
+# Clave de ElevenLabs: nunca debe subirse al repositorio
+js/data/voz.config.js
+
+# Archivos del sistema
+Thumbs.db
+.DS_Store

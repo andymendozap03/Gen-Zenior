@@ -40,14 +40,8 @@
     z-index: 310;
 }
 
-
 .boton-nico small {
     font-size: 15px;
-}
-
-.boton-nico:hover {
-    background: #89b84c;
-    transform: scale(1.05);
 }
 
 .menu-principal {
@@ -75,12 +69,6 @@
     box-shadow: 0 4px 10px rgba(0, 0, 0, .20);
     text-align: left;
     transition: all 0.25s ease;
-}
-
-.boton-menu:hover {
-    background: #e2d1b3;
-    transform: translateY(-3px);
-    box-shadow: 0 8px 16px rgba(0, 0, 0, .25);
 }
 
 .boton-menu:active,
@@ -112,8 +100,6 @@
     background-image: url("../assets/img/Contactos.png");
 }
 
-
-
 .menu-secundario {
     margin-top: 24px;
     display: grid;
@@ -132,11 +118,6 @@
     font-weight: 700;
     box-shadow: 0 4px 10px rgba(0, 0, 0, .20);
     transition: all 0.25s ease;
-}
-
-.boton-abajo:hover {
-    background: #7a4938;
-    transform: translateY(-3px);
 }
 
 .icono-abajo {
@@ -179,22 +160,6 @@
     border-top: 2px solid #6b4a3a;
     border-right: 2px solid #6b4a3a;
     transform: rotate(45deg);
-}
-
-.whatsapp:hover {
-    background: #cfe9c8;
-}
-
-.facebook:hover {
-    background: #d6e5ff;
-}
-
-.youtube:hover {
-    background: #f8d4d4;
-}
-
-.contactos:hover {
-    background: #eadcc8;
 }
 
 .icono-nico {
@@ -243,11 +208,6 @@
     cursor: pointer;
     transition: transform 0.2s ease, background-color 0.2s ease;
     flex-shrink: 0;
-}
-
-.ws-instructions-nico:hover {
-    background-color: #88b049;
-    transform: scale(1.05);
 }
 
 .ws-instructions-nico:active {
@@ -335,12 +295,6 @@
     transition: all 0.25s cubic-bezier(0.175, 0.885, 0.32, 1.275);
 }
 
-.btn-ver-creditos-large:hover {
-    transform: translateY(-4px) scale(1.03);
-    box-shadow: 0 10px 24px rgba(255, 61, 0, 0.55);
-    background: linear-gradient(135deg, #ffab40, #ff6e40);
-}
-
 .btn-ver-creditos-large:active {
     transform: translateY(1px);
 }
@@ -372,10 +326,6 @@
     align-items: center;
 }
 
-.btn-back-ajustes-full:hover {
-    text-decoration: underline;
-}
-
 .creditos-titulo {
     font-size: 24px;
     font-weight: 800;
@@ -404,12 +354,6 @@
     overflow: hidden;
     transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
     box-shadow: 0 2px 6px rgba(0, 0, 0, 0.04);
-}
-
-.credito-card:hover {
-    transform: translateY(-4px) scale(1.02);
-    border-color: #6b4a3a;
-    box-shadow: 0 8px 20px rgba(107, 74, 58, 0.15);
 }
 
 .card-avatar {
@@ -443,8 +387,6 @@
     border: none;
 }
 
-
-
 .card-name {
     font-size: 14px;
     font-weight: 800;
@@ -467,47 +409,6 @@
     padding: 2px 8px;
     border-radius: 10px;
     border: 1px solid #fad7a0;
-}
-
-/* Individual card accent highlights on hover */
-.card-edson:hover {
-    border-color: #2196f3;
-}
-
-.card-edson:hover .card-badge {
-    background: #e3f2fd;
-    color: #1e88e5;
-    border-color: #bbdefb;
-}
-
-.card-genesis:hover {
-    border-color: #9c27b0;
-}
-
-.card-genesis:hover .card-badge {
-    background: #f3e5f5;
-    color: #8e24aa;
-    border-color: #e1bee7;
-}
-
-.card-angelina:hover {
-    border-color: #e91e63;
-}
-
-.card-angelina:hover .card-badge {
-    background: #fce4ec;
-    color: #d81b60;
-    border-color: #f8bbd0;
-}
-
-.card-andy:hover {
-    border-color: #ff9800;
-}
-
-.card-andy:hover .card-badge {
-    background: #fff3e0;
-    color: #f57c00;
-    border-color: #ffe0b2;
 }
 
 /* ========================================================
@@ -534,19 +435,11 @@
     border: 1px solid #333333;
 }
 
-.app.dark-mode .boton-menu:hover {
-    background: #2a2a2a !important;
-}
-
 .app.dark-mode .boton-abajo {
     background: #271510 !important;
     color: #ffffff !important;
     box-shadow: 0 4px 10px rgba(0, 0, 0, 0.5) !important;
     border: 1px solid #333333;
-}
-
-.app.dark-mode .boton-abajo:hover {
-    background: #3e241c !important;
 }
 
 .app.dark-mode .modal-ajustes-content {
@@ -587,6 +480,116 @@
     /* Puedes cambiar este path por el icono deseado */
 }
 
-.creditos:hover {
-    background: #ffe3c9;
+/* ======================================================
+   EFECTOS DE CURSOR ENCIMA (solo con ratón)
+   En una pantalla táctil el efecto se queda "pegado" después de tocar: al
+   pulsar "Comenzar", el dedo queda justo sobre el botón de YouTube y este se
+   veía de otro color. Con esta condición, en móvil y tablet no se aplica.
+   ====================================================== */
+@media (hover: hover) and (pointer: fine) {
+    .boton-nico:hover {
+        background: #89b84c;
+        transform: scale(1.05);
+    }
+
+    .boton-menu:hover {
+        background: #e2d1b3;
+        transform: translateY(-3px);
+        box-shadow: 0 8px 16px rgba(0, 0, 0, .25);
+    }
+
+    .boton-abajo:hover {
+        background: #7a4938;
+        transform: translateY(-3px);
+    }
+
+    .whatsapp:hover {
+        background: #cfe9c8;
+    }
+
+    .facebook:hover {
+        background: #d6e5ff;
+    }
+
+    .youtube:hover {
+        background: #f8d4d4;
+    }
+
+    .contactos:hover {
+        background: #eadcc8;
+    }
+
+    .ws-instructions-nico:hover {
+        background-color: #88b049;
+        transform: scale(1.05);
+    }
+
+    .btn-ver-creditos-large:hover {
+        transform: translateY(-4px) scale(1.03);
+        box-shadow: 0 10px 24px rgba(255, 61, 0, 0.55);
+        background: linear-gradient(135deg, #ffab40, #ff6e40);
+    }
+
+    .btn-back-ajustes-full:hover {
+        text-decoration: underline;
+    }
+
+    .credito-card:hover {
+        transform: translateY(-4px) scale(1.02);
+        border-color: #6b4a3a;
+        box-shadow: 0 8px 20px rgba(107, 74, 58, 0.15);
+    }
+
+    /* Individual card accent highlights on hover */
+    .card-edson:hover {
+        border-color: #2196f3;
+    }
+
+    .card-edson:hover .card-badge {
+        background: #e3f2fd;
+        color: #1e88e5;
+        border-color: #bbdefb;
+    }
+
+    .card-genesis:hover {
+        border-color: #9c27b0;
+    }
+
+    .card-genesis:hover .card-badge {
+        background: #f3e5f5;
+        color: #8e24aa;
+        border-color: #e1bee7;
+    }
+
+    .card-angelina:hover {
+        border-color: #e91e63;
+    }
+
+    .card-angelina:hover .card-badge {
+        background: #fce4ec;
+        color: #d81b60;
+        border-color: #f8bbd0;
+    }
+
+    .card-andy:hover {
+        border-color: #ff9800;
+    }
+
+    .card-andy:hover .card-badge {
+        background: #fff3e0;
+        color: #f57c00;
+        border-color: #ffe0b2;
+    }
+
+    .app.dark-mode .boton-menu:hover {
+        background: #2a2a2a !important;
+    }
+
+    .app.dark-mode .boton-abajo:hover {
+        background: #3e241c !important;
+    }
+
+    .creditos:hover {
+        background: #ffe3c9;
+    }
 }
