@@ -1,5 +1,5 @@
 import { $ } from "../../utils/dom.js";
-import { speak, stopSpeech } from "../../services/speech.service.js";
+import { speak, speakPrioritario, stopSpeech } from "../../services/speech.service.js";
 import { resaltarElemento, limpiarResaltados } from "../../services/guide-highlight.service.js";
 import { completarNivel } from "../../services/progress.service.js";
 
@@ -23,14 +23,26 @@ let subPasoNivel5 = 1;
 let rondaNivel5 = 1; // 1 y 2 = deslizar hacia arriba (siguiente, dos veces), 3 = deslizar hacia abajo (anterior)
 let reelActualIdx = 0;
 let reelLikeYaDado = false;
+let respondiendoAComentarioReel = null; // índice del comentario del Reel al que se responde
+let respondiendoAComentario = null;     // índice del comentario del muro al que se responde
 let reelSwipeStartY = null;
 let reelArrastrandoMouse = false;
+
+// Gesto de reacción del Nivel 2: mantener presionado, arrastrar y soltar
+let gestoReaccionPostId = null;
+let gestoReaccionActivo = false;
+let opcionReaccionEnfocada = null;
+let momentoFinGestoReaccion = 0;
 let pestanaActiva = "inicio";
 let activeCommentsPostId = 1;
 let ultimaInstruccionHablada = "";
 
 // ---------- DATOS DE PUBLICACIONES ----------
-const POSTS_DATA = [
+// Catálogo original del feed. Nunca se modifica: al empezar cada nivel se hace
+// una copia limpia en POSTS_DATA, porque publicar y comentar sí modifican el
+// arreglo (y si no, las publicaciones y los comentarios de una partida se
+// quedaban para toda la sesión).
+const POSTS_ORIGINAL = [
     {
         id: 1,
         autor: "María Fernanda López",
@@ -123,6 +135,10 @@ const POSTS_DATA = [
         ]
     }
 ];
+
+// Copia de trabajo: es la que se renderiza y la que se modifica al publicar o
+// comentar. Se regenera en iniciarSimulador().
+let POSTS_DATA = JSON.parse(JSON.stringify(POSTS_ORIGINAL));
 
 // ---------- INSTRUCCIONES POR DEFECTO ----------
 const INSTRUCCIONES = {
@@ -272,6 +288,46 @@ function asegurarTemplateHTML() {
                 </div>
             </div>
 
+            <!-- Solicitudes que TE han enviado a ti (Nivel 4, ronda 2) -->
+            <div class="fb-friends-section-title">
+                <span>Solicitudes de amistad</span>
+                <span class="fb-friends-section-count" id="fbSolicitudesCount">2</span>
+            </div>
+
+            <div class="fb-requests-list" id="fbRequestsList">
+                <div class="fb-request-card" data-request="lucia">
+                    <div class="fb-friend-avatar" style="background:#7e57c2;">
+                        <span>LC</span>
+                    </div>
+                    <div class="fb-friend-info">
+                        <div class="fb-friend-name">Lucía Campos</div>
+                        <div class="fb-friend-mutual">
+                            <span class="fb-mutual-icon">👥</span> 6 amigos en común
+                        </div>
+                        <div class="fb-friend-actions">
+                            <button class="fb-btn-confirm-request" data-request="lucia" type="button">Confirmar</button>
+                            <button class="fb-btn-delete-request" data-request="lucia" type="button">Eliminar</button>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="fb-request-card" data-request="hector">
+                    <div class="fb-friend-avatar" style="background:#00897b;">
+                        <span>HV</span>
+                    </div>
+                    <div class="fb-friend-info">
+                        <div class="fb-friend-name">Héctor Vera</div>
+                        <div class="fb-friend-mutual">
+                            <span class="fb-mutual-icon">👥</span> 3 amigos en común
+                        </div>
+                        <div class="fb-friend-actions">
+                            <button class="fb-btn-confirm-request" data-request="hector" type="button">Confirmar</button>
+                            <button class="fb-btn-delete-request" data-request="hector" type="button">Eliminar</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
             <div class="fb-friends-section-title">
                 <span>Personas que quizás conozcas</span>
             </div>
@@ -373,7 +429,7 @@ function asegurarTemplateHTML() {
                                 <div class="fb-reel-avatar" id="fbReelAvatar">💪</div>
                                 <div class="fb-reel-creator-details">
                                     <span class="fb-reel-creator-name" id="fbReelCreatorName">@SaludActiva</span>
-                                    <button class="fb-reel-follow-btn">Seguir</button>
+                                    <button class="fb-reel-follow-btn" id="fbReelFollowBtn" type="button">Seguir</button>
                                 </div>
                             </div>
                             <div class="fb-reel-description" id="fbReelDescription">
@@ -391,11 +447,11 @@ function asegurarTemplateHTML() {
                                 <svg viewBox="0 0 24 24" id="fbReelLikeIcon"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg>
                                 <span id="fbReelLikeCount" class="fb-reel-action-label">847</span>
                             </button>
-                            <button class="fb-reel-action-btn" aria-label="Comentar">
+                            <button class="fb-reel-action-btn" id="fbReelCommentBtn" type="button" aria-label="Comentar">
                                 <svg viewBox="0 0 24 24"><path d="M21.99 4c0-1.1-.89-2-1.99-2H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h14l4 4-.01-18z"/></svg>
-                                <span class="fb-reel-action-label">32</span>
+                                <span class="fb-reel-action-label" id="fbReelCommentCount">32</span>
                             </button>
-                            <button class="fb-reel-action-btn" aria-label="Compartir">
+                            <button class="fb-reel-action-btn" id="fbReelShareBtn" type="button" aria-label="Compartir">
                                 <svg viewBox="0 0 24 24"><path d="M18 16.08c-.76 0-1.44.3-1.96.77L8.91 12.7c.05-.23.09-.46.09-.7s-.04-.47-.09-.7l7.05-4.11c.54.5 1.25.81 2.04.81 1.66 0 3-1.34 3-3s-1.34-3-3-3-3 1.34-3 3c0 .24.04.47.09.7L8.04 9.81C7.5 9.31 6.79 9 6 9c-1.66 0-3 1.34-3 3s1.34 3 3 3c.79 0 1.5-.31 2.04-.81l7.12 4.16c-.05.21-.08.43-.08.65 0 1.61 1.31 2.92 2.92 2.92 1.61 0 2.92-1.31 2.92-2.92s-1.31-2.92-2.92-2.92z"/></svg>
                                 <span class="fb-reel-action-label">Compartir</span>
                             </button>
@@ -410,6 +466,18 @@ function asegurarTemplateHTML() {
                     <div id="fbReelSwipeHint" class="fb-reel-swipe-hint" style="display:none;">
                         <span id="fbReelSwipeHintIcon">☝️</span>
                         <span id="fbReelSwipeHintText">Desliza hacia arriba</span>
+                    </div>
+
+                    <!-- Respaldo del gesto: mismas acciones que deslizar, para quien no
+                         logre el arrastre (ratón poco preciso, pulso, lápiz). El gesto
+                         sigue siendo lo que se enseña; esto solo evita quedarse atascado. -->
+                    <div class="fb-reel-fallback-nav">
+                        <button id="fbReelPrevBtn" class="fb-reel-fallback-btn" aria-label="Reel anterior" style="display:none;">
+                            <svg viewBox="0 0 24 24"><path d="M7.41 15.41L12 10.83l4.59 4.58L18 14l-6-6-6 6 1.41 1.41z"/></svg>
+                        </button>
+                        <button id="fbReelNextBtn" class="fb-reel-fallback-btn" aria-label="Siguiente Reel">
+                            <svg viewBox="0 0 24 24"><path d="M7.41 8.59L12 13.17l4.59-4.58L18 10l-6 6-6-6 1.41-1.41z"/></svg>
+                        </button>
                     </div>
 
                 </div>
@@ -518,6 +586,8 @@ function asegurarTemplateHTML() {
                 </div>
             </div>
 
+            <div id="fbRespondiendoA" class="fb-respondiendo-a" style="display:none;"></div>
+
             <div class="fb-comment-input-bar">
                 <div class="fb-comment-input-avatar">
                     <img src="./assets/img/facebook/user_profile.png" alt="Tú" class="fb-avatar-img">
@@ -525,6 +595,111 @@ function asegurarTemplateHTML() {
                 <input type="text" id="fbCommentInput" class="fb-comment-input" placeholder="Escribe un comentario...">
                 <button id="fbCommentSend" class="fb-comment-send-btn" aria-label="Enviar comentario">
                     <svg viewBox="0 0 24 24"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/></svg>
+                </button>
+            </div>
+        </div>
+
+        <!-- Comentarios de un Reel (Nivel 5) -->
+        <div id="fbReelCommentsPanel" class="fb-reel-sheet">
+            <div class="fb-reel-sheet-panel">
+                <div class="fb-reel-sheet-header">
+                    <span class="fb-reel-sheet-title">Comentarios</span>
+                    <button class="fb-reel-sheet-close" id="fbReelCommentsClose" type="button" aria-label="Cerrar">✕</button>
+                </div>
+
+                <div class="fb-reel-comments-list" id="fbReelCommentsList"></div>
+
+                <div id="fbReelRespondiendo" class="fb-reel-respondiendo" style="display:none;"></div>
+
+                <div class="fb-reel-comment-bar">
+                    <div class="fb-comment-input-avatar">
+                        <img src="./assets/img/facebook/user_profile.png" alt="Tú" class="fb-avatar-img">
+                    </div>
+                    <input type="text" id="fbReelCommentInput" class="fb-comment-input" placeholder="Escribe un comentario...">
+                    <button id="fbReelCommentSend" class="fb-comment-send-btn" type="button" aria-label="Enviar comentario">
+                        <svg viewBox="0 0 24 24"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/></svg>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Compartir un Reel (Nivel 5) -->
+        <div id="fbReelSharePanel" class="fb-reel-sheet">
+            <div class="fb-reel-sheet-panel">
+                <div class="fb-reel-sheet-header">
+                    <span class="fb-reel-sheet-title">Compartir</span>
+                    <button class="fb-reel-sheet-close" id="fbReelShareClose" type="button" aria-label="Cerrar">✕</button>
+                </div>
+
+                <div class="fb-reel-share-options" id="fbReelShareOptions">
+                    <button class="fb-reel-share-option" data-destino="Messenger" type="button">
+                        <span class="fb-reel-share-icon" style="background:#0084ff;">💬</span>
+                        <span>Enviar por Messenger</span>
+                    </button>
+                    <button class="fb-reel-share-option" data-destino="tu biografía" type="button">
+                        <span class="fb-reel-share-icon" style="background:#1877f2;">📋</span>
+                        <span>Compartir en tu biografía</span>
+                    </button>
+                    <button class="fb-reel-share-option" data-destino="WhatsApp" type="button">
+                        <span class="fb-reel-share-icon" style="background:#25d366;">📱</span>
+                        <span>Enviar por WhatsApp</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Messenger: al compartir por aquí se abre de verdad para elegir a quién -->
+        <div id="fbMessengerPanel" class="fb-messenger-panel">
+            <div class="fb-messenger-header">
+                <button class="fb-messenger-volver" id="fbMessengerVolver" type="button" aria-label="Volver">
+                    <svg viewBox="0 0 24 24"><path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z"/></svg>
+                </button>
+                <span class="fb-messenger-titulo">Messenger</span>
+            </div>
+
+            <div class="fb-messenger-aviso">
+                <span class="fb-messenger-aviso-icono">🎬</span>
+                <span>Vas a enviar este Reel. Elige a quién.</span>
+            </div>
+
+            <div class="fb-messenger-lista" id="fbMessengerLista">
+                <div class="fb-messenger-chat">
+                    <div class="fb-friend-avatar" style="background:#3f51b5;"><span>JN</span></div>
+                    <div class="fb-messenger-chat-info">
+                        <div class="fb-messenger-chat-nombre">Juan (Nieto)</div>
+                        <div class="fb-messenger-chat-estado">Activo ahora</div>
+                    </div>
+                    <button class="fb-messenger-enviar" data-nombre="Juan" type="button">Enviar</button>
+                </div>
+                <div class="fb-messenger-chat">
+                    <div class="fb-friend-avatar" style="background:#e91e8c;"><span>MF</span></div>
+                    <div class="fb-messenger-chat-info">
+                        <div class="fb-messenger-chat-nombre">María Fernanda</div>
+                        <div class="fb-messenger-chat-estado">Activa hace 10 min</div>
+                    </div>
+                    <button class="fb-messenger-enviar" data-nombre="María Fernanda" type="button">Enviar</button>
+                </div>
+                <div class="fb-messenger-chat">
+                    <div class="fb-friend-avatar" style="background:#00897b;"><span>FM</span></div>
+                    <div class="fb-messenger-chat-info">
+                        <div class="fb-messenger-chat-nombre">Familia Mendoza</div>
+                        <div class="fb-messenger-chat-estado">Grupo · 6 personas</div>
+                    </div>
+                    <button class="fb-messenger-enviar" data-nombre="la Familia Mendoza" type="button">Enviar</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Menú de un comentario propio (Nivel 3) -->
+        <div id="fbCommentMenu" class="fb-comment-menu">
+            <div class="fb-comment-menu-panel">
+                <button class="fb-comment-menu-opcion fb-comment-menu-eliminar" id="fbCommentMenuEliminar" type="button">
+                    <svg viewBox="0 0 24 24"><path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/></svg>
+                    <span>Eliminar</span>
+                </button>
+                <button class="fb-comment-menu-opcion" id="fbCommentMenuCancelar" type="button">
+                    <svg viewBox="0 0 24 24"><path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+                    <span>Cancelar</span>
                 </button>
             </div>
         </div>
@@ -660,10 +835,10 @@ function renderizarPublicaciones() {
                     <div class="fb-reactions-popup" id="fbReactions-${post.id}">
                         <div class="fb-reaction-option" data-emoji="👍" data-post-id="${post.id}">👍<span class="label">Me gusta</span></div>
                         <div class="fb-reaction-option" data-emoji="❤️" data-post-id="${post.id}">❤️<span class="label">Me encanta</span></div>
-                        <div class="fb-reaction-option" data-emoji="😂" data-post-id="${post.id}">😂<span class="label">Divertido</span></div>
-                        <div class="fb-reaction-option" data-emoji="😮" data-post-id="${post.id}">😮<span class="label">Asombrado</span></div>
-                        <div class="fb-reaction-option" data-emoji="😢" data-post-id="${post.id}">😢<span class="label">Triste</span></div>
-                        <div class="fb-reaction-option" data-emoji="😡" data-post-id="${post.id}">😡<span class="label">Enojado</span></div>
+                        <div class="fb-reaction-option" data-emoji="😂" data-post-id="${post.id}">😂<span class="label">Me divierte</span></div>
+                        <div class="fb-reaction-option" data-emoji="😮" data-post-id="${post.id}">😮<span class="label">Me asombra</span></div>
+                        <div class="fb-reaction-option" data-emoji="😢" data-post-id="${post.id}">😢<span class="label">Me entristece</span></div>
+                        <div class="fb-reaction-option" data-emoji="😡" data-post-id="${post.id}">😡<span class="label">Me enoja</span></div>
                     </div>
                     <svg viewBox="0 0 24 24"><path d="M1 21h4V9H1v12zm22-11c0-1.1-.9-2-2-2h-6.31l.95-4.57.03-.32c0-.41-.17-.79-.44-1.06L14.17 1 7.59 7.59C7.22 7.95 7 8.45 7 9v10c0 1.1.9 2 2 2h9c.83 0 1.54-.5 1.84-1.22l3.02-7.05c.09-.23.14-.47.14-.73v-2z"/></svg>
                     <span class="fb-like-label">${likedLabel}</span>
@@ -683,24 +858,33 @@ function renderizarPublicaciones() {
 }
 
 function etiquetaReaccion(emoji) {
-    const mapa = { "👍": "Me gusta", "❤️": "Me encanta", "😂": "Divertido", "😮": "Asombrado", "😢": "Triste", "😡": "Enojado" };
+    const mapa = { "👍": "Me gusta", "❤️": "Me encanta", "😂": "Me divierte", "😮": "Me asombra", "😢": "Me entristece", "😡": "Me enoja" };
     return mapa[emoji] || "Me gusta";
 }
 
 // ---------- COMENTARIOS ----------
-function abrirComentarios(postId) {
-    activeCommentsPostId = postId;
-    const post = POSTS_DATA.find(p => p.id === postId);
-    if (!post) return;
-
-    const modal = $("#fbCommentsModal");
+/**
+ * Pinta los comentarios de la publicación abierta. Se llama también al dar
+ * "Me gusta" a un comentario o al borrar el propio, para refrescar la lista.
+ */
+function renderizarComentariosModal() {
+    const post = POSTS_DATA.find(p => p.id === activeCommentsPostId);
     const lista = $("#fbCommentsList");
-    if (!modal || !lista) return;
+    if (!post || !lista) return;
 
     lista.innerHTML = "";
-    (post.comentariosData || []).forEach(com => {
+    (post.comentariosData || []).forEach((com, indice) => {
         const el = document.createElement("div");
-        el.className = "fb-comment";
+        el.className = "fb-comment" + (com.esMio ? " fb-comment-mio" : "") + (com.esRespuesta ? " fb-comment-respuesta" : "");
+        el.dataset.indice = indice;
+
+        // Los tres puntitos solo en los comentarios propios: solo esos se pueden borrar
+        const menuHtml = com.esMio
+            ? `<button class="fb-comment-menu-btn" data-indice="${indice}" type="button" aria-label="Opciones de tu comentario">
+                   <svg viewBox="0 0 24 24"><path d="M12 8c1.1 0 2-.9 2-2s-.9-2-2-2-2 .9-2 2 .9 2 2 2zm0 2c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2zm0 6c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2z"/></svg>
+               </button>`
+            : "";
+
         el.innerHTML = `
             <div class="fb-comment-avatar" style="background:${com.color || '#1877f2'};">
                 ${com.avatar ? `<img src="${com.avatar}" alt="${com.autor}" class="fb-avatar-img" onerror="this.style.display='none'; this.parentElement.innerText='${com.iniciales || 'U'}'">` : (com.iniciales || 'U')}
@@ -712,14 +896,27 @@ function abrirComentarios(postId) {
                 </div>
                 <div class="fb-comment-footer">
                     <span class="fb-comment-time">${com.tiempo}</span>
-                    <button class="fb-comment-action">Me gusta</button>
-                    <button class="fb-comment-action">Responder</button>
+                    <button class="fb-comment-action fb-comment-like-btn${com.miLike ? " activo" : ""}" data-indice="${indice}" type="button">Me gusta</button>
+                    <button class="fb-comment-action fb-comment-reply-btn" data-indice="${indice}" type="button">Responder</button>
                     ${com.likes > 0 ? `<span class="fb-comment-like-count">👍 ${com.likes}</span>` : ""}
                 </div>
             </div>
+            ${menuHtml}
         `;
         lista.appendChild(el);
     });
+}
+
+function abrirComentarios(postId) {
+    activeCommentsPostId = postId;
+    const post = POSTS_DATA.find(p => p.id === postId);
+    if (!post) return;
+
+    const modal = $("#fbCommentsModal");
+    const lista = $("#fbCommentsList");
+    if (!modal || !lista) return;
+
+    renderizarComentariosModal();
 
     modal.classList.add("activa");
 
@@ -729,13 +926,121 @@ function abrirComentarios(postId) {
     }
 }
 
+/**
+ * Marca o desmarca "Me gusta" en un comentario ajeno.
+ */
+/**
+ * Prepara la caja para responder a un comentario del muro.
+ */
+function responderComentario(indice) {
+    const post = POSTS_DATA.find(p => p.id === activeCommentsPostId);
+    const com = post && post.comentariosData[indice];
+    if (!com) return;
+
+    respondiendoAComentario = indice;
+
+    const input = $("#fbCommentInput");
+    if (input) {
+        input.placeholder = `Respondiendo a ${com.autor}...`;
+        input.focus();
+    }
+
+    const aviso = $("#fbRespondiendoA");
+    if (aviso) {
+        aviso.textContent = `Respondiendo a ${com.autor}`;
+        aviso.style.display = "block";
+    }
+
+    if (nivelActual === "comentar-publicacion" && rondaNivel3 === 2 && subPasoNivel3 === 4) {
+        subPasoNivel3 = 5;
+        actualizarBarraInstrucciones(true);
+    } else {
+        actualizarGuiaVisualFacebook();
+    }
+}
+
+function cancelarRespuestaComentario() {
+    respondiendoAComentario = null;
+
+    const input = $("#fbCommentInput");
+    if (input) input.placeholder = "Escribe un comentario...";
+
+    const aviso = $("#fbRespondiendoA");
+    if (aviso) aviso.style.display = "none";
+}
+
+function alternarLikeComentario(indice) {
+    const post = POSTS_DATA.find(p => p.id === activeCommentsPostId);
+    if (!post || !post.comentariosData || !post.comentariosData[indice]) return;
+
+    const com = post.comentariosData[indice];
+    com.miLike = !com.miLike;
+    com.likes = Math.max(0, (com.likes || 0) + (com.miLike ? 1 : -1));
+
+    renderizarComentariosModal();
+
+    if (nivelActual === "comentar-publicacion" && rondaNivel3 === 2 && subPasoNivel3 === 3 && com.miLike && !com.esMio) {
+        subPasoNivel3 = 4;
+        actualizarBarraInstrucciones(true);
+    } else {
+        actualizarGuiaVisualFacebook();
+    }
+}
+
+function abrirMenuComentario(indice) {
+    const menu = $("#fbCommentMenu");
+    if (!menu) return;
+
+    menu.dataset.indice = indice;
+    menu.classList.add("activa");
+    actualizarGuiaVisualFacebook();
+}
+
+function cerrarMenuComentario() {
+    const menu = $("#fbCommentMenu");
+    if (menu) menu.classList.remove("activa");
+}
+
+/**
+ * Borra el comentario propio seleccionado en el menú de tres puntitos.
+ */
+function eliminarComentarioPropio() {
+    const menu = $("#fbCommentMenu");
+    const post = POSTS_DATA.find(p => p.id === activeCommentsPostId);
+    if (!menu || !post) return;
+
+    const indice = parseInt(menu.dataset.indice, 10);
+    if (!isNaN(indice) && post.comentariosData[indice]) {
+        post.comentariosData.splice(indice, 1);
+        post.comentarios = Math.max(0, (post.comentarios || 1) - 1);
+    }
+
+    cerrarMenuComentario();
+    renderizarComentariosModal();
+    renderizarPublicaciones();
+
+    if (nivelActual === "comentar-publicacion" && rondaNivel3 === 2 && subPasoNivel3 === 6) {
+        subPasoNivel3 = 7;
+        completarNivelActual("¡Excelente! Ya sabes comentar, dar Me gusta, responder a otras personas y borrar lo que tú escribes.");
+    } else {
+        actualizarBarraInstrucciones(false);
+    }
+}
+
 function cerrarComentarios() {
     const modal = $("#fbCommentsModal");
     if (modal) modal.classList.remove("activa");
 
-    if (nivelActual === "comentar-publicacion") {
+    cerrarMenuComentario();
+
+    // Si ya escribió su comentario, al reabrir sigue donde estaba
+    cancelarRespuestaComentario();
+
+    if (nivelActual === "comentar-publicacion" && subPasoNivel3 < 3) {
         subPasoNivel3 = 1;
         actualizarBarraInstrucciones(true);
+    } else if (nivelActual === "comentar-publicacion") {
+        actualizarBarraInstrucciones(false);
     }
 }
 
@@ -754,6 +1059,9 @@ function manejarLike(postId) {
         const msg = "¡Muy bien! Para elegir más reacciones, deja presionado el botón. Ahora toca una de las emociones, como 'Me encanta' ❤️.";
         const textEl = $("#fbInstructionsText");
         if (textEl) textEl.textContent = msg;
+        // Se registra como la última instrucción hablada para no descuadrar el
+        // control anti-repetición del resto del archivo
+        ultimaInstruccionHablada = msg;
         speak(msg);
         subPasoNivel2 = 2;
         actualizarGuiaVisualFacebook();
@@ -780,6 +1088,27 @@ function mostrarReacciones(postId) {
             actualizarBarraInstrucciones(true);
         }
     }
+}
+
+/**
+ * Devuelve la opción de reacción que hay bajo un punto de la pantalla.
+ * Hace falta porque en móvil los eventos del gesto siguen apuntando al botón
+ * donde empezó, no al elemento que hay debajo del dedo.
+ */
+function opcionReaccionDesdePunto(x, y) {
+    const el = document.elementFromPoint(x, y);
+    return el ? el.closest(".fb-reaction-option") : null;
+}
+
+/**
+ * Agranda la reacción que está bajo el dedo, como hace Facebook.
+ */
+function enfocarOpcionReaccion(opcion) {
+    if (opcionReaccionEnfocada === opcion) return;
+
+    if (opcionReaccionEnfocada) opcionReaccionEnfocada.classList.remove("enfocada");
+    opcionReaccionEnfocada = opcion || null;
+    if (opcionReaccionEnfocada) opcionReaccionEnfocada.classList.add("enfocada");
 }
 
 function cerrarTodosPopups() {
@@ -1046,6 +1375,7 @@ function cambiarPestana(tabName) {
     const reelsView = $("#fbReelsView");
 
     if (tabName === "amigos") {
+        pausarReel();
         if (feed) feed.style.display = "none";
         if (friendsView) friendsView.style.display = "block";
         if (reelsView) reelsView.style.display = "none";
@@ -1067,6 +1397,7 @@ function cambiarPestana(tabName) {
             actualizarBarraInstrucciones(true);
         }
     } else {
+        pausarReel();
         if (feed) feed.style.display = "block";
         if (friendsView) friendsView.style.display = "none";
         if (reelsView) reelsView.style.display = "none";
@@ -1079,14 +1410,61 @@ function cambiarPestana(tabName) {
 }
 
 // ---------- DATOS Y RENDERIZADO DE REELS (NIVEL 5) ----------
-const REELS_DATA = [
-    { emoji: "🙏", autor: "@BendicionesDiarias", video: "./assets/video/piolin.mp4", desc: "Que la paz de Dios te cubra esta noche 🙏", likes: 847 },
-    { emoji: "🍞", autor: "@PanCasero", video: "./assets/video/panes.mp4", desc: "Pan casero recien horneado, que delicia 🍞", likes: 1203 },
-    { emoji: "🎤", autor: "@NilaStone", video: "./assets/video/nilastone.mp4", desc: "Ahora soy mi prioridad 🎤✨", likes: 532 },
-    { emoji: "💧", autor: "@NaturalezaViva", video: "./assets/video/cascada.mp4", desc: "Un lugar hermoso para relajar la mente 💧", likes: 2148 },
-    { emoji: "🍰", autor: "@RecetasSaludables", video: "./assets/video/minicake.mp4", desc: "Mini pastel saludable, facil y delicioso 🍰", likes: 918 },
-    { emoji: "🌱", autor: "@MiJardin", video: "./assets/video/monte.mp4", desc: "Sembrando con cariño en casa 🌱", likes: 3052 },
+// Cada Reel tiene su propia gente comentando y su propio estado de "Seguir".
+// Antes se compartían: seguir a uno seguía a todos y los comentarios eran los
+// mismos en los seis videos.
+const REELS_ORIGINAL = [
+    {
+        emoji: "🙏", autor: "@BendicionesDiarias", video: "./assets/video/piolin.mp4",
+        desc: "Que la paz de Dios te cubra esta noche 🙏", likes: 847, siguiendo: false,
+        comentarios: [
+            { autor: "Marta Ruiz", inicial: "M", color: "#e91e8c", texto: "Amén, qué bonito mensaje 🙏", tiempo: "2 h", likes: 24 },
+            { autor: "Pedro Salas", inicial: "P", color: "#2196f3", texto: "Se lo mando a mi hermana ahora mismo", tiempo: "5 h", likes: 8 }
+        ]
+    },
+    {
+        emoji: "🍞", autor: "@PanCasero", video: "./assets/video/panes.mp4",
+        desc: "Pan casero recien horneado, que delicia 🍞", likes: 1203, siguiendo: false,
+        comentarios: [
+            { autor: "Dolores Pérez", inicial: "D", color: "#8bc34a", texto: "¡Se ve riquísimo! ¿Con harina normal queda igual?", tiempo: "1 h", likes: 41 },
+            { autor: "Tomás Herrera", inicial: "T", color: "#795548", texto: "Huele hasta por la pantalla 😋", tiempo: "6 h", likes: 15 }
+        ]
+    },
+    {
+        emoji: "🎤", autor: "@NilaStone", video: "./assets/video/nilastone.mp4",
+        desc: "Ahora soy mi prioridad 🎤✨", likes: 532, siguiendo: false,
+        comentarios: [
+            { autor: "Gloria Castro", inicial: "G", color: "#9c27b0", texto: "Qué voz tan bonita, me puso la piel de gallina", tiempo: "3 h", likes: 33 },
+            { autor: "Ernesto Campos", inicial: "E", color: "#3f51b5", texto: "Esta canción me recuerda a mi juventud", tiempo: "8 h", likes: 12 }
+        ]
+    },
+    {
+        emoji: "💧", autor: "@NaturalezaViva", video: "./assets/video/cascada.mp4",
+        desc: "Un lugar hermoso para relajar la mente 💧", likes: 2148, siguiendo: false,
+        comentarios: [
+            { autor: "Consuelo Reyes", inicial: "C", color: "#00bcd4", texto: "Qué paz da verlo. ¿Dónde queda ese lugar?", tiempo: "4 h", likes: 57 },
+            { autor: "Ramón Flores", inicial: "R", color: "#009688", texto: "Lo pongo por las noches para dormir tranquilo", tiempo: "1 d", likes: 20 }
+        ]
+    },
+    {
+        emoji: "🍰", autor: "@RecetasSaludables", video: "./assets/video/minicake.mp4",
+        desc: "Mini pastel saludable, facil y delicioso 🍰", likes: 918, siguiendo: false,
+        comentarios: [
+            { autor: "Sandra López", inicial: "S", color: "#ff5722", texto: "¿Se puede hacer sin azúcar? Soy diabética", tiempo: "2 h", likes: 62 },
+            { autor: "Patricia Mora", inicial: "P", color: "#ff9800", texto: "Lo hice el domingo con mis nietas 🎂", tiempo: "1 d", likes: 18 }
+        ]
+    },
+    {
+        emoji: "🌱", autor: "@MiJardin", video: "./assets/video/monte.mp4",
+        desc: "Sembrando con cariño en casa 🌱", likes: 3052, siguiendo: false,
+        comentarios: [
+            { autor: "Luis García", inicial: "L", color: "#4caf50", texto: "Mis plantas se secan siempre, ¿algún consejo?", tiempo: "30 min", likes: 9 },
+            { autor: "Elena Vargas", inicial: "E", color: "#673ab7", texto: "Qué bien te quedó el huerto, felicidades", tiempo: "7 h", likes: 27 }
+        ]
+    }
 ];
+
+let REELS_DATA = JSON.parse(JSON.stringify(REELS_ORIGINAL));
 
 function renderizarReel(idx) {
     const data = REELS_DATA[idx];
@@ -1123,35 +1501,87 @@ function renderizarReel(idx) {
     if (likeBtn) likeBtn.classList.remove("liked");
     if (likeIcon) likeIcon.style.fill = "";
     reelLikeYaDado = false;
+
+    // Cada Reel tiene su propio "Seguir" y sus propios comentarios
+    actualizarBotonSeguirReel();
+    cancelarRespuestaReel();
+    renderizarComentariosReel();
 }
 
 // ---------- NAVEGACIÓN POR GESTO DE DESLIZAR (NIVEL 5) ----------
+/**
+ * Detiene el video de Reels. Sin esto seguía reproduciéndose oculto al cambiar
+ * de pestaña o al salir del simulador.
+ */
+function pausarReel() {
+    const video = $("#fbReelVideo");
+    if (video && !video.paused) video.pause();
+}
+
+/**
+ * Si el usuario desliza en la dirección contraria a la que toca practicar,
+ * Nico repite el gesto correcto. Se usa también cuando no hay Reel al que ir
+ * (por ejemplo, deslizar hacia abajo estando en el primero), que si no dejaba
+ * al usuario sin ninguna respuesta.
+ */
+function avisarDireccionIncorrectaNivel5(direccion) {
+    if (nivelActual !== "ver-reels" || subPasoNivel5 !== 2) return;
+    if (direccion === direccionEsperadaNivel5()) return;
+
+    ultimaInstruccionHablada = "";
+    actualizarBarraInstrucciones(true);
+}
+
 function irReelSiguiente() {
-    if (reelActualIdx >= REELS_DATA.length - 1) return;
+    if (reelActualIdx >= REELS_DATA.length - 1) {
+        avisarDireccionIncorrectaNivel5("arriba");
+        return;
+    }
     reelActualIdx++;
     renderizarReel(reelActualIdx);
+    actualizarBotonesRespaldoReel();
     manejarProgresoNivel5("arriba");
 }
 
 function irReelAnterior() {
-    if (reelActualIdx <= 0) return;
+    if (reelActualIdx <= 0) {
+        avisarDireccionIncorrectaNivel5("abajo");
+        return;
+    }
     reelActualIdx--;
     renderizarReel(reelActualIdx);
+    actualizarBotonesRespaldoReel();
     manejarProgresoNivel5("abajo");
+}
+
+/**
+ * Oculta las flechas de respaldo cuando no hay Reel al que ir.
+ */
+function actualizarBotonesRespaldoReel() {
+    const prev = $("#fbReelPrevBtn");
+    const next = $("#fbReelNextBtn");
+    if (prev) prev.style.display = reelActualIdx > 0 ? "flex" : "none";
+    if (next) next.style.display = reelActualIdx < REELS_DATA.length - 1 ? "flex" : "none";
 }
 
 // Dirección de deslizamiento que corresponde practicar en la ronda actual:
 // rondas 1 y 2 = arriba (dos veces seguidas, refuerzo del mismo gesto),
 // ronda 3 = abajo (el gesto nuevo, para volver al Reel anterior).
 function direccionEsperadaNivel5() {
-    return rondaNivel5 === 3 ? "abajo" : "arriba";
+    return rondaNivel5 === 2 ? "abajo" : "arriba";
 }
 
 // Avanza la guía del Nivel 5 cuando el deslizamiento ocurre en la dirección esperada
 // para la ronda actual. En cualquier otro caso el Reel cambia igual, pero sin
 // afectar el progreso del nivel.
 function manejarProgresoNivel5(direccion) {
-    if (nivelActual !== "ver-reels" || subPasoNivel5 !== 2 || direccion !== direccionEsperadaNivel5()) return;
+    if (nivelActual !== "ver-reels" || subPasoNivel5 !== 2) return;
+
+    if (direccion !== direccionEsperadaNivel5()) {
+        // Deslizó al revés: el Reel cambia igual, pero Nico repite el gesto que toca
+        avisarDireccionIncorrectaNivel5(direccion);
+        return;
+    }
 
     subPasoNivel5 = 3;
     actualizarBarraInstrucciones(true);
@@ -1161,12 +1591,14 @@ function manejarProgresoNivel5(direccion) {
         const enPantalla = sim && sim.classList.contains("activa");
         if (!enPantalla || nivelActual !== "ver-reels" || subPasoNivel5 !== 3) return;
 
-        if (rondaNivel5 < 3) {
+        if (rondaNivel5 < 2) {
             rondaNivel5++;
             subPasoNivel5 = 2;
             actualizarBarraInstrucciones(true);
         } else {
-            completarNivelActual("¡Excelente! Ya sabes navegar por los Reels de Facebook.");
+            // Ya sabe moverse entre Reels: ahora las cuatro acciones de un Reel
+            subPasoNivel5 = 4;
+            actualizarBarraInstrucciones(true);
         }
     }, 2600);
 }
@@ -1200,8 +1632,384 @@ function actualizarSwipeHintReel() {
     }
 }
 
+/**
+ * Acepta o rechaza una solicitud de amistad recibida (Nivel 4, ronda 2).
+ * Es la otra mitad de la amistad en Facebook: además de enviar solicitudes,
+ * también hay que saber responder a las que llegan.
+ */
+function responderSolicitud(requestId, aceptada) {
+    const tarjeta = document.querySelector(`.fb-request-card[data-request="${requestId}"]`);
+    if (!tarjeta) return;
+
+    const acciones = tarjeta.querySelector(".fb-friend-actions");
+    if (acciones) {
+        acciones.innerHTML = aceptada
+            ? `<span class="fb-request-resultado aceptada">✓ Ahora son amigos</span>`
+            : `<span class="fb-request-resultado">Solicitud eliminada</span>`;
+    }
+
+    // Baja el contador de solicitudes pendientes
+    const contador = $("#fbSolicitudesCount");
+    if (contador) {
+        const restantes = Math.max(0, (parseInt(contador.textContent, 10) || 1) - 1);
+        contador.textContent = restantes;
+        if (restantes === 0) contador.style.display = "none";
+    }
+
+    const badge = $("#fbAmigosBadge");
+    if (badge) {
+        const restantes = Math.max(0, (parseInt(badge.textContent, 10) || 1) - 1);
+        badge.textContent = restantes;
+        if (restantes === 0) badge.style.display = "none";
+    }
+
+    if (nivelActual === "agregar-amigo" && rondaNivel4 === 2 && subPasoNivel4 === 2 && aceptada) {
+        subPasoNivel4 = 3;
+        completarNivelActual("¡Excelente! Ya sabes enviar solicitudes de amistad y aceptar las que te llegan.");
+    }
+}
+
+// ---------- ACCIONES SOBRE UN REEL (NIVEL 5) ----------
+
+/**
+ * Sigue o deja de seguir la cuenta del Reel.
+ */
+function reelActual() {
+    return REELS_DATA[reelActualIdx];
+}
+
+/**
+ * Sigue o deja de seguir la cuenta de ESTE Reel. Antes el estado era único
+ * para todos, así que seguir a uno los dejaba a todos como "Siguiendo".
+ */
+function alternarSeguirReel() {
+    const btn = $("#fbReelFollowBtn");
+    const reel = reelActual();
+    if (!btn || !reel) return;
+
+    reel.siguiendo = !reel.siguiendo;
+    actualizarBotonSeguirReel();
+
+    if (reel.siguiendo && nivelActual === "ver-reels" && subPasoNivel5 === 5) {
+        subPasoNivel5 = 6;
+        actualizarBarraInstrucciones(true);
+    }
+}
+
+function actualizarBotonSeguirReel() {
+    const btn = $("#fbReelFollowBtn");
+    const reel = reelActual();
+    if (!btn || !reel) return;
+
+    btn.textContent = reel.siguiendo ? "Siguiendo" : "Seguir";
+    btn.classList.toggle("siguiendo", !!reel.siguiendo);
+}
+
+function renderizarComentariosReel() {
+    const lista = $("#fbReelCommentsList");
+    const reel = reelActual();
+    if (!lista || !reel) return;
+
+    lista.innerHTML = reel.comentarios.map((c, i) => `
+        <div class="fb-reel-comment${c.esMio ? " mio" : ""}${c.esRespuesta ? " respuesta" : ""}" data-indice="${i}">
+            <div class="fb-reel-comment-avatar" style="background:${c.color};">${c.inicial}</div>
+            <div class="fb-reel-comment-cuerpo">
+                <div class="fb-reel-comment-autor">${c.autor} <span class="fb-reel-comment-tiempo">${c.tiempo}</span></div>
+                <div class="fb-reel-comment-texto">${c.texto}</div>
+                <div class="fb-reel-comment-acciones">
+                    <button type="button" class="fb-reel-comment-btn fb-reel-comment-like${c.miLike ? " activo" : ""}" data-indice="${i}">Me gusta</button>
+                    <button type="button" class="fb-reel-comment-btn fb-reel-comment-responder" data-indice="${i}">Responder</button>
+                    ${c.likes > 0 ? `<span class="fb-reel-comment-likes">👍 ${c.likes}</span>` : ""}
+                </div>
+            </div>
+        </div>
+    `).join("");
+
+    const contador = $("#fbReelCommentCount");
+    if (contador) contador.textContent = reel.comentarios.length;
+}
+
+/**
+ * Me gusta a un comentario de otra persona dentro del Reel.
+ */
+function alternarLikeComentarioReel(indice) {
+    const reel = reelActual();
+    const com = reel && reel.comentarios[indice];
+    if (!com) return;
+
+    com.miLike = !com.miLike;
+    com.likes = Math.max(0, (com.likes || 0) + (com.miLike ? 1 : -1));
+    renderizarComentariosReel();
+
+    if (com.miLike && !com.esMio && nivelActual === "ver-reels" && subPasoNivel5 === 7) {
+        subPasoNivel5 = 8;
+        actualizarBarraInstrucciones(true);
+    } else {
+        actualizarGuiaVisualFacebook();
+    }
+}
+
+/**
+ * Prepara la caja de texto para responder a un comentario concreto.
+ */
+function responderComentarioReel(indice) {
+    const reel = reelActual();
+    const com = reel && reel.comentarios[indice];
+    if (!com) return;
+
+    respondiendoAComentarioReel = indice;
+
+    const input = $("#fbReelCommentInput");
+    if (input) {
+        input.placeholder = `Respondiendo a ${com.autor}...`;
+        input.focus();
+    }
+
+    const aviso = $("#fbReelRespondiendo");
+    if (aviso) {
+        aviso.textContent = `Respondiendo a ${com.autor}`;
+        aviso.style.display = "block";
+    }
+
+    actualizarBarraInstrucciones(true);
+}
+
+function cancelarRespuestaReel() {
+    respondiendoAComentarioReel = null;
+
+    const input = $("#fbReelCommentInput");
+    if (input) input.placeholder = "Escribe un comentario...";
+
+    const aviso = $("#fbReelRespondiendo");
+    if (aviso) aviso.style.display = "none";
+}
+
+
+function abrirComentariosReel() {
+    cancelarRespuestaReel();
+    renderizarComentariosReel();
+
+    const panel = $("#fbReelCommentsPanel");
+    if (panel) panel.classList.add("activa");
+
+    if (nivelActual === "ver-reels" && subPasoNivel5 === 6) {
+        // Ya está dentro: la guía pasa a explicar qué escribir
+        actualizarBarraInstrucciones(true);
+    } else {
+        actualizarBarraInstrucciones(false);
+    }
+}
+
+function cerrarComentariosReel() {
+    const panel = $("#fbReelCommentsPanel");
+    if (panel) panel.classList.remove("activa");
+    cancelarRespuestaReel();
+    actualizarBarraInstrucciones(false);
+}
+
+/**
+ * Publica un comentario propio, o una respuesta si se tocó "Responder".
+ * El panel NO se cierra: el usuario tiene que poder ver lo que escribió.
+ */
+function enviarComentarioReel() {
+    const input = $("#fbReelCommentInput");
+    const reel = reelActual();
+    if (!input || !input.value.trim() || !reel) return;
+
+    const nuevo = {
+        esMio: true,
+        autor: "Ramona Pico",
+        inicial: "R",
+        color: "#1877f2",
+        texto: input.value.trim(),
+        tiempo: "Ahora",
+        likes: 0
+    };
+
+    if (respondiendoAComentarioReel !== null) {
+        // Las respuestas van justo debajo del comentario respondido
+        nuevo.esRespuesta = true;
+        reel.comentarios.splice(respondiendoAComentarioReel + 1, 0, nuevo);
+    } else {
+        reel.comentarios.unshift(nuevo);
+    }
+
+    const eraRespuesta = respondiendoAComentarioReel !== null;
+    input.value = "";
+    cancelarRespuestaReel();
+    renderizarComentariosReel();
+
+    // Se deja a la vista el comentario recién escrito
+    const mio = $("#fbReelCommentsList .fb-reel-comment.mio");
+    if (mio) mio.scrollIntoView({ behavior: "smooth", block: "center" });
+
+    if (nivelActual !== "ver-reels") return;
+
+    if (!eraRespuesta && subPasoNivel5 === 6) {
+        subPasoNivel5 = 7;
+        actualizarBarraInstrucciones(true);
+    } else if (eraRespuesta && subPasoNivel5 === 8) {
+        subPasoNivel5 = 9;
+        actualizarBarraInstrucciones(true);
+    }
+}
+
+function abrirCompartirReel() {
+    const panel = $("#fbReelSharePanel");
+    if (panel) panel.classList.add("activa");
+
+    // Volver a la lista de destinos por si quedó abierto Messenger
+    const opciones = $("#fbReelShareOptions");
+    const messenger = $("#fbMessengerPanel");
+    if (opciones) opciones.style.display = "block";
+    if (messenger) messenger.classList.remove("activa");
+
+    if (nivelActual === "ver-reels" && subPasoNivel5 === 9) {
+        subPasoNivel5 = 10;
+    }
+    actualizarBarraInstrucciones(true);
+}
+
+function cerrarCompartirReel() {
+    const panel = $("#fbReelSharePanel");
+    if (panel) panel.classList.remove("activa");
+
+    if (nivelActual === "ver-reels" && subPasoNivel5 === 10) {
+        subPasoNivel5 = 9; // volvió atrás: se le vuelve a pedir compartir
+    }
+    actualizarBarraInstrucciones(true);
+}
+
+/**
+ * Abre la pantalla de Messenger con la lista de chats, como haría Facebook
+ * al compartir por ahí.
+ */
+function abrirMessenger() {
+    const panel = $("#fbReelSharePanel");
+    const messenger = $("#fbMessengerPanel");
+    if (panel) panel.classList.remove("activa");
+    if (messenger) messenger.classList.add("activa");
+
+    // Los chats vuelven a estar sin enviar
+    document.querySelectorAll("#fbMessengerLista .fb-messenger-enviar").forEach(btn => {
+        btn.textContent = "Enviar";
+        btn.classList.remove("enviado");
+        btn.disabled = false;
+    });
+
+    if (nivelActual === "ver-reels" && subPasoNivel5 === 10) {
+        subPasoNivel5 = 11;
+    }
+    actualizarBarraInstrucciones(true);
+}
+
+function cerrarMessenger() {
+    const messenger = $("#fbMessengerPanel");
+    if (messenger) messenger.classList.remove("activa");
+
+    if (nivelActual === "ver-reels" && subPasoNivel5 === 11) {
+        subPasoNivel5 = 10;
+    }
+    actualizarBarraInstrucciones(true);
+}
+
+/**
+ * Envía el Reel por Messenger a un contacto concreto.
+ */
+function enviarPorMessenger(btn) {
+    if (!btn || btn.classList.contains("enviado")) return;
+
+    const nombre = btn.dataset.nombre || "tu contacto";
+    btn.textContent = "Enviado ✓";
+    btn.classList.add("enviado");
+    btn.disabled = true;
+
+    if (nivelActual === "ver-reels" && subPasoNivel5 === 11) {
+        subPasoNivel5 = 12;
+        completarNivelActual(`¡Muy bien! Le enviaste el Reel a ${nombre} por Messenger. Ya sabes usar los Reels de Facebook.`);
+    }
+}
+
+function compartirReel(destino) {
+    // Messenger abre de verdad su pantalla para elegir a quién enviarlo;
+    // el resto de destinos son atajos que se resuelven al momento.
+    if (destino === "Messenger") {
+        abrirMessenger();
+        return;
+    }
+
+    const panel = $("#fbReelSharePanel");
+    if (panel) panel.classList.remove("activa");
+
+    if (nivelActual === "ver-reels" && subPasoNivel5 >= 10) {
+        subPasoNivel5 = 12;
+        completarNivelActual(`¡Muy bien! Compartiste el Reel en ${destino}. Ya sabes usar los Reels de Facebook.`);
+    }
+}
+
+/**
+ * Deshace una solicitud ya enviada y devuelve el botón a su estado original.
+ */
+/**
+ * Simula que la persona a la que enviaste la solicitud la acepta. En Facebook
+ * real llega por notificación, así que aquí también se avisa arriba.
+ */
+function mostrarSolicitudAceptada() {
+    const card = $("#fbFriendCardRosa");
+    if (card) {
+        const acciones = card.querySelector(".fb-friend-actions");
+        if (acciones) {
+            acciones.innerHTML = `<span class="fb-request-resultado aceptada">✓ Rosa Elena aceptó tu solicitud. Ya son amigos</span>`;
+        }
+    }
+
+    // La campana de notificaciones sube: así se ve de dónde viene el aviso
+    const badge = document.querySelector('.fb-header-btn[aria-label="Notificaciones"] .fb-badge');
+    if (badge) badge.textContent = (parseInt(badge.textContent, 10) || 3) + 1;
+
+    subPasoNivel4 = 6;
+    actualizarBarraInstrucciones(true);
+
+    setTimeout(() => {
+        const sim = $("#pantallaFacebookSimulador");
+        const enPantalla = sim && sim.classList.contains("activa");
+        if (!enPantalla || nivelActual !== "agregar-amigo" || subPasoNivel4 !== 6) return;
+
+        // Ronda 2: el lado contrario, aceptar una solicitud que te llega a ti
+        rondaNivel4 = 2;
+        subPasoNivel4 = 2;
+        actualizarBarraInstrucciones(true);
+    }, 3600);
+}
+
+function cancelarSolicitudEnviada(friendId, btnElement) {
+    btnElement.classList.remove("solicitud-enviada");
+    btnElement.innerHTML = `
+        <svg viewBox="0 0 24 24"><path d="M15 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm-9-2V7H4v3H1v2h3v3h2v-3h3v-2H6zm9 4c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/></svg>
+        Agregar a amigos
+    `;
+
+    const card = btnElement.closest(".fb-friend-card");
+    if (card) {
+        const deleteBtn = card.querySelector(".fb-btn-delete-friend");
+        if (deleteBtn) deleteBtn.style.display = "";
+    }
+
+    if (nivelActual === "agregar-amigo" && friendId === "rosa" && subPasoNivel4 === 3) {
+        subPasoNivel4 = 4;
+        actualizarBarraInstrucciones(true);
+    }
+}
+
 function manejarAgregarAmigo(friendId, btnElement) {
     if (!btnElement) return;
+
+    // Segundo toque sobre "Solicitud enviada" = cancelar la solicitud,
+    // igual que en Facebook real
+    if (btnElement.classList.contains("solicitud-enviada")) {
+        cancelarSolicitudEnviada(friendId, btnElement);
+        return;
+    }
 
     btnElement.classList.add("solicitud-enviada");
     btnElement.innerHTML = `
@@ -1227,32 +2035,39 @@ function manejarAgregarAmigo(friendId, btnElement) {
 
     if (nivelActual === "agregar-amigo") {
         // Ronda 1: solo Rosa Elena es válida. Ronda 2: cualquiera de los dos perfiles restantes.
-        const esObjetivoValido = rondaNivel4 === 1
-            ? friendId === "rosa"
-            : (friendId === "carlos" || friendId === "beatriz");
+        const esObjetivoValido = rondaNivel4 === 1 && friendId === "rosa";
 
         if (esObjetivoValido && subPasoNivel4 === 2) {
+            // Primer envío: ahora se enseña que se puede cancelar
             subPasoNivel4 = 3;
+            actualizarBarraInstrucciones(true);
+        } else if (esObjetivoValido && subPasoNivel4 === 4) {
+            // La volvió a enviar tras cancelarla: Rosa la acepta al rato
+            subPasoNivel4 = 5;
             actualizarBarraInstrucciones(true);
 
             setTimeout(() => {
                 const sim = $("#pantallaFacebookSimulador");
                 const enPantalla = sim && sim.classList.contains("activa");
-                if (!enPantalla || nivelActual !== "agregar-amigo" || subPasoNivel4 !== 3) return;
+                if (!enPantalla || nivelActual !== "agregar-amigo" || subPasoNivel4 !== 5) return;
 
-                if (rondaNivel4 === 1) {
-                    rondaNivel4 = 2;
-                    subPasoNivel4 = 2; // ya está en la pestaña de Amigos, no hace falta repetir ese paso
-                    actualizarBarraInstrucciones(true);
-                } else {
-                    completarNivelActual("¡Excelente! Ya sabes agregar amigos en Facebook.");
-                }
-            }, 2600);
+                mostrarSolicitudAceptada();
+            }, 3000);
         }
     }
 }
 
 // ---------- FINALIZAR Y RETORNAR A NIVELES ----------
+/**
+ * Quita los emojis de un texto antes de leerlo en voz alta.
+ */
+function limpiarEmojisFb(texto) {
+    return String(texto)
+        .replace(/[\u{1F300}-\u{1FAFF}\u{2600}-\u{27BF}\u{FE0F}]/gu, "")
+        .replace(/\s{2,}/g, " ")
+        .trim();
+}
+
 function completarNivelActual(mensajeExito) {
     completarNivel("Facebook", nivelActual);
 
@@ -1262,13 +2077,18 @@ function completarNivelActual(mensajeExito) {
     const modal = $("#fbModalExito");
     if (modal) modal.classList.add("activa");
 
-    const mensajeVoz = "¡Excelente trabajo! Nivel completado con éxito. Presiona continuar para regresar a la lista de niveles.";
-    speak(mensajeVoz);
+    // Prioritario: corta cualquier frase pendiente para que la felicitación
+    // se escuche completa y no la pise la instrucción anterior
+    speakPrioritario(`¡Excelente trabajo! ${limpiarEmojisFb(mensajeExito)} Presiona el botón azul de continuar para regresar a la lista de niveles.`);
+
+    // Nada debe hablar después de la felicitación
+    ultimaInstruccionHablada = "";
 }
 
 function retornarANiveles() {
     stopSpeech();
     limpiarResaltados();
+    pausarReel();
 
     const modalExito = $("#fbModalExito");
     if (modalExito) modalExito.classList.remove("activa");
@@ -1291,6 +2111,19 @@ function retornarANiveles() {
 }
 
 // ---------- INSTRUCCIONES Y GUÍA VISUAL ----------
+/**
+ * Publica la altura real de la barra de Nico como variable CSS, para que los
+ * paneles a pantalla completa (comentarios, Reels) empiecen justo debajo y
+ * Nico siga a la vista guiando al usuario.
+ */
+function ajustarAlturaNico() {
+    const barra = $("#fbInstructionsBar");
+    const pantalla = $("#pantallaFacebookSimulador");
+    if (!barra || !pantalla) return;
+
+    pantalla.style.setProperty("--fb-nico-h", barra.offsetHeight + "px");
+}
+
 function actualizarBarraInstrucciones(autoSpeak = true) {
     const textEl = $("#fbInstructionsText");
     if (!textEl) return;
@@ -1321,7 +2154,7 @@ function actualizarBarraInstrucciones(autoSpeak = true) {
             } else if (subPasoNivel1 === 7) {
                 instruccion = "Revisa tu publicación. Cuando estés listo, toca el botón azul 'Publicar'.";
             } else if (subPasoNivel1 === 8) {
-                instruccion = "¡Publicado! Mira tu mensaje arriba en el feed, con tu foto y tu etiqueta.";
+                instruccion = "¡Publicado! Te llevo a tu publicación: ahí está, la primera del muro, con tu foto y tu etiqueta.";
             }
         } else {
             // Ronda 2: repaso rápido, solo texto
@@ -1349,8 +2182,8 @@ function actualizarBarraInstrucciones(autoSpeak = true) {
             instruccion = "Ahora toca la reacción que prefieras, como 'Me encanta' ❤️ o 'Me gusta' 👍.";
         } else if (subPasoNivel2 === 3) {
             instruccion = rondaNivel2 === 1
-                ? `¡Reaccionaste con ${ultimaReaccionElegidaNivel2}! Mira cómo se refleja en la publicación.`
-                : `¡Reaccionaste con ${ultimaReaccionElegidaNivel2}! Ya sabes reaccionar a las publicaciones de tus amigos.`;
+                ? `¡Reaccionaste con "${etiquetaReaccion(ultimaReaccionElegidaNivel2)}"! ${ultimaReaccionElegidaNivel2} Mira cómo se refleja en la publicación.`
+                : `¡Reaccionaste con "${etiquetaReaccion(ultimaReaccionElegidaNivel2)}"! ${ultimaReaccionElegidaNivel2} Ya sabes reaccionar a las publicaciones de tus amigos.`;
         }
     } else if (nivelActual === "comentar-publicacion") {
         const modal = $("#fbCommentsModal");
@@ -1362,28 +2195,42 @@ function actualizarBarraInstrucciones(autoSpeak = true) {
         if (rondaNivel3 === 1) {
             // Ronda 1: flujo completo guiado (identificar → tocar campo → escribir → confirmación)
             if (subPasoNivel3 === 1) {
-                instruccion = `En la publicación de ${autorObjetivoN3}, toca el botón 'Comentar' para ver los comentarios.`;
+                instruccion = `En la publicación de ${autorObjetivoN3}, toca el botón 'Comentar' que está abajo, en el centro, al lado de 'Me gusta'.`;
             } else if (subPasoNivel3 === 2) {
-                instruccion = "Toca el cuadro de texto para escribir tu comentario.";
+                instruccion = "Toca el cuadro blanco de la parte de abajo que dice 'Escribe un comentario'.";
             } else if (subPasoNivel3 === 3) {
                 instruccion = inputVal.length > 0
-                    ? "Toca el botón azul de la flecha para enviar tu comentario."
-                    : "Escribe lo que deseas responder o toca una de las frases sugeridas.";
+                    ? "Ahora toca la flecha azul que está a la derecha del cuadro para enviar tu comentario."
+                    : "Escribe lo que quieras decirle, o toca una de las frases sugeridas de encima del cuadro.";
             } else if (subPasoNivel3 === 4) {
-                instruccion = "¡Tu comentario ya se publicó!";
+                instruccion = "¡Tu comentario ya se publicó! Ahí está, al final de la lista, con tu nombre.";
             }
         } else {
-            // Ronda 2: repaso ligero (tocar Comentar → escribir → mensaje final)
+            // Ronda 2: comentar otra vez y aprender a reaccionar, responder y borrar
+            const menuAbierto = $("#fbCommentMenu") && $("#fbCommentMenu").classList.contains("activa");
+
             if (subPasoNivel3 === 1) {
                 instruccion = estaAbierto
-                    ? "Escribe un comentario o toca una frase sugerida para responder."
-                    : `¡Practiquemos una vez más! Toca 'Comentar' en la publicación de ${autorObjetivoN3}.`;
+                    ? "Toca el cuadro blanco de abajo y escribe tu comentario."
+                    : `¡Practiquemos una vez más! Toca 'Comentar' en la publicación de ${autorObjetivoN3}, abajo en el centro.`;
             } else if (subPasoNivel3 === 2) {
                 instruccion = inputVal.length > 0
-                    ? "Toca el botón azul de la flecha para enviar tu comentario."
-                    : "Escribe lo que deseas responder o toca una de las frases sugeridas.";
+                    ? "Toca la flecha azul de la derecha para enviar tu comentario."
+                    : "Escribe lo que deseas responder en el cuadro de abajo, o toca una de las frases sugeridas.";
             } else if (subPasoNivel3 === 3) {
-                instruccion = "¡Excelente! Ya sabes comentar en las publicaciones de tus amigos.";
+                instruccion = "¿Te gustó lo que escribió otra persona? Toca 'Me gusta', el texto pequeño que hay justo debajo de su mensaje.";
+            } else if (subPasoNivel3 === 4) {
+                instruccion = "También puedes contestarle: toca 'Responder', al lado de 'Me gusta', debajo del mensaje de esa persona.";
+            } else if (subPasoNivel3 === 5) {
+                instruccion = inputVal.length > 0
+                    ? "Toca la flecha azul para enviar tu respuesta."
+                    : "Escribe tu respuesta en el cuadro de abajo y luego toca la flecha azul.";
+            } else if (subPasoNivel3 === 6) {
+                instruccion = menuAbierto
+                    ? "Toca 'Eliminar', la opción roja, para borrar tu comentario."
+                    : "¿Te arrepentiste de lo que escribiste? Toca los tres puntitos que hay a la derecha de tu propio comentario.";
+            } else if (subPasoNivel3 === 7) {
+                instruccion = "¡Excelente! Ya sabes comentar, reaccionar, responder y borrar lo que escribes.";
             }
         }
     } else if (nivelActual === "agregar-amigo") {
@@ -1394,22 +2241,28 @@ function actualizarBarraInstrucciones(autoSpeak = true) {
             // Ronda 1: identificar pestaña → tocar Agregar en Rosa Elena → confirmación
             if (subPasoNivel4 === 1) {
                 instruccion = estaEnAmigos
-                    ? "Encuentra a Rosa Elena en 'Personas que quizás conozcas' y toca el botón azul 'Agregar a amigos'."
-                    : "Toca el icono de 'Amigos' en la barra superior (el que tiene dos personas).";
+                    ? "Busca a Rosa Elena en la lista 'Personas que quizás conozcas' y toca su botón azul 'Agregar a amigos'."
+                    : "Toca el icono de 'Amigos' en la barra de arriba: es el segundo, el de las dos personitas.";
             } else if (subPasoNivel4 === 2) {
-                instruccion = "Encuentra a Rosa Elena en 'Personas que quizás conozcas' y toca el botón azul 'Agregar a amigos'.";
+                instruccion = "Busca a Rosa Elena en la lista 'Personas que quizás conozcas' y toca su botón azul 'Agregar a amigos'.";
             } else if (subPasoNivel4 === 3) {
-                instruccion = "¡Tu solicitud ya se envió!";
+                instruccion = "Enviada. Fíjate que el botón ahora dice 'Solicitud enviada': eso significa que Rosa todavía no la acepta. Si te equivocaste de persona, tócalo otra vez para cancelarla. Pruébalo.";
+            } else if (subPasoNivel4 === 4) {
+                instruccion = "Eso es: la solicitud se canceló y el botón volvió a 'Agregar a amigos'. Ahora vuelve a enviársela a Rosa.";
+            } else if (subPasoNivel4 === 5) {
+                instruccion = "Ya está enviada otra vez. Ahora hay que esperar: Rosa tiene que aceptarla desde su teléfono.";
+            } else if (subPasoNivel4 === 6) {
+                instruccion = "¡Rosa aceptó tu solicitud! Mira su tarjeta: ya son amigos. Así te enteras, y también te llega un aviso en la campana de arriba.";
             }
         } else {
-            // Ronda 2: repaso ligero, ya en la pestaña de Amigos. Cualquiera de los dos
-            // perfiles restantes (Carlos Méndez o Beatriz Soto) es válido para avanzar.
+            // Ronda 2: el otro lado de la amistad. Arriba, en 'Solicitudes de
+            // amistad', están las personas que te han pedido ser tus amigos.
             if (subPasoNivel4 === 1) {
                 instruccion = "Toca el icono de 'Amigos' en la barra superior (el que tiene dos personas).";
             } else if (subPasoNivel4 === 2) {
-                instruccion = "¡Practiquemos una vez más! Toca 'Agregar a amigos' en cualquiera de los perfiles sugeridos.";
+                instruccion = "Tu solicitud ya salió. Ahora mira arriba: Lucía te envió una a ti. Toca 'Confirmar' para aceptarla.";
             } else if (subPasoNivel4 === 3) {
-                instruccion = "¡Excelente! Ya sabes agregar amigos en Facebook.";
+                instruccion = "¡Excelente! Ya sabes enviar solicitudes y aceptar las que te llegan.";
             }
         }
     } else if (nivelActual === "ver-reels") {
@@ -1419,33 +2272,79 @@ function actualizarBarraInstrucciones(autoSpeak = true) {
         if (subPasoNivel5 === 1 || !estaEnReels) {
             instruccion = "Toca el icono de Video en la barra superior para entrar a los Reels.";
         } else if (subPasoNivel5 === 2) {
-            if (rondaNivel5 === 1) {
-                instruccion = "Desliza el video hacia arriba para ver el siguiente Reel.";
-            } else if (rondaNivel5 === 2) {
-                instruccion = "¡Bien hecho! Ahora desliza hacia arriba una vez más para ver el siguiente Reel.";
-            } else {
-                instruccion = "¡Practiquemos algo nuevo! Ahora desliza hacia abajo para volver al Reel anterior.";
-            }
+            instruccion = rondaNivel5 === 1
+                ? "Desliza el video hacia arriba para ver el siguiente Reel."
+                : "¡Bien hecho! Ahora desliza hacia abajo para volver al Reel anterior.";
         } else if (subPasoNivel5 === 3) {
-            if (rondaNivel5 === 1) {
-                instruccion = "¡Muy bien! Así se navega entre Reels.";
-            } else if (rondaNivel5 === 2) {
-                instruccion = "¡Perfecto! Ya dominas deslizar hacia arriba.";
+            instruccion = rondaNivel5 === 1
+                ? "¡Muy bien! Así se pasa al siguiente Reel."
+                : "¡Perfecto! Ya sabes moverte entre Reels en las dos direcciones.";
+        } else if (subPasoNivel5 === 4) {
+            instruccion = "¿Te gustó este Reel? Toca el corazón blanco de la columna de la derecha, el de más arriba.";
+        } else if (subPasoNivel5 === 5) {
+            instruccion = "Si quieres que te salgan más videos de esta cuenta, toca el botón 'Seguir' que está abajo a la izquierda, al lado del nombre.";
+        } else if (subPasoNivel5 === 6) {
+            const panelComentarios = $("#fbReelCommentsPanel");
+            const abierto = panelComentarios && panelComentarios.classList.contains("activa");
+            const val = $("#fbReelCommentInput") ? $("#fbReelCommentInput").value.trim() : "";
+            if (!abierto) {
+                instruccion = "Ahora deja un comentario: toca el globo de diálogo de la derecha, el que está debajo del corazón.";
             } else {
-                instruccion = "¡Excelente! Ya sabes navegar por los Reels de Facebook.";
+                instruccion = val.length > 0
+                    ? "Ahora toca la flecha azul de la derecha, al lado del cuadro, para publicar tu comentario."
+                    : "Toca el cuadro blanco de abajo que dice 'Escribe un comentario' y escribe lo que quieras decir.";
             }
+        } else if (subPasoNivel5 === 7) {
+            instruccion = "Ahí está tu comentario, en la lista. Ahora dale 'Me gusta' al comentario de otra persona: toca donde dice 'Me gusta', debajo de su mensaje.";
+        } else if (subPasoNivel5 === 8) {
+            const val = $("#fbReelCommentInput") ? $("#fbReelCommentInput").value.trim() : "";
+            if (respondiendoAComentarioReel !== null) {
+                instruccion = val.length > 0
+                    ? "Toca la flecha azul para enviar tu respuesta."
+                    : "Escribe tu respuesta en el cuadro de abajo y luego toca la flecha azul.";
+            } else {
+                instruccion = "También puedes contestarle: toca 'Responder' debajo del comentario de esa persona.";
+            }
+        } else if (subPasoNivel5 === 9) {
+            instruccion = "Ya contestaste. Por último vamos a compartirlo: cierra los comentarios con la equis de arriba y toca la flecha de compartir, la de más abajo de la columna derecha.";
+        } else if (subPasoNivel5 === 10) {
+            instruccion = "Elige por dónde mandarlo. Toca 'Enviar por Messenger', la primera opción.";
+        } else if (subPasoNivel5 === 11) {
+            instruccion = "Este es Messenger. Toca el botón azul 'Enviar' de la persona a la que se lo quieras mandar.";
+        } else if (subPasoNivel5 === 12) {
+            instruccion = "¡Excelente! Ya sabes usar los Reels de Facebook.";
         }
     }
 
     textEl.textContent = instruccion;
+    ajustarAlturaNico();
 
     if (autoSpeak && instruccion !== ultimaInstruccionHablada) {
-        let instruccionLimpia = instruccion.replace(/[\uE000-\uF8FF]|\uD83C[\uDC00-\uDFFF]|\uD83D[\uDC00-\uDFFF]|[\u2011-\u26FF]|\uD83E[\uDD10-\uDDFF]/g, "");
         ultimaInstruccionHablada = instruccion;
-        speak(instruccionLimpia);
+        speak(limpiarEmojisFb(instruccion));
     }
 
     actualizarGuiaVisualFacebook();
+}
+
+/**
+ * Resalta un objetivo y lo centra en pantalla. El servicio compartido solo
+ * hace scroll "nearest", que deja el objetivo pegado al borde o directamente
+ * fuera de la vista cuando el feed acaba de renderizarse.
+ */
+function enfocarObjetivo(selector, opciones = {}) {
+    resaltarElemento(selector, opciones);
+
+    const el = document.querySelector(selector);
+    if (!el) return;
+
+    // scrollIntoView fuerza el cálculo de posiciones, así que no hace falta
+    // esperar a un fotograma para que mida bien
+    try {
+        el.scrollIntoView({ behavior: "smooth", block: "center", inline: "nearest" });
+    } catch (e) {
+        el.scrollIntoView(false);
+    }
 }
 
 function actualizarGuiaVisualFacebook(idNivel) {
@@ -1456,38 +2355,43 @@ function actualizarGuiaVisualFacebook(idNivel) {
         const estaAbierto = modal && modal.classList.contains("activa");
         const textareaVal = $("#fbCreatePostTextarea") ? $("#fbCreatePostTextarea").value.trim() : "";
 
-        if (!estaAbierto) {
-            resaltarElemento(".fb-create-post");
+        if (rondaNivel1 === 1 && subPasoNivel1 === 8) {
+            // Ya publicó: el objetivo es su publicación recién creada, no el
+            // cuadro de escribir (que es lo que se resaltaba antes por error)
+            enfocarObjetivo("#fbPostsContainer .fb-post:first-child");
+        } else if (!estaAbierto) {
+            enfocarObjetivo(".fb-create-post");
         } else if (rondaNivel1 === 1) {
             if (subPasoNivel1 === 2) {
-                resaltarElemento("#fbCreatePostTextarea");
+                enfocarObjetivo("#fbCreatePostTextarea");
             } else if (subPasoNivel1 === 3) {
-                resaltarElemento(textareaVal.length > 0 ? "#fbAddonFotoBtn" : "#fbCreatePostTextarea");
+                enfocarObjetivo(textareaVal.length > 0 ? "#fbAddonFotoBtn" : "#fbCreatePostTextarea");
             } else if (subPasoNivel1 === 4) {
-                resaltarElemento("#fbPhotoPickerPopup .fb-photo-picker-option");
+                enfocarObjetivo("#fbPhotoPickerPopup .fb-photo-picker-option");
             } else if (subPasoNivel1 === 5) {
-                resaltarElemento("#fbAddonTagBtn");
+                enfocarObjetivo("#fbAddonTagBtn");
             } else if (subPasoNivel1 === 6) {
-                resaltarElemento("#fbTagPickerPopup .fb-tag-option");
+                enfocarObjetivo("#fbTagPickerPopup .fb-tag-option");
             } else if (subPasoNivel1 === 7) {
-                resaltarElemento("#fbCreatePostSubmitBtn");
+                enfocarObjetivo("#fbCreatePostSubmitBtn");
             } else if (subPasoNivel1 === 8) {
-                resaltarElemento("#fbPostsContainer .fb-post:first-child", { scroll: true });
+                enfocarObjetivo("#fbPostsContainer .fb-post:first-child");
             }
         } else {
             if (textareaVal.length > 0) {
-                resaltarElemento("#fbCreatePostSubmitBtn");
+                enfocarObjetivo("#fbCreatePostSubmitBtn");
             } else {
-                resaltarElemento("#fbCreatePostTextarea");
+                enfocarObjetivo("#fbCreatePostTextarea");
             }
         }
     } else if (idNivel === "reaccionar-foto") {
         if (subPasoNivel2 === 1) {
-            resaltarElemento(`#fbFeed .fb-post[data-post-id='${postObjetivoNivel2}'] .fb-like-btn`);
+            // scroll: en la ronda 2 el objetivo es la 3ª publicación, que queda fuera de pantalla
+            enfocarObjetivo(`#fbFeed .fb-post[data-post-id='${postObjetivoNivel2}'] .fb-like-btn`);
         } else if (subPasoNivel2 === 2) {
-            resaltarElemento(`#fbReactions-${postObjetivoNivel2}`);
+            enfocarObjetivo(`#fbReactions-${postObjetivoNivel2}`);
         } else if (subPasoNivel2 === 3) {
-            resaltarElemento(`#fbFeed .fb-post[data-post-id='${postObjetivoNivel2}'] .fb-post-reactions-summary`, { scroll: true });
+            enfocarObjetivo(`#fbFeed .fb-post[data-post-id='${postObjetivoNivel2}'] .fb-post-reactions-summary`);
         }
     } else if (idNivel === "comentar-publicacion") {
         const modal = $("#fbCommentsModal");
@@ -1497,20 +2401,31 @@ function actualizarGuiaVisualFacebook(idNivel) {
         if (!estaAbierto || subPasoNivel3 === 1) {
             // .fb-open-comments también la comparten el resumen de reacciones y el contador de
             // comentarios (ambos abren el modal en uso libre); aquí se resalta solo el botón real.
-            resaltarElemento(`#fbFeed .fb-post[data-post-id='${postObjetivoNivel3}'] .fb-action-btn.fb-open-comments`);
+            // scroll: en la ronda 2 el objetivo es la 4ª publicación, que queda fuera de pantalla
+            enfocarObjetivo(`#fbFeed .fb-post[data-post-id='${postObjetivoNivel3}'] .fb-action-btn.fb-open-comments`);
         } else if (rondaNivel3 === 1) {
             if (subPasoNivel3 === 2) {
-                resaltarElemento("#fbCommentInput");
+                enfocarObjetivo("#fbCommentInput");
             } else if (subPasoNivel3 === 3) {
-                resaltarElemento(inputVal.length > 0 ? "#fbCommentSend" : "#fbCommentInput");
+                enfocarObjetivo(inputVal.length > 0 ? "#fbCommentSend" : "#fbCommentInput");
             } else if (subPasoNivel3 === 4) {
-                resaltarElemento("#fbCommentsList .fb-comment:last-child", { scroll: true });
+                enfocarObjetivo("#fbCommentsList .fb-comment:last-child");
             }
+        } else if (subPasoNivel3 === 3) {
+            // Primer comentario que no sea el tuyo
+            enfocarObjetivo("#fbCommentsList .fb-comment:not(.fb-comment-mio) .fb-comment-like-btn");
+        } else if (subPasoNivel3 === 4) {
+            enfocarObjetivo("#fbCommentsList .fb-comment:not(.fb-comment-mio) .fb-comment-reply-btn");
+        } else if (subPasoNivel3 === 5) {
+            enfocarObjetivo(inputVal.length > 0 ? "#fbCommentSend" : "#fbCommentInput");
+        } else if (subPasoNivel3 === 6) {
+            const menuAbierto = $("#fbCommentMenu") && $("#fbCommentMenu").classList.contains("activa");
+            enfocarObjetivo(menuAbierto ? "#fbCommentMenuEliminar" : "#fbCommentsList .fb-comment-mio .fb-comment-menu-btn");
         } else {
             if (inputVal.length > 0) {
-                resaltarElemento("#fbCommentSend");
+                enfocarObjetivo("#fbCommentSend");
             } else {
-                resaltarElemento("#fbCommentInput");
+                enfocarObjetivo("#fbCommentInput");
             }
         }
     } else if (idNivel === "agregar-amigo") {
@@ -1518,27 +2433,61 @@ function actualizarGuiaVisualFacebook(idNivel) {
         const estaEnAmigos = friendsView && friendsView.style.display !== "none";
 
         if (!estaEnAmigos || (rondaNivel4 === 1 && subPasoNivel4 === 1)) {
-            resaltarElemento(".fb-nav-tab[data-tab='amigos']");
+            enfocarObjetivo(".fb-nav-tab[data-tab='amigos']");
+        } else if (rondaNivel4 === 1 && (subPasoNivel4 === 5 || subPasoNivel4 === 6)) {
+            // Esperando respuesta o ya aceptada: se mira la tarjeta completa
+            enfocarObjetivo("#fbFriendCardRosa");
         } else if (rondaNivel4 === 1) {
-            resaltarElemento("#fbAddFriendBtn-rosa");
+            enfocarObjetivo("#fbAddFriendBtn-rosa");
         } else if (subPasoNivel4 === 2) {
-            // Cualquiera de los dos perfiles restantes es válido: se resaltan ambos botones.
-            resaltarElemento(".fb-btn-add-friend[data-friend='carlos'], .fb-btn-add-friend[data-friend='beatriz']");
+            enfocarObjetivo(".fb-request-card[data-request='lucia'] .fb-btn-confirm-request");
         }
     } else if (idNivel === "ver-reels") {
         const reelsView = $("#fbReelsView");
         const estaEnReels = reelsView && reelsView.style.display !== "none";
 
         if (subPasoNivel5 === 1 || !estaEnReels) {
-            resaltarElemento(".fb-nav-tab[data-tab='video']");
-        } else {
-            // Sin botón de respaldo: se resalta el video completo, la interacción es
-            // el gesto de deslizar (indicado además por el aviso #fbReelSwipeHint).
+            enfocarObjetivo(".fb-nav-tab[data-tab='video']");
+        } else if (subPasoNivel5 === 2 || subPasoNivel5 === 3) {
+            // Aquí la interacción es el gesto de deslizar, señalado además por
+            // el aviso #fbReelSwipeHint
             resaltarElemento("#fbReelPlayer");
+        } else if (subPasoNivel5 === 4) {
+            resaltarElemento("#fbReelLikeBtn");
+        } else if (subPasoNivel5 === 5) {
+            resaltarElemento("#fbReelFollowBtn");
+        } else if (subPasoNivel5 === 6) {
+            const panel = $("#fbReelCommentsPanel");
+            const abierto = panel && panel.classList.contains("activa");
+            if (abierto) {
+                const val = $("#fbReelCommentInput") ? $("#fbReelCommentInput").value.trim() : "";
+                resaltarElemento(val.length > 0 ? "#fbReelCommentSend" : "#fbReelCommentInput");
+            } else {
+                resaltarElemento("#fbReelCommentBtn");
+            }
+        } else if (subPasoNivel5 === 7) {
+            resaltarElemento("#fbReelCommentsList .fb-reel-comment:not(.mio) .fb-reel-comment-like");
+        } else if (subPasoNivel5 === 8) {
+            if (respondiendoAComentarioReel !== null) {
+                const val = $("#fbReelCommentInput") ? $("#fbReelCommentInput").value.trim() : "";
+                resaltarElemento(val.length > 0 ? "#fbReelCommentSend" : "#fbReelCommentInput");
+            } else {
+                resaltarElemento("#fbReelCommentsList .fb-reel-comment:not(.mio) .fb-reel-comment-responder");
+            }
+        } else if (subPasoNivel5 === 9) {
+            const panel = $("#fbReelCommentsPanel");
+            const abierto = panel && panel.classList.contains("activa");
+            resaltarElemento(abierto ? "#fbReelCommentsClose" : "#fbReelShareBtn");
+        } else if (subPasoNivel5 === 10) {
+            resaltarElemento("#fbReelShareOptions .fb-reel-share-option:first-child");
+        } else if (subPasoNivel5 === 11) {
+            resaltarElemento("#fbMessengerLista .fb-messenger-enviar");
+        } else {
+            limpiarResaltados();
         }
         actualizarSwipeHintReel();
     } else {
-        resaltarElemento("#fbFeed .fb-post:first-child");
+        enfocarObjetivo("#fbFeed .fb-post:first-child");
     }
 }
 
@@ -1573,34 +2522,38 @@ function inicializarListeners() {
         };
     });
 
-    // Botones de agregar amigo
-    const addFriendBtns = document.querySelectorAll(".fb-btn-add-friend");
-    addFriendBtns.forEach(btn => {
-        btn.onclick = (e) => {
-            e.stopPropagation();
-            manejarAgregarAmigo(btn.dataset.friend, btn);
-        };
-    });
-
-    // Botones de eliminar sugerencia de amigo
-    const deleteFriendBtns = document.querySelectorAll(".fb-btn-delete-friend");
-    deleteFriendBtns.forEach(btn => {
-        btn.onclick = (e) => {
-            e.stopPropagation();
-            const card = btn.closest(".fb-friend-card");
-            if (card) {
-                card.style.opacity = "0";
-                setTimeout(() => card.remove(), 200);
+    // Agregar / cancelar / descartar sugerencias de amigos.
+    // Por delegación: las tarjetas se vuelven a dibujar al reiniciar el nivel
+    // o al aceptarse una solicitud, y con enlaces directos se quedaban muertas.
+    const vistaAmigos = $("#fbFriendsView");
+    if (vistaAmigos) {
+        vistaAmigos.addEventListener("click", (e) => {
+            const agregar = e.target.closest(".fb-btn-add-friend");
+            if (agregar) {
+                e.stopPropagation();
+                manejarAgregarAmigo(agregar.dataset.friend, agregar);
+                return;
             }
-        };
-    });
+
+            const descartar = e.target.closest(".fb-btn-delete-friend");
+            if (descartar) {
+                e.stopPropagation();
+                const card = descartar.closest(".fb-friend-card");
+                if (card) {
+                    card.style.opacity = "0";
+                    setTimeout(() => card.remove(), 200);
+                }
+            }
+        });
+    }
 
     // ---- Nivel 5: Reels — navegación por gesto de deslizar (sin botón de respaldo) ----
     const reelPlayer = $("#fbReelPlayer");
     if (reelPlayer) {
         const UMBRAL_SWIPE = 40; // px mínimos para considerar el gesto intencional
         const dentroDeAccionesOInfo = (target) =>
-            target.closest(".fb-reel-actions") || target.closest(".fb-reel-info");
+            target.closest(".fb-reel-actions") || target.closest(".fb-reel-info") ||
+            target.closest(".fb-reel-fallback-nav");
 
         const manejarSwipeReel = (deltaY) => {
             if (deltaY <= -UMBRAL_SWIPE) {
@@ -1616,11 +2569,35 @@ function inicializarListeners() {
             reelSwipeStartY = e.touches[0].clientY;
         }, { passive: true });
 
+        // Sin esto, deslizar hacia abajo activaba el "tirar para recargar" del
+        // navegador y se recargaba la aplicación entera a mitad del nivel.
+        reelPlayer.addEventListener("touchmove", (e) => {
+            if (reelSwipeStartY !== null && e.cancelable) e.preventDefault();
+        }, { passive: false });
+
         reelPlayer.addEventListener("touchend", (e) => {
             if (reelSwipeStartY === null) return;
             manejarSwipeReel(e.changedTouches[0].clientY - reelSwipeStartY);
             reelSwipeStartY = null;
         }, { passive: true });
+
+        // Flechas de respaldo: llaman a las mismas funciones que el gesto, así
+        // que la secuencia guiada del nivel avanza exactamente igual
+        const prevBtn = $("#fbReelPrevBtn");
+        if (prevBtn) {
+            prevBtn.onclick = (e) => {
+                e.stopPropagation();
+                irReelAnterior();
+            };
+        }
+
+        const nextBtn = $("#fbReelNextBtn");
+        if (nextBtn) {
+            nextBtn.onclick = (e) => {
+                e.stopPropagation();
+                irReelSiguiente();
+            };
+        }
 
         // Arrastre con mouse (equivalente de escritorio)
         reelPlayer.addEventListener("mousedown", (e) => {
@@ -1634,6 +2611,67 @@ function inicializarListeners() {
             reelArrastrandoMouse = false;
             manejarSwipeReel(e.clientY - reelSwipeStartY);
             reelSwipeStartY = null;
+        });
+    }
+
+    const reelFollowBtn = $("#fbReelFollowBtn");
+    if (reelFollowBtn) reelFollowBtn.onclick = alternarSeguirReel;
+
+    const reelCommentBtn = $("#fbReelCommentBtn");
+    if (reelCommentBtn) reelCommentBtn.onclick = abrirComentariosReel;
+
+    const reelCommentsClose = $("#fbReelCommentsClose");
+    if (reelCommentsClose) reelCommentsClose.onclick = cerrarComentariosReel;
+
+    const reelCommentSend = $("#fbReelCommentSend");
+    if (reelCommentSend) reelCommentSend.onclick = enviarComentarioReel;
+
+    const reelCommentInput = $("#fbReelCommentInput");
+    if (reelCommentInput) {
+        reelCommentInput.oninput = () => actualizarGuiaVisualFacebook();
+        reelCommentInput.onkeypress = (e) => { if (e.key === "Enter") enviarComentarioReel(); };
+    }
+
+    const reelShareBtn = $("#fbReelShareBtn");
+    if (reelShareBtn) reelShareBtn.onclick = abrirCompartirReel;
+
+    const reelShareClose = $("#fbReelShareClose");
+    if (reelShareClose) reelShareClose.onclick = cerrarCompartirReel;
+
+    // Me gusta y responder dentro de los comentarios del Reel
+    const listaComentariosReel = $("#fbReelCommentsList");
+    if (listaComentariosReel) {
+        listaComentariosReel.addEventListener("click", (e) => {
+            const like = e.target.closest(".fb-reel-comment-like");
+            if (like) {
+                alternarLikeComentarioReel(parseInt(like.dataset.indice, 10));
+                return;
+            }
+
+            const responder = e.target.closest(".fb-reel-comment-responder");
+            if (responder) {
+                responderComentarioReel(parseInt(responder.dataset.indice, 10));
+            }
+        });
+    }
+
+    // Messenger
+    const messengerVolver = $("#fbMessengerVolver");
+    if (messengerVolver) messengerVolver.onclick = cerrarMessenger;
+
+    const messengerLista = $("#fbMessengerLista");
+    if (messengerLista) {
+        messengerLista.addEventListener("click", (e) => {
+            const btn = e.target.closest(".fb-messenger-enviar");
+            if (btn) enviarPorMessenger(btn);
+        });
+    }
+
+    const reelShareOptions = $("#fbReelShareOptions");
+    if (reelShareOptions) {
+        reelShareOptions.addEventListener("click", (e) => {
+            const opcion = e.target.closest(".fb-reel-share-option");
+            if (opcion) compartirReel(opcion.dataset.destino);
         });
     }
 
@@ -1652,8 +2690,11 @@ function inicializarListeners() {
                 const current = REELS_DATA[reelActualIdx].likes;
                 likeCount.textContent = (current + 1).toLocaleString("es-MX");
             }
-            // "Me gusta" queda funcional en pantalla pero no forma parte de la
-            // secuencia guiada del Nivel 5 (ese aprendizaje ya se cubrió en el Nivel 2).
+
+            if (nivelActual === "ver-reels" && subPasoNivel5 === 4) {
+                subPasoNivel5 = 5;
+                actualizarBarraInstrucciones(true);
+            }
         };
     }
 
@@ -1830,10 +2871,67 @@ function inicializarListeners() {
         inputComentario.onkeypress = (e) => { if (e.key === "Enter") enviarComentario(); };
     }
 
+    // ---- Nivel 3: Me gusta y borrado dentro de la lista de comentarios ----
+    const listaComentarios = $("#fbCommentsList");
+    if (listaComentarios) {
+        listaComentarios.addEventListener("click", (e) => {
+            const like = e.target.closest(".fb-comment-like-btn");
+            if (like) {
+                alternarLikeComentario(parseInt(like.dataset.indice, 10));
+                return;
+            }
+
+            const responder = e.target.closest(".fb-comment-reply-btn");
+            if (responder) {
+                responderComentario(parseInt(responder.dataset.indice, 10));
+                return;
+            }
+
+            const menuBtn = e.target.closest(".fb-comment-menu-btn");
+            if (menuBtn) {
+                abrirMenuComentario(parseInt(menuBtn.dataset.indice, 10));
+            }
+        });
+    }
+
+    // ---- Nivel 4: solicitudes de amistad recibidas ----
+    const listaSolicitudes = $("#fbRequestsList");
+    if (listaSolicitudes) {
+        listaSolicitudes.addEventListener("click", (e) => {
+            const confirmar = e.target.closest(".fb-btn-confirm-request");
+            if (confirmar) {
+                responderSolicitud(confirmar.dataset.request, true);
+                return;
+            }
+
+            const eliminar = e.target.closest(".fb-btn-delete-request");
+            if (eliminar) {
+                responderSolicitud(eliminar.dataset.request, false);
+            }
+        });
+    }
+
+    const menuEliminar = $("#fbCommentMenuEliminar");
+    if (menuEliminar) menuEliminar.onclick = eliminarComentarioPropio;
+
+    const menuCancelar = $("#fbCommentMenuCancelar");
+    if (menuCancelar) {
+        menuCancelar.onclick = () => {
+            cerrarMenuComentario();
+            actualizarBarraInstrucciones(false);
+        };
+    }
+
     // Feed delegado
     const feed = $("#fbFeed");
     if (feed) {
         feed.addEventListener("click", (e) => {
+            // Click generado al soltar el gesto de arrastre: ya se resolvió en pointerup
+            if (Date.now() - momentoFinGestoReaccion < 400) {
+                e.stopPropagation();
+                return;
+            }
+
             const reaccionOption = e.target.closest(".fb-reaction-option");
             if (reaccionOption) {
                 aplicarReaccion(reaccionOption.dataset.emoji, parseInt(reaccionOption.dataset.postId));
@@ -1863,29 +2961,65 @@ function inicializarListeners() {
             }
         });
 
-        // Hold para reacciones - Touch
-        feed.addEventListener("touchstart", (e) => {
+        // ---- Gesto de reacción igual que en Facebook real ----
+        // Se deja presionado "Me gusta", aparecen las reacciones, se arrastra el
+        // dedo (o el ratón) sin soltar hasta la que se quiere y al soltar se
+        // aplica esa. Un toque corto sigue funcionando como "Me gusta" normal.
+        feed.addEventListener("pointerdown", (e) => {
             const likeBtn = e.target.closest(".fb-like-btn");
             if (!likeBtn) return;
-            const postId = parseInt(likeBtn.dataset.postId);
-            reactionHoldTimer = setTimeout(() => mostrarReacciones(postId), 600);
-        }, { passive: true });
 
-        feed.addEventListener("touchend", () => {
+            gestoReaccionPostId = parseInt(likeBtn.dataset.postId);
+            gestoReaccionActivo = false;
+
             clearTimeout(reactionHoldTimer);
-            reactionHoldTimer = null;
-        }, { passive: true });
-
-        // Hold para reacciones - Mouse
-        feed.addEventListener("mousedown", (e) => {
-            const likeBtn = e.target.closest(".fb-like-btn");
-            if (!likeBtn) return;
-            reactionHoldTimer = setTimeout(() => mostrarReacciones(parseInt(likeBtn.dataset.postId)), 600);
+            reactionHoldTimer = setTimeout(() => {
+                gestoReaccionActivo = true;
+                mostrarReacciones(gestoReaccionPostId);
+            }, 500);
         });
 
-        feed.addEventListener("mouseup", () => {
+        // El movimiento se escucha en window: el dedo sale del botón al subir
+        // hacia las reacciones, y en móvil el evento sigue yendo al elemento
+        // donde empezó el gesto.
+        window.addEventListener("pointermove", (e) => {
+            if (!gestoReaccionActivo) return;
+            e.preventDefault();
+            enfocarOpcionReaccion(opcionReaccionDesdePunto(e.clientX, e.clientY));
+        }, { passive: false });
+
+        window.addEventListener("pointerup", (e) => {
             clearTimeout(reactionHoldTimer);
             reactionHoldTimer = null;
+
+            if (!gestoReaccionActivo) {
+                gestoReaccionPostId = null;
+                return;
+            }
+
+            const opcion = opcionReaccionDesdePunto(e.clientX, e.clientY);
+            enfocarOpcionReaccion(null);
+            gestoReaccionActivo = false;
+            gestoReaccionPostId = null;
+
+            // Tras soltar, el navegador dispara un click; se ignora durante un
+            // instante para que no vuelva a alternar la reacción recién puesta.
+            momentoFinGestoReaccion = Date.now();
+
+            if (opcion) {
+                aplicarReaccion(opcion.dataset.emoji, parseInt(opcion.dataset.postId));
+            }
+            // Si soltó fuera de las reacciones, el panel se queda abierto para
+            // que pueda elegir tocando, como también permite Facebook.
+        });
+
+        // Si el gesto se cancela (por ejemplo al entrar una llamada), se limpia
+        window.addEventListener("pointercancel", () => {
+            clearTimeout(reactionHoldTimer);
+            reactionHoldTimer = null;
+            enfocarOpcionReaccion(null);
+            gestoReaccionActivo = false;
+            gestoReaccionPostId = null;
         });
     }
 
@@ -1919,9 +3053,12 @@ function enviarComentario() {
     const texto = input.value.trim();
 
     const post = POSTS_DATA.find(p => p.id === activeCommentsPostId) || POSTS_DATA[0];
+    const eraRespuesta = respondiendoAComentario !== null;
     if (post) {
         if (!post.comentariosData) post.comentariosData = [];
-        post.comentariosData.push({
+        const nuevoComentario = {
+            esMio: true,
+            esRespuesta: eraRespuesta,
             autor: "Ramona Pico",
             iniciales: "RP",
             avatar: "./assets/img/facebook/user_profile.png",
@@ -1929,36 +3066,25 @@ function enviarComentario() {
             texto: texto,
             tiempo: "Ahora",
             likes: 0
-        });
+        };
+
+        if (eraRespuesta) {
+            // La respuesta queda justo debajo del comentario contestado
+            post.comentariosData.splice(respondiendoAComentario + 1, 0, nuevoComentario);
+        } else {
+            post.comentariosData.push(nuevoComentario);
+        }
         post.comentarios = (post.comentarios || 0) + 1;
     }
 
-    const lista = $("#fbCommentsList");
-    if (lista) {
-        const el = document.createElement("div");
-        el.className = "fb-comment";
-        el.innerHTML = `
-            <div class="fb-comment-avatar" style="background:#1877f2;">
-                <img src="./assets/img/facebook/user_profile.png" alt="Tú" class="fb-avatar-img" onerror="this.style.display='none'; this.parentElement.innerText='RP'">
-            </div>
-            <div class="fb-comment-right">
-                <div class="fb-comment-bubble">
-                    <div class="fb-comment-author">Ramona Pico</div>
-                    <div class="fb-comment-text">${texto}</div>
-                </div>
-                <div class="fb-comment-footer">
-                    <span class="fb-comment-time">Ahora</span>
-                    <button class="fb-comment-action">Me gusta</button>
-                    <button class="fb-comment-action">Responder</button>
-                </div>
-            </div>
-        `;
-        lista.appendChild(el);
-        lista.scrollTop = lista.scrollHeight;
-    }
-
     input.value = "";
+    cancelarRespuestaComentario();
+    renderizarComentariosModal();
     renderizarPublicaciones();
+
+    // Dejar a la vista lo que acaba de escribir
+    const mio = $("#fbCommentsList .fb-comment-mio:last-of-type");
+    if (mio) mio.scrollIntoView({ behavior: "smooth", block: "center" });
 
     if (nivelActual === "comentar-publicacion" && activeCommentsPostId === postObjetivoNivel3) {
         if (rondaNivel3 === 1 && subPasoNivel3 === 3) {
@@ -1972,11 +3098,15 @@ function enviarComentario() {
 
                 rondaNivel3 = 2;
                 postObjetivoNivel3 = 4;
+                subPasoNivel3 = 1; // la ronda 2 empieza otra vez por tocar 'Comentar'
                 cerrarComentarios();
             }, 2600);
-        } else if (rondaNivel3 === 2 && subPasoNivel3 === 2) {
+        } else if (rondaNivel3 === 2 && subPasoNivel3 === 2 && !eraRespuesta) {
             subPasoNivel3 = 3;
-            completarNivelActual("¡Excelente! Ya sabes comentar en las publicaciones de tus amigos.");
+            actualizarBarraInstrucciones(true);
+        } else if (rondaNivel3 === 2 && subPasoNivel3 === 5 && eraRespuesta) {
+            subPasoNivel3 = 6;
+            actualizarBarraInstrucciones(true);
         }
     }
 }
@@ -2001,11 +3131,17 @@ export function iniciarSimulador(idNivel) {
     rondaNivel5 = 1;
     reelActualIdx = 0;
     reelLikeYaDado = false;
+    REELS_DATA = JSON.parse(JSON.stringify(REELS_ORIGINAL));
+    respondiendoAComentarioReel = null;
     reelSwipeStartY = null;
     reelArrastrandoMouse = false;
     activeCommentsPostId = 1;
     ultimaInstruccionHablada = "";
     reaccionesEstado = {};
+
+    // Feed limpio en cada intento: sin las publicaciones ni los comentarios
+    // que se crearon en partidas anteriores
+    POSTS_DATA = JSON.parse(JSON.stringify(POSTS_ORIGINAL));
 
     asegurarTemplateHTML();
 
@@ -2021,6 +3157,37 @@ export function iniciarSimulador(idNivel) {
         btn.innerHTML = `<svg viewBox="0 0 24 24"><path d="M15 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm-9-2V7H4v3H1v2h3v3h2v-3h3v-2H6zm9 4c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/></svg> Agregar a amigos`;
     });
     document.querySelectorAll(".fb-btn-delete-friend").forEach(btn => btn.style.display = "");
+
+    // Rosa vuelve a estar sin agregar (su tarjeta cambia al aceptar la solicitud)
+    const accionesRosa = $("#fbFriendCardRosa .fb-friend-actions");
+    if (accionesRosa) {
+        accionesRosa.innerHTML = `
+            <button id="fbAddFriendBtn-rosa" class="fb-btn-add-friend" data-friend="rosa" type="button">
+                <svg viewBox="0 0 24 24"><path d="M15 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm-9-2V7H4v3H1v2h3v3h2v-3h3v-2H6zm9 4c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/></svg>
+                Agregar a amigos
+            </button>
+            <button class="fb-btn-delete-friend" data-friend="rosa" type="button">Eliminar</button>
+        `;
+    }
+    const badgeNotif = document.querySelector('.fb-header-btn[aria-label="Notificaciones"] .fb-badge');
+    if (badgeNotif) badgeNotif.textContent = "3";
+
+    // Devolver las solicitudes recibidas a su estado inicial
+    document.querySelectorAll(".fb-request-card").forEach(card => {
+        const id = card.dataset.request;
+        const acciones = card.querySelector(".fb-friend-actions");
+        if (acciones) {
+            acciones.innerHTML = `
+                <button class="fb-btn-confirm-request" data-request="${id}" type="button">Confirmar</button>
+                <button class="fb-btn-delete-request" data-request="${id}" type="button">Eliminar</button>
+            `;
+        }
+    });
+    const contadorSolicitudes = $("#fbSolicitudesCount");
+    if (contadorSolicitudes) {
+        contadorSolicitudes.textContent = "2";
+        contadorSolicitudes.style.display = "";
+    }
     const badge = $("#fbAmigosBadge");
     if (badge) {
         badge.textContent = "2";
@@ -2029,6 +3196,10 @@ export function iniciarSimulador(idNivel) {
 
     renderizarPublicaciones();
     renderizarAdjuntosNivel1();
+
+    const feedEl = $("#fbFeed");
+    if (feedEl) feedEl.scrollTop = 0;
+    actualizarBotonesRespaldoReel();
 
     actualizarBarraInstrucciones(true);
 

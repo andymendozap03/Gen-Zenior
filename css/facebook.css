@@ -638,7 +638,7 @@
     box-shadow: 0 4px 20px rgba(0, 0, 0, 0.25);
     display: none;
     gap: 4px;
-    z-index: 200;
+    z-index: 250;
     animation: fbReactionIn 0.2s ease;
 }
 
@@ -1878,6 +1878,9 @@
     justify-content: center;
     background: #000;
     overflow: hidden;
+    /* Al arrastrar para deslizar no se debe ir seleccionando el texto del overlay */
+    user-select: none;
+    -webkit-user-select: none;
 }
 
 /* Video: cubre el player, object-fit cover */
@@ -2136,4 +2139,585 @@
     to {
         transform: translateX(-50%) translateY(6px);
     }
+}
+/* Flechas de respaldo del Nivel 5: alternativa al gesto de deslizar para quien
+   no consiga el arrastre. Discretas, para que el gesto siga siendo lo principal. */
+.fb-reel-fallback-nav {
+    position: absolute;
+    left: 12px;
+    top: 50%;
+    transform: translateY(-50%);
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    z-index: 15;
+}
+
+.fb-reel-fallback-btn {
+    width: 40px;
+    height: 40px;
+    border: none;
+    border-radius: 50%;
+    background: rgba(0, 0, 0, 0.45);
+    backdrop-filter: blur(4px);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+}
+
+.fb-reel-fallback-btn svg {
+    width: 24px;
+    height: 24px;
+    fill: #ffffff;
+}
+
+.fb-reel-fallback-btn:active {
+    background: rgba(0, 0, 0, 0.7);
+}
+
+/* ======================================================
+   GESTO DE REACCIÓN (mantener presionado y arrastrar)
+   ====================================================== */
+
+/* Sin esto, arrastrar el dedo sobre los botones iba seleccionando el texto
+   ("Me gusta", "Comentar"...) y el gesto se veía como una selección azul. */
+.fb-post-actions,
+.fb-reactions-popup,
+.fb-post-stats {
+    user-select: none;
+    -webkit-user-select: none;
+    -webkit-touch-callout: none;
+}
+
+/* El botón se queda con el gesto: así arrastrar hacia las reacciones no
+   desplaza el feed por debajo. */
+.fb-like-btn {
+    touch-action: none;
+}
+
+/* Reacción que está justo debajo del dedo mientras se arrastra */
+.fb-reaction-option.enfocada {
+    transform: translateY(-10px) scale(1.35);
+    z-index: 2;
+}
+
+.fb-reaction-option.enfocada span.label {
+    display: block;
+}
+
+/* ======================================================
+   SOLICITUDES DE AMISTAD RECIBIDAS (Nivel 4)
+   ====================================================== */
+.fb-friends-section-count {
+    background: #e41e3f;
+    color: #ffffff;
+    font-size: 12px;
+    font-weight: 800;
+    border-radius: 10px;
+    padding: 1px 8px;
+    margin-left: 8px;
+}
+
+.fb-requests-list {
+    background: #ffffff;
+    padding: 0 12px;
+}
+
+.fb-request-card {
+    display: flex;
+    gap: 12px;
+    padding: 12px 0;
+    border-bottom: 1px solid #f0f2f5;
+}
+
+.fb-btn-confirm-request {
+    flex: 1;
+    background: #1877f2;
+    color: #ffffff;
+    border: none;
+    border-radius: 6px;
+    padding: 8px 12px;
+    font-size: 14px;
+    font-weight: 700;
+    font-family: inherit;
+    cursor: pointer;
+}
+
+.fb-btn-delete-request {
+    flex: 1;
+    background: #e4e6eb;
+    color: #050505;
+    border: none;
+    border-radius: 6px;
+    padding: 8px 12px;
+    font-size: 14px;
+    font-weight: 700;
+    font-family: inherit;
+    cursor: pointer;
+}
+
+.fb-request-resultado {
+    font-size: 13px;
+    font-weight: 600;
+    color: #65676b;
+    padding: 6px 0;
+    display: inline-block;
+}
+
+.fb-request-resultado.aceptada {
+    color: #31a24c;
+}
+
+/* ======================================================
+   MENÚ DE UN COMENTARIO PROPIO (Nivel 3)
+   ====================================================== */
+.fb-comment {
+    position: relative;
+}
+
+.fb-comment-menu-btn {
+    position: absolute;
+    top: 2px;
+    right: 0;
+    width: 30px;
+    height: 30px;
+    border: none;
+    border-radius: 50%;
+    background: transparent;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+}
+
+.fb-comment-menu-btn svg {
+    width: 16px;
+    height: 16px;
+    fill: #65676b;
+}
+
+.fb-comment-mio .fb-comment-right {
+    padding-right: 30px;
+}
+
+.fb-comment-like-btn.activo {
+    color: #1877f2;
+    font-weight: 800;
+}
+
+.fb-comment-menu {
+    display: none;
+    position: absolute;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.4);
+    z-index: 400;
+    align-items: flex-end;
+}
+
+.fb-comment-menu.activa {
+    display: flex;
+}
+
+.fb-comment-menu-panel {
+    width: 100%;
+    background: #ffffff;
+    border-radius: 14px 14px 0 0;
+    padding: 10px;
+}
+
+.fb-comment-menu-opcion {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    width: 100%;
+    background: transparent;
+    border: none;
+    border-radius: 10px;
+    padding: 14px 12px;
+    font-family: inherit;
+    font-size: 16px;
+    font-weight: 600;
+    color: #050505;
+    text-align: left;
+    cursor: pointer;
+}
+
+.fb-comment-menu-opcion svg {
+    width: 22px;
+    height: 22px;
+    fill: #050505;
+    flex-shrink: 0;
+}
+
+.fb-comment-menu-eliminar,
+.fb-comment-menu-eliminar svg {
+    color: #e41e3f;
+    fill: #e41e3f;
+}
+
+/* ======================================================
+   PANELES DE UN REEL: COMENTARIOS Y COMPARTIR (Nivel 5)
+   ====================================================== */
+.fb-reel-sheet {
+    display: none;
+    position: absolute;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.5);
+    z-index: 350;
+    align-items: flex-end;
+}
+
+.fb-reel-sheet.activa {
+    display: flex;
+}
+
+.fb-reel-sheet-panel {
+    width: 100%;
+    max-height: 65%;
+    background: #ffffff;
+    border-radius: 16px 16px 0 0;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+}
+
+.fb-reel-sheet-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 14px 16px;
+    border-bottom: 1px solid #e4e6eb;
+    flex-shrink: 0;
+}
+
+.fb-reel-sheet-title {
+    font-size: 17px;
+    font-weight: 800;
+    color: #050505;
+}
+
+.fb-reel-sheet-close {
+    background: none;
+    border: none;
+    font-size: 18px;
+    color: #65676b;
+    cursor: pointer;
+    padding: 4px 8px;
+}
+
+.fb-reel-comments-list {
+    flex: 1;
+    min-height: 0;
+    overflow-y: auto;
+    padding: 12px 16px;
+}
+
+.fb-reel-comment {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 14px;
+}
+
+.fb-reel-comment.mio .fb-reel-comment-texto {
+    background: #e7f3ff;
+}
+
+.fb-reel-comment-avatar {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    color: #ffffff;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+
+.fb-reel-comment-autor {
+    font-size: 13px;
+    font-weight: 700;
+    color: #050505;
+    margin-bottom: 2px;
+}
+
+.fb-reel-comment-tiempo {
+    font-size: 12px;
+    font-weight: 400;
+    color: #65676b;
+    margin-left: 6px;
+}
+
+.fb-reel-comment-texto {
+    background: #f0f2f5;
+    border-radius: 14px;
+    padding: 8px 12px;
+    font-size: 14px;
+    color: #050505;
+}
+
+.fb-reel-comment-bar {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 12px;
+    border-top: 1px solid #e4e6eb;
+    flex-shrink: 0;
+}
+
+.fb-reel-share-options {
+    padding: 8px 12px 20px;
+}
+
+.fb-reel-share-option {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    width: 100%;
+    background: transparent;
+    border: none;
+    border-radius: 10px;
+    padding: 14px 10px;
+    font-family: inherit;
+    font-size: 16px;
+    font-weight: 600;
+    color: #050505;
+    text-align: left;
+    cursor: pointer;
+}
+
+.fb-reel-share-icon {
+    width: 44px;
+    height: 44px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 22px;
+    flex-shrink: 0;
+}
+
+.fb-reel-follow-btn.siguiendo {
+    background: rgba(255, 255, 255, 0.25);
+    color: #ffffff;
+}
+
+/* El resaltado de Nico anima el botón con transform y z-index 25, lo que crea
+   un contexto de apilamiento: sin esto el panel de reacciones queda atrapado
+   dentro de él y la barra de pestañas (z-index 101) se pinta por encima,
+   dejándolo inaccesible al dedo. */
+.fb-post-actions .fb-like-btn.nico-highlight-target {
+    z-index: 150 !important;
+}
+
+/* ======================================================
+   NICO SIEMPRE A LA VISTA
+   Los paneles a pantalla completa tapaban la barra de instrucciones, y el
+   adulto mayor se quedaba sin guía justo cuando más la necesita.
+   --fb-nico-h la calcula el JS con la altura real de la barra.
+   ====================================================== */
+#fbInstructionsBar {
+    position: relative;
+    z-index: 600;
+}
+
+.fb-comments-modal,
+.fb-reel-sheet,
+.fb-comment-menu {
+    top: var(--fb-nico-h, 0px);
+}
+
+/* ======================================================
+   RESPONDER A COMENTARIOS
+   ====================================================== */
+.fb-respondiendo-a,
+.fb-reel-respondiendo {
+    background: #e7f3ff;
+    color: #1877f2;
+    font-size: 13px;
+    font-weight: 700;
+    padding: 8px 16px;
+    border-top: 1px solid #d0e3f7;
+}
+
+.fb-comment-respuesta {
+    margin-left: 34px;
+}
+
+.fb-comment-respuesta .fb-comment-bubble {
+    background: #eaf3ff;
+}
+
+.fb-comment-reply-btn.activo,
+.fb-comment-like-btn.activo {
+    color: #1877f2;
+    font-weight: 800;
+}
+
+/* ======================================================
+   COMENTARIOS DENTRO DE UN REEL
+   ====================================================== */
+.fb-reel-comment-cuerpo {
+    flex: 1;
+    min-width: 0;
+}
+
+.fb-reel-comment.respuesta {
+    margin-left: 30px;
+}
+
+.fb-reel-comment-acciones {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    margin-top: 4px;
+    padding-left: 4px;
+}
+
+.fb-reel-comment-btn {
+    background: none;
+    border: none;
+    padding: 2px 0;
+    font-family: inherit;
+    font-size: 12px;
+    font-weight: 700;
+    color: #65676b;
+    cursor: pointer;
+}
+
+.fb-reel-comment-btn.activo {
+    color: #1877f2;
+}
+
+.fb-reel-comment-likes {
+    font-size: 12px;
+    color: #65676b;
+}
+
+/* ======================================================
+   MESSENGER (compartir un Reel de verdad)
+   ====================================================== */
+.fb-messenger-panel {
+    display: none;
+    position: absolute;
+    top: var(--fb-nico-h, 0px);
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: #ffffff;
+    z-index: 380;
+    flex-direction: column;
+}
+
+.fb-messenger-panel.activa {
+    display: flex;
+}
+
+.fb-messenger-header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 12px 14px;
+    border-bottom: 1px solid #e4e6eb;
+    flex-shrink: 0;
+}
+
+.fb-messenger-volver {
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 4px;
+    display: flex;
+    align-items: center;
+}
+
+.fb-messenger-volver svg {
+    width: 22px;
+    height: 22px;
+    fill: #050505;
+}
+
+.fb-messenger-titulo {
+    font-size: 20px;
+    font-weight: 800;
+    background: linear-gradient(90deg, #0084ff, #a033ff, #ff5c87);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+}
+
+.fb-messenger-aviso {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin: 12px 14px;
+    padding: 12px;
+    background: #f0f2f5;
+    border-radius: 12px;
+    font-size: 14px;
+    font-weight: 600;
+    color: #050505;
+}
+
+.fb-messenger-aviso-icono {
+    font-size: 22px;
+}
+
+.fb-messenger-lista {
+    flex: 1;
+    min-height: 0;
+    overflow-y: auto;
+    padding: 0 8px;
+}
+
+.fb-messenger-chat {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 8px;
+    border-bottom: 1px solid #f0f2f5;
+}
+
+.fb-messenger-chat-info {
+    flex: 1;
+    min-width: 0;
+}
+
+.fb-messenger-chat-nombre {
+    font-size: 16px;
+    font-weight: 700;
+    color: #050505;
+}
+
+.fb-messenger-chat-estado {
+    font-size: 13px;
+    color: #65676b;
+}
+
+.fb-messenger-enviar {
+    background: #0084ff;
+    color: #ffffff;
+    border: none;
+    border-radius: 18px;
+    padding: 8px 18px;
+    font-size: 14px;
+    font-weight: 700;
+    font-family: inherit;
+    cursor: pointer;
+    flex-shrink: 0;
+}
+
+.fb-messenger-enviar.enviado {
+    background: #e4e6eb;
+    color: #31a24c;
+}
+
+/* Deslizar en el Reel no debe arrastrar la página ni recargar el navegador */
+.fb-reel-player,
+.fb-reels-view {
+    touch-action: none;
+    overscroll-behavior: none;
 }

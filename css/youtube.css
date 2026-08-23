@@ -1199,8 +1199,8 @@
 }
 
 .yt-success-container {
-    background: #fff7e9;
-    border: 3px solid #6b4a3a;
+    background: #ffffff;
+    border: 3px solid #ff0000;
     border-radius: 20px;
     padding: 28px 24px;
     text-align: center;
@@ -1223,22 +1223,22 @@
 .yt-success-container h2 {
     margin: 0 0 10px;
     font-size: 24px;
-    color: #4b2e22;
+    color: #ff0000;
 }
 
 .yt-success-container p {
     margin: 0 0 22px;
     font-size: 16px;
     line-height: 1.4;
-    color: #5b4034;
+    color: #0f0f0f;
 }
 
 .yt-success-btn-continuar {
     width: 100%;
-    background: #7b9f42;
+    background: #ff0000;
     color: #ffffff;
     border: none;
-    border-bottom: 5px solid #5c7a2e;
+    border-bottom: 5px solid #b71c1c;
     border-radius: 14px;
     padding: 14px;
     font-size: 18px;

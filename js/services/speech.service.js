@@ -109,31 +109,93 @@ function speakWithWebSpeech(text, onEnd) {
     }
 
     let ended = false;
+    let vigilante = null;
+    let mantenerVivo = null;
+
     const triggerEnd = () => {
-        if (!ended) {
-            ended = true;
-            if (typeof onEnd === "function") onEnd();
-        }
+        if (ended) return;
+        ended = true;
+
+        if (vigilante) clearTimeout(vigilante);
+        if (mantenerVivo) clearInterval(mantenerVivo);
+
+        if (typeof onEnd === "function") onEnd();
     };
 
     voiceMessage.onend = triggerEnd;
     voiceMessage.onerror = triggerEnd;
 
     speechSynthesis.speak(voiceMessage);
+
+    // Chrome corta las frases largas pasados unos segundos si no se le insiste
+    mantenerVivo = setInterval(() => {
+        if (ended || !speechSynthesis.speaking) return;
+        speechSynthesis.pause();
+        speechSynthesis.resume();
+    }, 8000);
+
+    // Red de seguridad: si el navegador nunca avisa de que terminó, la cola
+    // no se puede quedar bloqueada. Se calcula por longitud del texto.
+    const duracionEstimada = 2500 + text.length * 110;
+    vigilante = setTimeout(triggerEnd, duracionEstimada);
 }
 
-export async function speak(text, onEnd) {
-    await stopSpeech();
+/* ----------------------------------------------------------------------
+   COLA DE VOZ
+   Antes cada frase nueva cancelaba la anterior, así que Nico se cortaba a
+   media frase cada vez que la guía avanzaba de paso. Ahora las frases se
+   encolan y se dicen enteras, una detrás de otra.
+   ---------------------------------------------------------------------- */
+let colaVoz = [];
+let hablando = false;
 
-    if (window.nicoVoiceEnabled === false) {
+function procesarColaVoz() {
+    if (colaVoz.length === 0) {
+        hablando = false;
+        return;
+    }
+
+    hablando = true;
+    const item = colaVoz.shift();
+
+    speakWithWebSpeech(item.text, () => {
+        if (typeof item.onEnd === "function") item.onEnd();
+        procesarColaVoz();
+    });
+}
+
+/**
+ * Encola una frase. Se dirá completa, después de las que ya estén esperando.
+ */
+export function speak(text, onEnd) {
+    if (window.nicoVoiceEnabled === false || !text || !String(text).trim()) {
         if (typeof onEnd === "function") onEnd();
         return;
     }
 
-    speakWithWebSpeech(text, onEnd);
+    colaVoz.push({ text: String(text), onEnd });
+    if (!hablando) procesarColaVoz();
+}
+
+/**
+ * Corta lo que se esté diciendo y dice esta frase enseguida. Para avisos que
+ * no pueden esperar, como "¡Nivel completado!".
+ */
+export function speakPrioritario(text, onEnd) {
+    colaVoz = [];
+    hablando = false;
+
+    if ("speechSynthesis" in window) {
+        speechSynthesis.cancel();
+    }
+
+    speak(text, onEnd);
 }
 
 export async function stopSpeech() {
+    colaVoz = [];
+    hablando = false;
+
     if (currentAudio) {
         currentAudio.pause();
         currentAudio.currentTime = 0;

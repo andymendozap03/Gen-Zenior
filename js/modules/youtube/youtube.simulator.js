@@ -1,6 +1,6 @@
 import { $ } from "../../utils/dom.js";
 import { completarNivel } from "../../services/progress.service.js";
-import { speak, stopSpeech } from "../../services/speech.service.js";
+import { speak, speakPrioritario, stopSpeech } from "../../services/speech.service.js";
 import { resaltarElemento, limpiarResaltados } from "../../services/guide-highlight.service.js";
 
 /* ======================================================================
@@ -536,38 +536,38 @@ function asegurarTemplateHTML() {
 const PASOS = {
     "buscar-video": {
         1: {
-            texto: "Toca la lupa, arriba a la derecha, para buscar un video.",
+            texto: "Toca la lupa que está arriba a la derecha, al lado del nombre de YouTube, para buscar un video.",
             objetivo: "#ytBuscarBtn"
         },
         2: {
-            texto: "Escribe lo que quieres ver, o toca una de las sugerencias.",
+            texto: "Escribe lo que quieres ver en el cuadro blanco de arriba, o toca una de las tres sugerencias que aparecen debajo.",
             objetivo: "#ytSearchInput, .yt-search-chip"
         },
         3: {
-            texto: "Muy bien. Ahora toca el botón azul de la lupa para buscar.",
+            texto: "Muy bien. Ahora toca el botón azul redondo de la lupa, a la derecha del cuadro, para buscar.",
             objetivo: "#ytSearchGoBtn"
         },
         4: {
-            texto: "Estos son los resultados. Toca el primer video para verlo.",
+            texto: "Estos son los resultados. Toca el primer video de la lista, el de más arriba, para verlo.",
             objetivo: "#ytSearchResults .yt-video-card:first-child"
         },
         5: {
-            texto: "Toca el botón grande del centro para empezar a ver el video.",
+            texto: "Toca el botón redondo grande que está en el centro del video para empezar a verlo.",
             objetivo: "#ytBigPlayBtn",
             requierePlayer: true
         },
         6: {
-            texto: "El video está andando. Tócalo otra vez para pausarlo.",
+            texto: "El video ya está andando. Toca otra vez ese mismo botón del centro para pausarlo.",
             objetivo: "#ytBigPlayBtn",
             requierePlayer: true
         },
         7: {
-            texto: "El video está en pausa. Tócalo de nuevo para seguir viéndolo.",
+            texto: "El video está detenido. Toca de nuevo el botón del centro para seguir viéndolo.",
             objetivo: "#ytBigPlayBtn",
             requierePlayer: true
         },
         8: {
-            texto: "Por último, sube el volumen tocando el botón de la bocina grande.",
+            texto: "Por último sube el volumen: toca la bocina grande, la que está abajo a la derecha del video.",
             objetivo: "#ytVolUpBtn",
             requierePlayer: true
         }
@@ -575,21 +575,21 @@ const PASOS = {
 
     "reaccionar-suscribir": {
         1: {
-            texto: "Toca el primer video de la lista para abrirlo.",
+            texto: "Toca el primer video de la lista, el de más arriba, para abrirlo.",
             objetivo: "#ytFeedList .yt-video-card:first-child"
         },
         2: {
-            texto: "¿Te gustó el video? Toca el pulgar hacia arriba que dice Me gusta.",
+            texto: "¿Te gustó el video? Toca el pulgar hacia arriba que está debajo del video, junto al número de me gusta.",
             objetivo: "#ytLikeBtn",
             requierePlayer: true
         },
         3: {
-            texto: "Ahora toca el botón negro Suscribirse para seguir a este canal.",
+            texto: "Ahora toca el botón negro que dice Suscribirse, a la derecha del nombre del canal.",
             objetivo: "#ytSubscribeBtn",
             requierePlayer: true
         },
         4: {
-            texto: "Toca la campanita para que te avisen cuando suban un video nuevo.",
+            texto: "Toca la campanita que apareció al lado, para que te avisen cuando suban un video nuevo.",
             objetivo: "#ytBellBtn",
             requierePlayer: true
         }
@@ -601,7 +601,7 @@ const PASOS = {
             objetivo: "#ytFeedList .yt-video-card:first-child"
         },
         2: {
-            texto: "Toca la caja gris que dice Comentarios para abrirlos.",
+            texto: "Baja un poco y toca la caja gris que dice Comentarios, debajo de los botones.",
             objetivo: "#ytCommentsPreviewBox",
             requierePlayer: true
         },
@@ -616,12 +616,12 @@ const PASOS = {
             requierePlayer: true
         },
         5: {
-            texto: "Ahora escribe tu comentario abajo, donde dice Añade un comentario.",
+            texto: "Toca el cuadro de la parte de abajo que dice Añade un comentario y escribe lo que quieras decir.",
             objetivo: "#ytCommentInput",
             requierePlayer: true
         },
         6: {
-            texto: "Ya lo escribiste. Toca la flecha azul para enviar tu comentario.",
+            texto: "Ya lo escribiste. Toca la flecha azul de la derecha, al lado del cuadro, para enviarlo.",
             objetivo: "#ytCommentSendBtn",
             requierePlayer: true
         },
@@ -670,22 +670,26 @@ const PASOS = {
             objetivo: "#ytFeedList .yt-video-card:first-child"
         },
         2: {
-            texto: "Toca el botón Guardar para dejar este video anotado y verlo después.",
+            texto: "Toca el botón Guardar, el del marcador, que está debajo del video a la derecha.",
             objetivo: "#ytSaveBtn",
             requierePlayer: true
         },
         3: {
-            texto: "Guardado. Ahora toca Volver al inicio.",
+            texto: "Guardado. Ahora toca Volver al inicio, el botón gris que está justo debajo del video.",
             objetivo: "#ytPlayerVolverBtn",
             requierePlayer: true
         },
         4: {
-            texto: "Abajo a la derecha, toca la pestaña que dice Tú.",
+            texto: "Abajo del todo, en la barra de la aplicación, toca la última pestaña: la que dice Tú.",
             objetivo: "#ytNavTu"
         },
         5: {
-            texto: "Toca Ver más tarde para encontrar el video que guardaste.",
+            texto: "Toca 'Ver más tarde', la primera opción de la lista, para encontrar el video que guardaste.",
             objetivo: "#ytLibVerMasTarde"
+        },
+        6: {
+            texto: "¡Ahí está tu video guardado! Tócalo para abrirlo y verlo cuando quieras.",
+            objetivo: "#ytLibSavedList .yt-video-card:first-child"
         }
     }
 };
@@ -1517,6 +1521,12 @@ function inicializarListeners() {
                 return;
             }
 
+            // Final del nivel de guardar: abre el video que había guardado
+            if (selector === "#ytLibSavedList" && esPaso("guardar-video", 6)) {
+                completarNivelActual("¡Lo lograste! Guardaste un video, lo volviste a encontrar en Ver más tarde y lo abriste para verlo.");
+                return;
+            }
+
             // En el resto de niveles, abrir el video es el paso 1
             if (subPaso === 1 && PASOS[nivelActual] && PASOS[nivelActual][2]) {
                 irAPaso(2);
@@ -1777,7 +1787,7 @@ function inicializarListeners() {
             if (seccion) seccion.style.display = "block";
 
             if (esPaso("guardar-video", 5) && videosGuardados.length > 0) {
-                completarNivelActual("¡Lo lograste! Guardaste un video y lo volviste a encontrar en Ver más tarde.");
+                irAPaso(6);
             }
         };
     }
@@ -1842,7 +1852,9 @@ function completarNivelActual(mensajeExito) {
     const modal = $("#ytModalExito");
     if (modal) modal.classList.add("activa");
 
-    speak("¡Excelente trabajo! Nivel completado con éxito. Presiona continuar para regresar a la lista de niveles.");
+    // Prioritario: corta cualquier frase pendiente para que la felicitación
+    // se escuche completa y no la pise la instrucción anterior
+    speakPrioritario(`¡Excelente trabajo! ${limpiarEmojis(mensajeExito)} Presiona el botón verde de continuar para regresar a la lista de niveles.`);
 }
 
 function limpiarTodo() {
