@@ -585,6 +585,19 @@ function asegurarTemplateHTML() {
                 <button id="ytSuccessBtnContinuar" class="yt-success-btn-continuar">Continuar</button>
             </div>
         </div>
+
+        <!-- ======= MODAL DE CONFIRMACIÓN AL SALIR DEL NIVEL ======= -->
+        <div id="ytModalConfirmarSalida" class="modal-confirmar-reinicio">
+            <div class="modal-confirmar-card">
+                <img src="./assets/img/icons/advertencia.svg" alt="" style="width: 48px; height: 48px; margin-bottom: 8px;">
+                <h2>¿Seguro que quieres salir?</h2>
+                <p>Si sales ahora, perderás el progreso de este nivel y tendrás que empezar de nuevo.</p>
+                <div class="modal-confirmar-acciones">
+                    <button id="ytBtnCancelarSalida" class="btn-modal-cancelar">Cancelar</button>
+                    <button id="ytBtnConfirmarSalida" class="btn-modal-peligro">Sí, salir</button>
+                </div>
+            </div>
+        </div>
     `;
 }
 
@@ -1507,8 +1520,26 @@ function inicializarListeners() {
     }
 
     // Salir del simulador
+    // Salir del simulador: pide confirmación antes de perder el progreso del nivel
     const btnSalir = $("#ytSalirBtn");
-    if (btnSalir) btnSalir.onclick = salirDelSimulador;
+    const modalConfirmarSalida = $("#ytModalConfirmarSalida");
+    if (btnSalir) {
+        btnSalir.onclick = () => {
+            if (modalConfirmarSalida) {
+                modalConfirmarSalida.classList.add("activa");
+            } else {
+                salirDelSimulador();
+            }
+        };
+    }
+
+    const btnCancelarSalida = $("#ytBtnCancelarSalida");
+    if (btnCancelarSalida) {
+        btnCancelarSalida.onclick = () => modalConfirmarSalida?.classList.remove("activa");
+    }
+
+    const btnConfirmarSalida = $("#ytBtnConfirmarSalida");
+    if (btnConfirmarSalida) btnConfirmarSalida.onclick = salirDelSimulador;
 
     // Logo -> inicio
     const logoHome = $("#ytLogoHome");
@@ -2009,6 +2040,9 @@ function salirDelSimulador() {
 
     const modal = $("#ytModalExito");
     if (modal) modal.classList.remove("activa");
+
+    const modalSalida = $("#ytModalConfirmarSalida");
+    if (modalSalida) modalSalida.classList.remove("activa");
 
     const simulador = $("#pantallaYoutubeSimulador");
     if (simulador) simulador.classList.remove("activa");

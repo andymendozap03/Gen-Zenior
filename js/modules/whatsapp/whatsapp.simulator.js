@@ -816,6 +816,19 @@ function asegurarTemplateHTML() {
                     <button id="wsSuccessBtnContinuar" class="ws-success-btn-continuar">Continuar</button>
                 </div>
             </div>
+
+            <!-- 7. Modal de confirmación al salir del nivel -->
+            <div id="wsModalConfirmarSalida" class="modal-confirmar-reinicio">
+                <div class="modal-confirmar-card">
+                    <img src="./assets/img/icons/advertencia.svg" alt="" style="width: 48px; height: 48px; margin-bottom: 8px;">
+                    <h2>¿Seguro que quieres salir?</h2>
+                    <p>Si sales ahora, perderás el progreso de este nivel y tendrás que empezar de nuevo.</p>
+                    <div class="modal-confirmar-acciones">
+                        <button id="wsBtnCancelarSalida" class="btn-modal-cancelar">Cancelar</button>
+                        <button id="wsBtnConfirmarSalida" class="btn-modal-peligro">Sí, salir</button>
+                    </div>
+                </div>
+            </div>
         `;
     }
 }
@@ -1172,12 +1185,12 @@ function actualizarGuiaVisualWhatsApp() {
             const modalEntrante = $("#wsModalLlamadaEntrante");
             const modalLlamada = $("#wsModalLlamada");
             if (modalEntrante && modalEntrante.classList.contains("activa")) {
-                resaltarElemento("#wsIncomingBtnContestar", { variant: "amber" });
+                resaltarElemento("#wsIncomingBtnContestar");
             } else if (modalLlamada && modalLlamada.classList.contains("activa")) {
                 if (subPasoNivel3 === 3) {
-                    resaltarElemento("#wsCallBtnMute", { variant: "amber" });
+                    resaltarElemento("#wsCallBtnMute");
                 } else if (subPasoNivel3 === 5 || subPasoNivel3 === 9) {
-                    resaltarElemento("#wsCallBtnColgar", { variant: "amber" });
+                    resaltarElemento("#wsCallBtnColgar");
                 } else {
                     limpiarResaltados();
                 }
@@ -1196,11 +1209,11 @@ function actualizarGuiaVisualWhatsApp() {
             const modalVideo = $("#wsModalVideoLlamada");
             if (modalVideo && modalVideo.classList.contains("activa")) {
                 if (subPasoNivel4 === 3) {
-                    resaltarElemento("#wsVideoCallBtnVideo", { variant: "amber" });
+                    resaltarElemento("#wsVideoCallBtnVideo");
                 } else if (subPasoNivel4 === 5) {
-                    resaltarElemento("#wsVideoCallBtnMute", { variant: "amber" });
+                    resaltarElemento("#wsVideoCallBtnMute");
                 } else if (subPasoNivel4 >= 7) {
-                    resaltarElemento("#wsVideoCallBtnColgar", { variant: "amber" });
+                    resaltarElemento("#wsVideoCallBtnColgar");
                 } else {
                     limpiarResaltados();
                 }
@@ -1216,17 +1229,17 @@ function actualizarGuiaVisualWhatsApp() {
             const modalPreview = $("#wsModalPreviewFoto");
             const modalGaleria = $("#wsModalGaleria");
             if (modalVisor && modalVisor.classList.contains("activa")) {
-                resaltarElemento("#wsVisorBtnVolver", { variant: "amber" });
+                resaltarElemento("#wsVisorBtnVolver");
             } else if (modalPreview && modalPreview.classList.contains("activa")) {
-                resaltarElemento("#wsBtnEnviarFotoPreview", { variant: "amber" });
+                resaltarElemento("#wsBtnEnviarFotoPreview");
             } else if (modalGaleria && modalGaleria.classList.contains("activa")) {
-                resaltarElemento(".ws-galeria-item:first-child", { variant: "amber" });
+                resaltarElemento(".ws-galeria-item:first-child");
             } else {
                 if (subPasoNivel5 === 5) {
                     const receivedPhotos = document.querySelectorAll("#wsChatBody .ws-msg-bubble.recibida .ws-photo-msg-clickable");
                     const lastPhoto = receivedPhotos[receivedPhotos.length - 1];
                     if (lastPhoto) {
-                        resaltarElemento(lastPhoto, { variant: "amber" });
+                        resaltarElemento(lastPhoto);
                     } else {
                         limpiarResaltados();
                     }
@@ -1727,6 +1740,9 @@ function inicializarListeners() {
         const modalVisor = $("#wsModalVisorFoto");
         if (modalVisor) modalVisor.classList.remove("activa");
 
+        const modalSalida = $("#wsModalConfirmarSalida");
+        if (modalSalida) modalSalida.classList.remove("activa");
+
         const simulador = $("#pantallaWhatsappSimulador");
         if (simulador) simulador.classList.remove("activa");
 
@@ -1734,9 +1750,26 @@ function inicializarListeners() {
         location.hash = "/modulo/WhatsApp";
     };
 
-    // Salir del simulador
+    // Salir del simulador: pide confirmación antes de perder el progreso del nivel
     const btnSalir = $("#wsSalirSimulador");
-    if (btnSalir) btnSalir.onclick = retornarANiveles;
+    const modalConfirmarSalida = $("#wsModalConfirmarSalida");
+    if (btnSalir) {
+        btnSalir.onclick = () => {
+            if (modalConfirmarSalida) {
+                modalConfirmarSalida.classList.add("activa");
+            } else {
+                retornarANiveles();
+            }
+        };
+    }
+
+    const btnCancelarSalida = $("#wsBtnCancelarSalida");
+    if (btnCancelarSalida) {
+        btnCancelarSalida.onclick = () => modalConfirmarSalida?.classList.remove("activa");
+    }
+
+    const btnConfirmarSalida = $("#wsBtnConfirmarSalida");
+    if (btnConfirmarSalida) btnConfirmarSalida.onclick = retornarANiveles;
 
     // Volver de la conversación a la lista de chats
     const btnVolver = $("#wsVolverChats");

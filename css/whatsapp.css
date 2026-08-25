@@ -42,7 +42,7 @@
 }
 
 .ws-header-title {
-    font-size: 22px;
+    font-size: calc(22px * var(--font-scale, 1));
     font-weight: 700;
     letter-spacing: 0.2px;
 }
@@ -133,14 +133,14 @@
     border: 2px solid #ffffff;
     display: grid;
     place-items: center;
-    font-size: 14px;
+    font-size: calc(14px * var(--font-scale, 1));
     font-weight: 900;
     line-height: 1;
 }
 
 .ws-status-name {
     margin-top: 5px;
-    font-size: 12px;
+    font-size: calc(12px * var(--font-scale, 1));
     color: #3b3b3b;
     text-align: center;
     width: 100%;
@@ -163,7 +163,7 @@
     align-items: center;
     gap: 12px;
     color: #667781;
-    font-size: 15px;
+    font-size: calc(15px * var(--font-scale, 1));
     cursor: pointer;
 }
 
@@ -187,7 +187,7 @@
     color: #54656f;
     padding: 6px 14px;
     border-radius: 20px;
-    font-size: 13.5px;
+    font-size: calc(13.5px * var(--font-scale, 1));
     font-weight: 700;
     border: none;
     cursor: pointer;
@@ -243,7 +243,7 @@
 }
 
 .ws-chat-name {
-    font-size: 16px;
+    font-size: calc(16px * var(--font-scale, 1));
     font-weight: 700;
     color: #111b21;
     margin: 0;
@@ -253,13 +253,13 @@
 }
 
 .ws-chat-time {
-    font-size: 12px;
+    font-size: calc(12px * var(--font-scale, 1));
     color: #667781;
     white-space: nowrap;
 }
 
 .ws-chat-preview {
-    font-size: 14px;
+    font-size: calc(14px * var(--font-scale, 1));
     color: #667781;
     margin: 0;
     white-space: nowrap;
@@ -326,7 +326,7 @@
     align-items: center;
     gap: 4px;
     color: #54656f;
-    font-size: 12px;
+    font-size: calc(12px * var(--font-scale, 1));
     font-weight: 700;
     background: none;
     border: none;
@@ -420,7 +420,7 @@
 }
 
 .ws-chat-contact-name {
-    font-size: 16px;
+    font-size: calc(16px * var(--font-scale, 1));
     font-weight: 700;
     margin: 0;
     white-space: nowrap;
@@ -429,7 +429,7 @@
 }
 
 .ws-chat-contact-status {
-    font-size: 11.5px;
+    font-size: calc(11.5px * var(--font-scale, 1));
     opacity: 0.9;
     white-space: nowrap;
     overflow: hidden;
@@ -482,7 +482,7 @@
     color: #54656f;
     padding: 4px 12px;
     border-radius: 8px;
-    font-size: 11px;
+    font-size: calc(11px * var(--font-scale, 1));
     font-weight: 700;
     box-shadow: 0 1px 1px rgba(0, 0, 0, 0.06);
     margin: 6px 0;
@@ -494,7 +494,7 @@
     position: relative;
     max-width: 80%;
     padding: 6px 10px 8px;
-    font-size: 15px;
+    font-size: calc(15px * var(--font-scale, 1));
     line-height: 1.4;
     color: #111b21;
     box-shadow: 0 1px 1.5px rgba(0, 0, 0, 0.13);
@@ -575,7 +575,7 @@
 .ws-audio-meta {
     display: flex;
     justify-content: space-between;
-    font-size: 11px;
+    font-size: calc(11px * var(--font-scale, 1));
     color: #667781;
 }
 
@@ -591,7 +591,7 @@
     display: flex;
     align-items: center;
     gap: 3px;
-    font-size: 11px;
+    font-size: calc(11px * var(--font-scale, 1));
     color: #667781;
     margin-top: 2px;
     margin-left: 20px;
@@ -654,7 +654,7 @@
     min-width: 0;
     border: none;
     outline: none;
-    font-size: 16px;
+    font-size: calc(16px * var(--font-scale, 1));
     color: #111b21;
     background: transparent;
     padding: 2px 0;
@@ -747,7 +747,7 @@
     display: flex;
     align-items: center;
     gap: 12px;
-    font-size: 14px;
+    font-size: calc(14px * var(--font-scale, 1));
     color: #4b2e22;
     z-index: 15;
     flex-shrink: 0;
@@ -762,7 +762,7 @@
     padding: 4px 8px;
     border-radius: 8px;
     font-weight: bold;
-    font-size: 11px;
+    font-size: calc(11px * var(--font-scale, 1));
 }
 
 .ws-instructions-icono-nico {
@@ -787,7 +787,7 @@
     color: #ffffff;
     padding: 10px 18px;
     border-radius: 24px;
-    font-size: 13.5px;
+    font-size: calc(13.5px * var(--font-scale, 1));
     font-weight: 700;
     box-shadow: 0 4px 16px rgba(0, 0, 0, 0.35);
     border: 1px solid rgba(255, 255, 255, 0.15);
@@ -857,14 +857,14 @@
 }
 
 .ws-call-name {
-    font-size: 20px;
+    font-size: calc(20px * var(--font-scale, 1));
     margin: 0;
     font-weight: 700;
     letter-spacing: 0.2px;
 }
 
 .ws-call-status {
-    font-size: 13.5px;
+    font-size: calc(13.5px * var(--font-scale, 1));
     color: #8696a0;
     margin: 2px 0 0;
     font-weight: 600;
@@ -896,7 +896,7 @@
     border-radius: 50%;
     display: grid;
     place-items: center;
-    font-size: 52px;
+    font-size: calc(52px * var(--font-scale, 1));
     font-weight: 700;
     color: #ffffff;
     letter-spacing: 1px;
@@ -936,7 +936,7 @@
     background: rgba(255, 255, 255, 0.08);
     padding: 6px 14px;
     border-radius: 20px;
-    font-size: 13px;
+    font-size: calc(13px * var(--font-scale, 1));
     font-weight: 600;
     color: #e9edef;
 }
@@ -953,7 +953,7 @@
     width: 130px;
     height: 130px;
     border-radius: 50%;
-    font-size: 48px;
+    font-size: calc(48px * var(--font-scale, 1));
     font-weight: 700;
     display: grid;
     place-items: center;
@@ -963,7 +963,7 @@
 }
 
 .ws-incoming-name {
-    font-size: 24px;
+    font-size: calc(24px * var(--font-scale, 1));
     font-weight: 700;
     margin: 8px 0 0;
     color: #ffffff;
@@ -971,7 +971,7 @@
 }
 
 .ws-incoming-type {
-    font-size: 14.5px;
+    font-size: calc(14.5px * var(--font-scale, 1));
     color: #25d366;
     font-weight: 600;
     margin: 0;
@@ -1001,7 +1001,7 @@
     border: none;
     cursor: pointer;
     color: #ffffff;
-    font-size: 13px;
+    font-size: calc(13px * var(--font-scale, 1));
     font-weight: 600;
 }
 
@@ -1093,7 +1093,7 @@
 }
 
 .ws-call-ctrl-label {
-    font-size: 12px;
+    font-size: calc(12px * var(--font-scale, 1));
     color: #aebac1;
     font-weight: 600;
 }
@@ -1186,7 +1186,7 @@
     justify-content: center;
     gap: 8px;
     color: rgba(255, 255, 255, 0.7);
-    font-size: 11px;
+    font-size: calc(11px * var(--font-scale, 1));
     font-weight: 500;
     text-align: center;
     padding: 8px;
@@ -1310,7 +1310,7 @@
 
 .ws-galeria-header h3 {
     margin: 0;
-    font-size: 17px;
+    font-size: calc(17px * var(--font-scale, 1));
     color: #111b21;
     font-weight: 700;
 }
@@ -1318,7 +1318,7 @@
 .ws-galeria-close-btn {
     background: none;
     border: none;
-    font-size: 26px;
+    font-size: calc(26px * var(--font-scale, 1));
     color: #8696a0;
     cursor: pointer;
     line-height: 1;
@@ -1358,7 +1358,7 @@
 }
 
 .ws-attach-label {
-    font-size: 11.5px;
+    font-size: calc(11.5px * var(--font-scale, 1));
     color: #54656f;
     font-weight: 600;
 }
@@ -1370,7 +1370,7 @@
 }
 
 .ws-galeria-recent-label {
-    font-size: 13px;
+    font-size: calc(13px * var(--font-scale, 1));
     font-weight: 700;
     color: #54656f;
     margin: 0 0 10px;
@@ -1411,7 +1411,7 @@
     width: 100%;
     background: rgba(0, 0, 0, 0.65);
     color: #ffffff;
-    font-size: 9px;
+    font-size: calc(9px * var(--font-scale, 1));
     text-align: center;
     padding: 2px 0;
 }
@@ -1490,7 +1490,7 @@
     background: none;
     border: none;
     color: #ffffff;
-    font-size: 15px;
+    font-size: calc(15px * var(--font-scale, 1));
     outline: none;
 }
 
@@ -1558,13 +1558,13 @@
 
 .ws-visor-header-info h3 {
     margin: 0;
-    font-size: 16px;
+    font-size: calc(16px * var(--font-scale, 1));
     font-weight: 600;
     color: #ffffff;
 }
 
 .ws-visor-header-info span {
-    font-size: 12px;
+    font-size: calc(12px * var(--font-scale, 1));
     color: #8696a0;
 }
 
@@ -1601,7 +1601,7 @@
 
 .ws-visor-caption {
     margin: 0;
-    font-size: 15px;
+    font-size: calc(15px * var(--font-scale, 1));
     color: #e9edef;
     font-weight: 500;
 }
@@ -1693,14 +1693,14 @@
 .ws-success-container h2 {
     color: #4c7a3b;
     margin: 0 0 8px;
-    font-size: 22px;
+    font-size: calc(22px * var(--font-scale, 1));
     font-weight: 800;
 }
 
 .ws-success-container p {
     color: #6b4a3a;
     margin: 0 0 20px;
-    font-size: 15px;
+    font-size: calc(15px * var(--font-scale, 1));
     font-weight: 700;
     line-height: 1.35;
 }
@@ -1711,7 +1711,7 @@
     border: none;
     border-radius: 12px;
     padding: 10px 24px;
-    font-size: 16px;
+    font-size: calc(16px * var(--font-scale, 1));
     font-weight: 700;
     cursor: pointer;
     box-shadow: 0 4px 0 #4d843d;
@@ -1731,7 +1731,7 @@
 .ws-chat-badge {
     background-color: #00a884;
     color: #ffffff;
-    font-size: 11px;
+    font-size: calc(11px * var(--font-scale, 1));
     font-weight: 700;
     min-width: 19px;
     height: 19px;
@@ -1756,7 +1756,7 @@
 /* --- AJUSTES DE RESPONSIVIDAD PARA EL SIMULADOR DE WHATSAPP --- */
 @media (max-width: 380px) {
     .ws-header-title {
-        font-size: 19px;
+        font-size: calc(19px * var(--font-scale, 1));
     }
 
     .ws-header-actions {
@@ -1784,11 +1784,11 @@
     }
 
     .ws-chat-name {
-        font-size: 15px;
+        font-size: calc(15px * var(--font-scale, 1));
     }
 
     .ws-chat-preview {
-        font-size: 13px;
+        font-size: calc(13px * var(--font-scale, 1));
     }
 
     .ws-bottom-nav {
@@ -1796,7 +1796,7 @@
     }
 
     .ws-nav-item {
-        font-size: 11px;
+        font-size: calc(11px * var(--font-scale, 1));
     }
 
     .ws-chat-header {
@@ -1810,11 +1810,11 @@
     }
 
     .ws-chat-contact-name {
-        font-size: 14px;
+        font-size: calc(14px * var(--font-scale, 1));
     }
 
     .ws-chat-contact-status {
-        font-size: 10.5px;
+        font-size: calc(10.5px * var(--font-scale, 1));
     }
 
     .ws-chat-actions {
@@ -1822,7 +1822,7 @@
     }
 
     .ws-msg-bubble {
-        font-size: 14px;
+        font-size: calc(14px * var(--font-scale, 1));
         max-width: 85%;
     }
 
@@ -1846,7 +1846,7 @@
     }
 
     .ws-input-field {
-        font-size: 14px;
+        font-size: calc(14px * var(--font-scale, 1));
     }
 
     .ws-action-circle-btn {
@@ -1860,14 +1860,14 @@
     }
 
     .ws-instructions-bar {
-        font-size: 13px;
+        font-size: calc(13px * var(--font-scale, 1));
         padding: 6px 10px;
     }
 }
 
 @media (max-width: 340px) {
     .ws-header-title {
-        font-size: 17px;
+        font-size: calc(17px * var(--font-scale, 1));
     }
 
     .ws-chat-contact-name {
@@ -1889,4 +1889,235 @@
         width: 18px;
         height: 18px;
     }
+}
+
+/* ===================== MODO OSCURO Y ALTO CONTRASTE (WhatsApp) ===================== */
+/* La escala de texto de estos elementos ya se aplica directamente en su
+   declaración original "font-size: calc(Npx * var(--font-scale, 1));". */
+
+/* --- MODO OSCURO --- */
+
+html[data-theme="dark"] .pantalla-whatsapp {
+    background-color: #121212;
+}
+
+html[data-theme="dark"] .ws-header,
+html[data-theme="dark"] .ws-chat-header {
+    background-color: #1c1c1c;
+    color: #ffffff;
+    border-bottom: 1px solid #3d3d3d;
+}
+
+html[data-theme="dark"] .ws-status-bar,
+html[data-theme="dark"] .ws-search-container,
+html[data-theme="dark"] .ws-filters-bar,
+html[data-theme="dark"] .ws-chats-list {
+    background-color: #1c1c1c;
+    border-color: #3d3d3d;
+}
+
+html[data-theme="dark"] .ws-status-name {
+    color: #aaaaaa;
+}
+
+html[data-theme="dark"] .ws-search-box {
+    background-color: #282828;
+    color: #aaaaaa;
+}
+
+html[data-theme="dark"] .ws-filter-pill {
+    background-color: #282828;
+    color: #aaaaaa;
+}
+
+html[data-theme="dark"] .ws-filter-pill.activa {
+    background-color: #14532d;
+    color: #4ade80;
+}
+
+html[data-theme="dark"] .ws-chat-item {
+    border-bottom: 1px solid #3d3d3d;
+}
+
+html[data-theme="dark"] .ws-chat-item:active {
+    background-color: #282828;
+}
+
+html[data-theme="dark"] .ws-chat-name {
+    color: #ffffff;
+}
+
+html[data-theme="dark"] .ws-chat-time,
+html[data-theme="dark"] .ws-chat-preview {
+    color: #aaaaaa;
+}
+
+html[data-theme="dark"] .ws-chat-preview.unread {
+    color: #ffffff !important;
+}
+
+html[data-theme="dark"] .ws-bottom-nav {
+    background-color: #1c1c1c;
+    border-top: 1px solid #3d3d3d;
+}
+
+html[data-theme="dark"] .ws-nav-item {
+    color: #aaaaaa;
+}
+
+html[data-theme="dark"] .ws-nav-item.activa {
+    color: #ffffff;
+}
+
+html[data-theme="dark"] .ws-nav-item.activa .ws-nav-icon-wrapper {
+    background-color: #14532d;
+    color: #4ade80;
+}
+
+/* Cuerpo del chat y burbujas */
+html[data-theme="dark"] .ws-chat-body {
+    background-color: #121212;
+    background-blend-mode: multiply;
+}
+
+html[data-theme="dark"] .ws-date-separator {
+    background-color: #282828;
+    color: #aaaaaa;
+}
+
+html[data-theme="dark"] .ws-msg-bubble.recibida {
+    background-color: #1c1c1c;
+    color: #e0e0e0;
+}
+
+html[data-theme="dark"] .ws-msg-bubble.enviada {
+    background-color: #075e4d;
+    color: #ffffff;
+}
+
+html[data-theme="dark"] .ws-msg-meta {
+    color: #aaaaaa;
+}
+
+html[data-theme="dark"] .ws-audio-timeline {
+    background-color: #3d3d3d;
+}
+
+html[data-theme="dark"] .ws-audio-meta {
+    color: #aaaaaa;
+}
+
+/* Área de entrada de mensajes */
+html[data-theme="dark"] .ws-chat-footer {
+    background-color: #1c1c1c;
+}
+
+html[data-theme="dark"] .ws-input-container {
+    background-color: #282828;
+}
+
+html[data-theme="dark"] .ws-input-field {
+    color: #e0e0e0;
+}
+
+html[data-theme="dark"] .ws-input-field::placeholder {
+    color: #aaaaaa;
+}
+
+html[data-theme="dark"] .ws-input-btn {
+    color: #aaaaaa;
+}
+
+/* Barra de instrucciones de Nico */
+html[data-theme="dark"] .ws-instructions-bar {
+    background-color: #282828;
+    color: #e0e0e0;
+    border-bottom: 2px solid #3d3d3d;
+}
+
+/* Modal de adjuntar archivo (galería) */
+html[data-theme="dark"] .ws-galeria-container {
+    background-color: #1c1c1c;
+}
+
+html[data-theme="dark"] .ws-galeria-header {
+    border-bottom: 1px solid #3d3d3d;
+}
+
+html[data-theme="dark"] .ws-galeria-header h3 {
+    color: #ffffff;
+}
+
+html[data-theme="dark"] .ws-galeria-close-btn {
+    color: #aaaaaa;
+}
+
+html[data-theme="dark"] .ws-attach-label {
+    color: #aaaaaa;
+}
+
+html[data-theme="dark"] .ws-galeria-recent-section {
+    border-top: 1px solid #3d3d3d;
+}
+
+html[data-theme="dark"] .ws-galeria-recent-label {
+    color: #aaaaaa;
+}
+
+/* Modal de éxito */
+html[data-theme="dark"] .ws-success-container {
+    background-color: #282828;
+    border: 3px solid #3d3d3d;
+}
+
+html[data-theme="dark"] .ws-success-container h2 {
+    color: #4ade80;
+}
+
+html[data-theme="dark"] .ws-success-container p {
+    color: #e0e0e0;
+}
+
+/* --- ALTO CONTRASTE --- */
+
+html[data-contrast="high"] .ws-chat-item,
+html[data-contrast="high"] .ws-msg-bubble,
+html[data-contrast="high"] .ws-fab,
+html[data-contrast="high"] .ws-action-circle-btn,
+html[data-contrast="high"] .ws-header-btn,
+html[data-contrast="high"] .ws-chat-action-btn,
+html[data-contrast="high"] .ws-nav-item,
+html[data-contrast="high"] .ws-filter-pill,
+html[data-contrast="high"] .ws-input-container,
+html[data-contrast="high"] .ws-success-btn-continuar,
+html[data-contrast="high"] .ws-attach-option,
+html[data-contrast="high"] .ws-galeria-item,
+html[data-contrast="high"] .ws-call-ctrl-btn,
+html[data-contrast="high"] .ws-videocall-bottom-btn,
+html[data-contrast="high"] .ws-incoming-btn-icon-wrapper,
+html[data-contrast="high"] .ws-photo-preview-send-btn,
+html[data-contrast="high"] button {
+    border: 3px solid #000000 !important;
+    font-weight: 800 !important;
+}
+
+html[data-theme="dark"][data-contrast="high"] .ws-chat-item,
+html[data-theme="dark"][data-contrast="high"] .ws-msg-bubble,
+html[data-theme="dark"][data-contrast="high"] .ws-fab,
+html[data-theme="dark"][data-contrast="high"] .ws-action-circle-btn,
+html[data-theme="dark"][data-contrast="high"] .ws-header-btn,
+html[data-theme="dark"][data-contrast="high"] .ws-chat-action-btn,
+html[data-theme="dark"][data-contrast="high"] .ws-nav-item,
+html[data-theme="dark"][data-contrast="high"] .ws-filter-pill,
+html[data-theme="dark"][data-contrast="high"] .ws-input-container,
+html[data-theme="dark"][data-contrast="high"] .ws-success-btn-continuar,
+html[data-theme="dark"][data-contrast="high"] .ws-attach-option,
+html[data-theme="dark"][data-contrast="high"] .ws-galeria-item,
+html[data-theme="dark"][data-contrast="high"] .ws-call-ctrl-btn,
+html[data-theme="dark"][data-contrast="high"] .ws-videocall-bottom-btn,
+html[data-theme="dark"][data-contrast="high"] .ws-incoming-btn-icon-wrapper,
+html[data-theme="dark"][data-contrast="high"] .ws-photo-preview-send-btn,
+html[data-theme="dark"][data-contrast="high"] button {
+    border: 3px solid #ffffff !important;
+    color: #ffffff !important;
 }

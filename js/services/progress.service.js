@@ -141,10 +141,47 @@ function desbloquearTrofeo(idTrofeo) {
 
     console.log(`¡TROFEO DESBLOQUEADO!: ${titulo}`);
 
-    // Alerta visual discreta (se puede reemplazar por un toast visual premium)
-    setTimeout(() => {
-        alert(`¡Nuevo Logro Desbloqueado! \n\n"${titulo}"\n${trofeoInfo ? trofeoInfo.descripcion : ""}`);
-    }, 500);
+    // Notificación propia (nada de alert() del navegador): una tarjeta que
+    // entra deslizándose con el trofeo, se queda unos segundos y se retira sola.
+    setTimeout(() => mostrarToastTrofeo(trofeoInfo, titulo), 900);
+}
+
+/**
+ * Tarjeta flotante de "logro desbloqueado". Se crea una sola vez y se
+ * reutiliza para cada trofeo nuevo, apilando el aviso si llegara a
+ * desbloquearse más de uno seguido (p. ej. "Primer paso" junto con un
+ * "Maestro de...").
+ */
+let colaToastsTrofeo = Promise.resolve();
+
+function mostrarToastTrofeo(trofeoInfo, titulo) {
+    colaToastsTrofeo = colaToastsTrofeo.then(() => new Promise(resolve => {
+        let toast = document.getElementById("trofeoToast");
+        if (!toast) {
+            toast = document.createElement("div");
+            toast.id = "trofeoToast";
+            toast.className = "trofeo-toast";
+            toast.innerHTML = `
+                <img class="trofeo-toast-icono" src="./assets/img/icons/trofeo.svg" alt="">
+                <div class="trofeo-toast-texto">
+                    <span class="trofeo-toast-titulo">¡Trofeo desbloqueado!</span>
+                    <span class="trofeo-toast-nombre"></span>
+                </div>
+            `;
+            document.body.appendChild(toast);
+        }
+
+        const nombreEl = toast.querySelector(".trofeo-toast-nombre");
+        if (nombreEl) nombreEl.textContent = titulo;
+        if (trofeoInfo?.color) toast.style.setProperty("--trofeo-toast-color", trofeoInfo.color);
+
+        toast.classList.add("mostrar");
+
+        setTimeout(() => {
+            toast.classList.remove("mostrar");
+            setTimeout(resolve, 400); // deja terminar la animación de salida antes del siguiente
+        }, 3600);
+    }));
 }
 
 /**
@@ -185,3 +222,27 @@ function evaluarTrofeos() {
         desbloquearTrofeo("gran-zenior");
     }
 }
+
+/**
+ * Reinicia completamente el progreso de los niveles y trofeos.
+ */
+export function limpiarProgresoTotal() {
+    progresoActual = { ...PROGRESO_DEFECTO };
+    trofeosDesbloqueados = {};
+
+    guardar("gz_progress", progresoActual);
+    guardar("gz_trophies", trofeosDesbloqueados);
+
+    // Limpiar estados de chats simulados
+    try {
+        const keys = Object.keys(localStorage);
+        keys.forEach(k => {
+            if (k.startsWith("gz_whatsapp_chats_") || k.startsWith("gz_contactos_")) {
+                localStorage.removeItem(k);
+            }
+        });
+    } catch (e) {
+        console.warn("Error al limpiar chats guardados:", e);
+    }
+}
+

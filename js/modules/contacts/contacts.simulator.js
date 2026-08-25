@@ -448,6 +448,19 @@ function asegurarTemplateHTML() {
                 </div>
             </div>
         </div>
+
+        <!-- MODAL DE CONFIRMACIÓN AL SALIR DEL NIVEL -->
+        <div id="ctModalConfirmarSalida" class="modal-confirmar-reinicio">
+            <div class="modal-confirmar-card">
+                <img src="./assets/img/icons/advertencia.svg" alt="" style="width: 48px; height: 48px; margin-bottom: 8px;">
+                <h2>¿Seguro que quieres salir?</h2>
+                <p>Si sales ahora, perderás el progreso de este nivel y tendrás que empezar de nuevo.</p>
+                <div class="modal-confirmar-acciones">
+                    <button id="ctBtnCancelarSalida" class="btn-modal-cancelar">Cancelar</button>
+                    <button id="ctBtnConfirmarSalida" class="btn-modal-peligro">Sí, salir</button>
+                </div>
+            </div>
+        </div>
     `;
 }
 
@@ -1139,11 +1152,7 @@ function mostrarToast(mensaje) {
 function actualizarInstruccionesTexto(texto, ronda = rondaActualNivel, total = TOTAL_RONDAS, esRepaso = false) {
     const textEl = $("#ctInstructionsText");
     if (textEl) {
-        let badgeLabel = `Práctica ${ronda}`;
-        if (esRepaso === "Reto Final") badgeLabel = `Reto ${ronda}`;
-        else if (esRepaso) badgeLabel = `Repaso ${ronda}`;
-
-        textEl.innerHTML = `${texto} <span class="ct-progress-badge">${badgeLabel}</span>`;
+        textEl.textContent = texto;
     }
 }
 
@@ -1159,13 +1168,11 @@ function actualizarGuiaNivel1(forzarVoz = false) {
 
     if (viewActiva === "ctViewRecientes") {
         subPaso = 1;
-        texto = `Práctica ${rondaActualNivel}: Presiona en 'Contactos' abajo o en 'Ver contactos' para ir a la lista.`;
+        texto = `Presiona en 'Contactos' abajo o en 'Ver contactos' para ir a la lista.`;
         aplicarResaltado("#ctNavContactos, #ctVerContactosBtn");
     } else if (viewActiva === "ctViewContactos") {
         subPaso = 2;
-        texto = (rondaActualNivel > 1 && subPaso === 2)
-            ? `Práctica ${rondaActualNivel}: Presiona el botón '+ Crear contacto' arriba en la lista para agregar a ${meta.nombre}.`
-            : `Presiona el botón '+ Crear contacto' arriba en la lista para agregar a ${meta.nombre}.`;
+        texto = `Presiona el botón '+ Crear contacto' arriba en la lista para agregar a ${meta.nombre}.`;
         aplicarResaltado("#ctCreateBtn");
     } else if (viewActiva === "ctViewCrearContacto") {
         const inputNombre = $("#ctInputNombre");
@@ -1205,15 +1212,13 @@ function actualizarGuiaNivel2(forzarVoz = false) {
 
     if (viewActiva === "ctViewRecientes") {
         subPaso = 1;
-        texto = `Práctica ${rondaActualNivel}: Toca el botón 'Contactos' en la parte de abajo para abrir la lista.`;
+        texto = `Toca el botón 'Contactos' en la parte de abajo para abrir la lista.`;
         aplicarResaltado("#ctNavContactos, #ctVerContactosBtn");
     } else if (viewActiva === "ctViewContactos") {
         const searchInput = $("#ctContactosSearch");
         if (!searchInput || !searchInput.value.toLowerCase().includes(meta.termino.toLowerCase())) {
             subPaso = 2;
-            texto = (rondaActualNivel > 1 && subPaso === 2)
-                ? `Práctica ${rondaActualNivel}: Escribe '${meta.termino}' en la barra de búsqueda o toca la sugerencia de abajo.`
-                : `Escribe '${meta.termino}' en la barra de búsqueda o toca la sugerencia de abajo.`;
+            texto = `Escribe '${meta.termino}' en la barra de búsqueda o toca la sugerencia de abajo.`;
             const searchSuggest = $("#ctSearchSuggestContainer");
             if (searchSuggest) searchSuggest.style.display = "block";
             aplicarResaltado("#ctContactosSearch, #ctSugerirBusqueda");
@@ -1377,13 +1382,11 @@ function actualizarGuiaNivel4(forzarVoz = false) {
 
     if (viewActiva === "ctViewRecientes") {
         subPaso = 1;
-        texto = `Práctica ${rondaActualNivel}: Ve a 'Contactos' abajo para buscar a '${meta.nombre}'.`;
+        texto = `Ve a 'Contactos' abajo para buscar a '${meta.nombre}'.`;
         aplicarResaltado("#ctNavContactos, #ctVerContactosBtn");
     } else if (viewActiva === "ctViewContactos") {
         subPaso = 1;
-        texto = (subPaso === 1)
-            ? `Práctica ${rondaActualNivel}: Toca sobre '${meta.nombre}' en la lista para abrir su información.`
-            : `Toca sobre '${meta.nombre}' en la lista para abrir su información.`;
+        texto = `Toca sobre '${meta.nombre}' en la lista para abrir su información.`;
         aplicarResaltado(`.ct-contact-item[data-nombre="${meta.nombre}"]`);
     } else if (viewActiva === "ctViewDetalleContacto") {
         if (subPaso === 5) {
@@ -1429,13 +1432,11 @@ function actualizarGuiaNivel5(forzarVoz = false) {
             aplicarResaltado("#ctBtnConfirmarEliminar");
         } else if (viewActiva === "ctViewRecientes") {
             subPaso = 1;
-            texto = `Práctica ${rondaActualNivel}: Ve a 'Contactos' abajo para buscar a '${meta.nombre}'.`;
+            texto = `Ve a 'Contactos' abajo para buscar a '${meta.nombre}'.`;
             aplicarResaltado("#ctNavContactos, #ctVerContactosBtn");
         } else if (viewActiva === "ctViewContactos") {
             subPaso = 1;
-            texto = (subPaso === 1)
-                ? `Práctica ${rondaActualNivel}: Toca sobre '${meta.nombre}' en la lista.`
-                : `Toca sobre '${meta.nombre}' en la lista.`;
+            texto = `Toca sobre '${meta.nombre}' en la lista.`;
             aplicarResaltado(`.ct-contact-item[data-nombre="${meta.nombre}"]`);
         } else if (viewActiva === "ctViewDetalleContacto") {
             subPaso = 2;
@@ -1699,9 +1700,26 @@ function inicializarListeners() {
         };
     }
 
-    // Salir
+    // Salir del simulador: pide confirmación antes de perder el progreso del nivel
     const btnSalir = $("#ctSalirBtn");
-    if (btnSalir) btnSalir.onclick = salir;
+    const modalConfirmarSalida = $("#ctModalConfirmarSalida");
+    if (btnSalir) {
+        btnSalir.onclick = () => {
+            if (modalConfirmarSalida) {
+                modalConfirmarSalida.classList.add("activa");
+            } else {
+                salir();
+            }
+        };
+    }
+
+    const btnCancelarSalida = $("#ctBtnCancelarSalida");
+    if (btnCancelarSalida) {
+        btnCancelarSalida.onclick = () => modalConfirmarSalida?.classList.remove("activa");
+    }
+
+    const btnConfirmarSalida = $("#ctBtnConfirmarSalida");
+    if (btnConfirmarSalida) btnConfirmarSalida.onclick = salir;
 
     // Buscador en Recientes — filtra llamadas sin cambiar de pantalla
     const searchInputRecientes = $("#ctRecientesSearchInput");
@@ -2280,6 +2298,7 @@ function salir() {
     cerrarLlamada();
     cerrarModalEliminar();
     $("#ctModalExito")?.classList.remove("activa");
+    $("#ctModalConfirmarSalida")?.classList.remove("activa");
     stopSpeech();
 
     const pantallaSim = $("#pantallaContactosSimulador");

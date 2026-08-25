@@ -64,7 +64,7 @@
 
 .ct-search-bar span {
     flex: 1;
-    font-size: 16px;
+    font-size: calc(16px * var(--font-scale, 1));
     color: #5f6368;
 }
 
@@ -84,7 +84,7 @@
     white-space: nowrap;
     padding: 6px 16px;
     border-radius: 20px;
-    font-size: 13px;
+    font-size: calc(13px * var(--font-scale, 1));
     font-weight: 600;
     border: 1.5px solid #dadce0;
     background: #ffffff;
@@ -102,7 +102,7 @@
 
 /* Sección favoritos */
 .ct-section-label {
-    font-size: 13px;
+    font-size: calc(13px * var(--font-scale, 1));
     font-weight: 600;
     color: #5f6368;
     padding: 12px 16px 6px;
@@ -117,7 +117,7 @@
     border: 1px solid #dadce0;
     border-radius: 20px;
     padding: 4px 12px;
-    font-size: 12px;
+    font-size: calc(12px * var(--font-scale, 1));
     font-weight: 600;
     color: #1a73e8;
     cursor: pointer;
@@ -153,7 +153,7 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 22px;
+    font-size: calc(22px * var(--font-scale, 1));
     font-weight: 700;
     color: white;
 }
@@ -175,7 +175,7 @@
 }
 
 .ct-fav-name {
-    font-size: 12px;
+    font-size: calc(12px * var(--font-scale, 1));
     color: #202124;
     max-width: 60px;
     text-align: center;
@@ -203,7 +203,7 @@
 }
 
 .ct-date-label {
-    font-size: 13px;
+    font-size: calc(13px * var(--font-scale, 1));
     font-weight: 600;
     color: #5f6368;
     padding: 10px 16px 4px;
@@ -232,7 +232,7 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 18px;
+    font-size: calc(18px * var(--font-scale, 1));
     font-weight: 700;
     color: white;
     flex-shrink: 0;
@@ -244,7 +244,7 @@
 }
 
 .ct-call-name {
-    font-size: 16px;
+    font-size: calc(16px * var(--font-scale, 1));
     font-weight: 500;
     color: #202124;
     margin-bottom: 2px;
@@ -254,7 +254,7 @@
 }
 
 .ct-call-meta {
-    font-size: 13px;
+    font-size: calc(13px * var(--font-scale, 1));
     color: #5f6368;
     display: flex;
     align-items: center;
@@ -272,7 +272,7 @@
 }
 
 .ct-call-carrier {
-    font-size: 12px;
+    font-size: calc(12px * var(--font-scale, 1));
     color: #1a73e8;
     margin-top: 1px;
 }
@@ -342,7 +342,7 @@
     background: #ffffff;
     border-radius: 28px;
     padding: 10px 16px;
-    font-size: 16px;
+    font-size: calc(16px * var(--font-scale, 1));
     color: #5f6368;
     border: none;
     outline: none;
@@ -379,7 +379,7 @@
     border: none;
     border-radius: 8px;
     padding: 13px;
-    font-size: 15px;
+    font-size: calc(15px * var(--font-scale, 1));
     font-weight: 600;
     color: #1a73e8;
     cursor: pointer;
@@ -438,7 +438,7 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 18px;
+    font-size: calc(18px * var(--font-scale, 1));
     font-weight: 700;
     color: white;
     flex-shrink: 0;
@@ -449,13 +449,13 @@
 }
 
 .ct-my-info-label {
-    font-size: 12px;
+    font-size: calc(12px * var(--font-scale, 1));
     color: #5f6368;
     margin-bottom: 2px;
 }
 
 .ct-my-info-name {
-    font-size: 15px;
+    font-size: calc(15px * var(--font-scale, 1));
     font-weight: 600;
     color: #202124;
 }
@@ -479,7 +479,7 @@
 }
 
 .ct-alpha-label {
-    font-size: 13px;
+    font-size: calc(13px * var(--font-scale, 1));
     font-weight: 600;
     color: #5f6368;
     padding: 8px 20px 4px;
@@ -489,7 +489,7 @@
     display: flex;
     align-items: center;
     gap: 6px;
-    font-size: 13px;
+    font-size: calc(13px * var(--font-scale, 1));
     font-weight: 600;
     color: #5f6368;
     padding: 8px 20px 4px;
@@ -537,7 +537,7 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 18px;
+    font-size: calc(18px * var(--font-scale, 1));
     font-weight: 700;
     color: white;
     flex-shrink: 0;
@@ -549,7 +549,7 @@
 }
 
 .ct-contact-name {
-    font-size: 16px;
+    font-size: calc(16px * var(--font-scale, 1));
     font-weight: 400;
     color: #202124;
     white-space: nowrap;
@@ -558,7 +558,7 @@
 }
 
 .ct-contact-phone {
-    font-size: 13px;
+    font-size: calc(13px * var(--font-scale, 1));
     color: #5f6368;
     margin-top: 2px;
 }
@@ -622,7 +622,7 @@
 }
 
 .ct-dialpad-number {
-    font-size: 34px;
+    font-size: calc(34px * var(--font-scale, 1));
     font-weight: 300;
     color: #202124;
     letter-spacing: 3px;
@@ -694,14 +694,14 @@
 }
 
 .ct-dialpad-digit {
-    font-size: 28px;
+    font-size: calc(28px * var(--font-scale, 1));
     font-weight: 300;
     color: #202124;
     line-height: 1;
 }
 
 .ct-dialpad-letters {
-    font-size: 10px;
+    font-size: calc(10px * var(--font-scale, 1));
     color: #5f6368;
     margin-top: 2px;
     letter-spacing: 1.5px;
@@ -786,7 +786,7 @@
 }
 
 .ct-nav-tab span {
-    font-size: 12px;
+    font-size: calc(12px * var(--font-scale, 1));
     font-weight: 500;
 }
 
@@ -837,21 +837,21 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 40px;
+    font-size: calc(40px * var(--font-scale, 1));
     font-weight: 700;
     color: white;
     margin: 0 auto 20px;
 }
 
 .ct-call-name-label {
-    font-size: 30px;
+    font-size: calc(30px * var(--font-scale, 1));
     font-weight: 400;
     margin-bottom: 8px;
     text-align: center;
 }
 
 .ct-call-status-label {
-    font-size: 16px;
+    font-size: calc(16px * var(--font-scale, 1));
     opacity: 0.8;
     text-align: center;
 }
@@ -966,7 +966,7 @@
 }
 
 .ct-form-title {
-    font-size: 19px;
+    font-size: calc(19px * var(--font-scale, 1));
     font-weight: 700;
     color: #202124;
     margin: 0;
@@ -978,7 +978,7 @@
     border: none;
     border-radius: 20px;
     padding: 9px 22px;
-    font-size: 15px;
+    font-size: calc(15px * var(--font-scale, 1));
     font-weight: 700;
     cursor: pointer;
     font-family: inherit;
@@ -1042,7 +1042,7 @@
 }
 
 .ct-form-avatar-label {
-    font-size: 13px;
+    font-size: calc(13px * var(--font-scale, 1));
     font-weight: 600;
     color: #7b4b24;
 }
@@ -1065,7 +1065,7 @@
 }
 
 .ct-field-label {
-    font-size: 13px;
+    font-size: calc(13px * var(--font-scale, 1));
     font-weight: 700;
     color: #5f6368;
     display: flex;
@@ -1084,7 +1084,7 @@
     padding: 12px 14px;
     border: 2px solid #dadce0;
     border-radius: 10px;
-    font-size: 16px;
+    font-size: calc(16px * var(--font-scale, 1));
     color: #202124;
     font-family: inherit;
     outline: none;
@@ -1100,7 +1100,7 @@
 
 .ct-field-input::placeholder {
     color: #9aa0a6;
-    font-size: 14px;
+    font-size: calc(14px * var(--font-scale, 1));
 }
 
 /* Botón de ayuda/sugerencia rápida para adultos mayores */
@@ -1113,7 +1113,7 @@
     border: 1.5px dashed #d49a6a;
     border-radius: 8px;
     padding: 6px 12px;
-    font-size: 13px;
+    font-size: calc(13px * var(--font-scale, 1));
     font-weight: 700;
     color: #8c4a16;
     cursor: pointer;
@@ -1141,7 +1141,7 @@
     color: #ffffff;
     padding: 12px 24px;
     border-radius: 28px;
-    font-size: 14px;
+    font-size: calc(14px * var(--font-scale, 1));
     font-weight: 600;
     box-shadow: 0 4px 14px rgba(0, 0, 0, 0.3);
     z-index: 300;
@@ -1168,7 +1168,7 @@
 .ct-nuevo-badge {
     background: #e6f4ea;
     color: #137333;
-    font-size: 11px;
+    font-size: calc(11px * var(--font-scale, 1));
     font-weight: 800;
     padding: 2px 8px;
     border-radius: 10px;
@@ -1183,7 +1183,7 @@
     gap: 4px;
     background: #7b4b24;
     color: #ffffff;
-    font-size: 11px;
+    font-size: calc(11px * var(--font-scale, 1));
     font-weight: 800;
     padding: 2px 8px;
     border-radius: 12px;
@@ -1212,7 +1212,7 @@
     color: #ffffff;
     padding: 10px 20px;
     border-radius: 24px;
-    font-size: 13.5px;
+    font-size: calc(13.5px * var(--font-scale, 1));
     font-weight: 700;
     box-shadow: 0 4px 16px rgba(0, 0, 0, 0.35);
     border: 1px solid rgba(255, 255, 255, 0.2);
@@ -1254,7 +1254,7 @@
 }
 
 .ct-call-instructions-text {
-    font-size: 14.5px;
+    font-size: calc(14.5px * var(--font-scale, 1));
     font-weight: 700;
     line-height: 1.35;
     color: #ffffff;
@@ -1266,7 +1266,7 @@
     border: 2px solid #7b4b24;
     border-radius: 14px;
     padding: 11px 20px;
-    font-size: 15px;
+    font-size: calc(15px * var(--font-scale, 1));
     font-weight: 700;
     cursor: pointer;
     box-shadow: 0 3px 0 #d4c1b5;
@@ -1291,7 +1291,7 @@
     color: #6d635c;
     border: none;
     padding: 8px 16px;
-    font-size: 14px;
+    font-size: calc(14px * var(--font-scale, 1));
     font-weight: 600;
     cursor: pointer;
     font-family: inherit;
@@ -1374,14 +1374,14 @@
 .ct-success-container h2 {
     color: #7b4b24;
     margin: 0 0 8px;
-    font-size: 22px;
+    font-size: calc(22px * var(--font-scale, 1));
     font-weight: 800;
 }
 
 .ct-success-container p {
     color: #5d391d;
     margin: 0 0 20px;
-    font-size: 15px;
+    font-size: calc(15px * var(--font-scale, 1));
     font-weight: 700;
     line-height: 1.4;
 }
@@ -1392,7 +1392,7 @@
     border: none;
     border-radius: 14px;
     padding: 12px 28px;
-    font-size: 16px;
+    font-size: calc(16px * var(--font-scale, 1));
     font-weight: 700;
     cursor: pointer;
     box-shadow: 0 4px 0 #523015;
@@ -1434,7 +1434,7 @@
     border: none;
     border-radius: 20px;
     padding: 8px 18px;
-    font-size: 14px;
+    font-size: calc(14px * var(--font-scale, 1));
     font-weight: 700;
     cursor: pointer;
     font-family: inherit;
@@ -1469,14 +1469,14 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 40px;
+    font-size: calc(40px * var(--font-scale, 1));
     font-weight: 800;
     color: white;
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
 }
 
 .ct-detalle-nombre {
-    font-size: 24px;
+    font-size: calc(24px * var(--font-scale, 1));
     font-weight: 700;
     color: #202124;
     text-align: center;
@@ -1534,7 +1534,7 @@
 }
 
 .ct-quick-action-label {
-    font-size: 13px;
+    font-size: calc(13px * var(--font-scale, 1));
     font-weight: 600;
     color: #3c4043;
 }
@@ -1577,13 +1577,13 @@
 }
 
 .ct-detalle-info-val {
-    font-size: 16px;
+    font-size: calc(16px * var(--font-scale, 1));
     font-weight: 600;
     color: #202124;
 }
 
 .ct-detalle-info-sub {
-    font-size: 12px;
+    font-size: calc(12px * var(--font-scale, 1));
     color: #5f6368;
 }
 
@@ -1599,7 +1599,7 @@
     border: 1.5px solid #f28b82;
     border-radius: 12px;
     padding: 14px;
-    font-size: 15px;
+    font-size: calc(15px * var(--font-scale, 1));
     font-weight: 700;
     cursor: pointer;
     font-family: inherit;
@@ -1655,14 +1655,14 @@
 
 .ct-confirmar-card h3 {
     margin: 0 0 10px;
-    font-size: 19px;
+    font-size: calc(19px * var(--font-scale, 1));
     color: #202124;
     font-weight: 800;
 }
 
 .ct-confirmar-card p {
     margin: 0 0 22px;
-    font-size: 14px;
+    font-size: calc(14px * var(--font-scale, 1));
     color: #5f6368;
     line-height: 1.45;
 }
@@ -1679,7 +1679,7 @@
     border: none;
     border-radius: 12px;
     padding: 10px 18px;
-    font-size: 14px;
+    font-size: calc(14px * var(--font-scale, 1));
     font-weight: 700;
     cursor: pointer;
     font-family: inherit;
@@ -1696,7 +1696,7 @@
     border: none;
     border-radius: 12px;
     padding: 10px 20px;
-    font-size: 14px;
+    font-size: calc(14px * var(--font-scale, 1));
     font-weight: 700;
     cursor: pointer;
     font-family: inherit;
@@ -1727,7 +1727,7 @@
     display: flex;
     align-items: center;
     gap: 8px;
-    font-size: 15px;
+    font-size: calc(15px * var(--font-scale, 1));
     font-weight: 800;
     color: #1a73e8;
     margin: 0 0 10px 0;
@@ -1752,7 +1752,7 @@
     display: flex;
     align-items: flex-start;
     gap: 8px;
-    font-size: 13px;
+    font-size: calc(13px * var(--font-scale, 1));
     color: #3c4043;
     line-height: 1.45;
 }
@@ -1764,7 +1764,7 @@
 .ct-feedback-badge {
     background: #e8f0fe;
     color: #1a73e8;
-    font-size: 11px;
+    font-size: calc(11px * var(--font-scale, 1));
     font-weight: 800;
     padding: 2px 6px;
     border-radius: 6px;
@@ -1782,7 +1782,7 @@
     color: #1a73e8;
     border-radius: 10px;
     padding: 8px 14px;
-    font-size: 13px;
+    font-size: calc(13px * var(--font-scale, 1));
     font-weight: 700;
     cursor: pointer;
     width: 100%;
@@ -1799,7 +1799,7 @@
     flex: 1;
     border: none;
     background: transparent;
-    font-size: 15px;
+    font-size: calc(15px * var(--font-scale, 1));
     font-family: inherit;
     color: #202124;
     outline: none;
@@ -1813,10 +1813,425 @@
 /* Pista visual durante la llamada */
 .ct-call-hint-label {
     margin-top: 8px;
-    font-size: 14px;
+    font-size: calc(14px * var(--font-scale, 1));
     color: #e8eaed;
     background: rgba(0, 0, 0, 0.3);
     padding: 6px 14px;
     border-radius: 20px;
     display: inline-block;
 }
+
+/* ===================== MODO OSCURO Y ALTO CONTRASTE (Contactos) ===================== */
+
+/* ---------- MODO OSCURO ---------- */
+
+html[data-theme="dark"] .pantalla-contactos {
+    background: #121212;
+    color: #e0e0e0;
+}
+
+html[data-theme="dark"] .ct-recent-header,
+html[data-theme="dark"] .ct-calls-list,
+html[data-theme="dark"] .ct-contacts-header,
+html[data-theme="dark"] .ct-contacts-list,
+html[data-theme="dark"] .ct-dialpad-contacts-preview,
+html[data-theme="dark"] .ct-dialpad-number-display,
+html[data-theme="dark"] .ct-dialpad-grid,
+html[data-theme="dark"] .ct-dialpad-actions {
+    background: #121212;
+    color: #e0e0e0;
+}
+
+html[data-theme="dark"] .ct-search-bar,
+html[data-theme="dark"] .ct-contacts-search,
+html[data-theme="dark"] .ct-call-item,
+html[data-theme="dark"] .ct-my-info-item,
+html[data-theme="dark"] .ct-contact-item,
+html[data-theme="dark"] .ct-dialpad-key,
+html[data-theme="dark"] .ct-bottom-nav,
+html[data-theme="dark"] .ct-form-header,
+html[data-theme="dark"] .ct-form-card,
+html[data-theme="dark"] .ct-detalle-header,
+html[data-theme="dark"] .ct-detalle-card,
+html[data-theme="dark"] .ct-confirmar-card,
+html[data-theme="dark"] .ct-field-input {
+    background: #1c1c1c;
+    color: #e0e0e0;
+    border-color: #3d3d3d;
+}
+
+html[data-theme="dark"] .ct-search-bar:hover,
+html[data-theme="dark"] .ct-call-item:hover,
+html[data-theme="dark"] .ct-my-info-item:hover,
+html[data-theme="dark"] .ct-contact-item:hover {
+    background: #282828;
+}
+
+html[data-theme="dark"] .ct-search-bar span,
+html[data-theme="dark"] .ct-contacts-search,
+html[data-theme="dark"] .ct-field-input::placeholder,
+html[data-theme="dark"] .ct-recientes-search-input::placeholder {
+    color: #aaaaaa;
+}
+
+html[data-theme="dark"] .ct-filter-tab {
+    background: #282828;
+    color: #e0e0e0;
+    border-color: #3d3d3d;
+}
+
+html[data-theme="dark"] .ct-filter-tab.activa {
+    background: #1a3a5c;
+    border-color: #4fa3ff;
+    color: #4fa3ff;
+}
+
+html[data-theme="dark"] .ct-section-label,
+html[data-theme="dark"] .ct-date-label,
+html[data-theme="dark"] .ct-alpha-label,
+html[data-theme="dark"] .ct-fav-star-label,
+html[data-theme="dark"] .ct-call-meta,
+html[data-theme="dark"] .ct-call-carrier,
+html[data-theme="dark"] .ct-my-info-label,
+html[data-theme="dark"] .ct-dialpad-letters,
+html[data-theme="dark"] .ct-nav-tab,
+html[data-theme="dark"] .ct-detalle-info-sub,
+html[data-theme="dark"] .ct-quick-action-label,
+html[data-theme="dark"] .ct-field-label,
+html[data-theme="dark"] .ct-confirmar-card p,
+html[data-theme="dark"] .ct-salir-btn svg,
+html[data-theme="dark"] .ct-fav-name {
+    color: #aaaaaa;
+}
+
+html[data-theme="dark"] .ct-ver-contactos-btn {
+    background: none;
+    border-color: #3d3d3d;
+    color: #4fa3ff;
+}
+
+html[data-theme="dark"] .ct-fav-add {
+    background: #282828;
+}
+
+html[data-theme="dark"] .ct-call-name,
+html[data-theme="dark"] .ct-contact-name,
+html[data-theme="dark"] .ct-my-info-name,
+html[data-theme="dark"] .ct-dialpad-number,
+html[data-theme="dark"] .ct-dialpad-digit,
+html[data-theme="dark"] .ct-form-title,
+html[data-theme="dark"] .ct-detalle-nombre,
+html[data-theme="dark"] .ct-detalle-info-val,
+html[data-theme="dark"] .ct-confirmar-card h3,
+html[data-theme="dark"] .ct-back-btn svg {
+    color: #ffffff;
+}
+
+html[data-theme="dark"] .ct-contact-phone {
+    color: #aaaaaa;
+}
+
+html[data-theme="dark"] .ct-create-btn {
+    background: #1a3a5c;
+    color: #4fa3ff;
+}
+
+html[data-theme="dark"] .ct-create-btn:hover {
+    background: #234a72;
+}
+
+html[data-theme="dark"] .ct-create-btn svg,
+html[data-theme="dark"] .ct-call-phone-btn svg,
+html[data-theme="dark"] .ct-btn-editar-header svg,
+html[data-theme="dark"] .ct-feedback-title,
+html[data-theme="dark"] .ct-feedback-title svg,
+html[data-theme="dark"] .ct-btn-escuchar-repaso {
+    color: #4fa3ff;
+    fill: #4fa3ff;
+}
+
+html[data-theme="dark"] .ct-profile-icon-btn {
+    background: #282828;
+}
+
+html[data-theme="dark"] .ct-profile-icon-btn svg,
+html[data-theme="dark"] .ct-share-btn svg,
+html[data-theme="dark"] .ct-dialpad-options-btn svg,
+html[data-theme="dark"] .ct-dialpad-del-btn svg,
+html[data-theme="dark"] .ct-detalle-info-left svg {
+    fill: #aaaaaa;
+}
+
+html[data-theme="dark"] .ct-call-phone-btn:hover {
+    background: #1a3a5c;
+}
+
+html[data-theme="dark"] .ct-dialpad-key:hover,
+html[data-theme="dark"] .ct-dialpad-del-btn:hover {
+    background: #282828;
+}
+
+html[data-theme="dark"] .ct-dialpad-key:active {
+    background: #333333;
+}
+
+html[data-theme="dark"] .ct-nav-tab.activa {
+    color: #4fa3ff;
+}
+
+html[data-theme="dark"] .ct-btn-editar-header {
+    background: #1a3a5c;
+    color: #4fa3ff;
+}
+
+html[data-theme="dark"] .ct-btn-editar-header:hover {
+    background: #234a72;
+}
+
+html[data-theme="dark"] .ct-quick-action-icon {
+    background: #1a3a5c;
+}
+
+html[data-theme="dark"] .ct-quick-action-icon svg {
+    fill: #4fa3ff;
+}
+
+html[data-theme="dark"] .ct-quick-action-icon.verde {
+    background: #1f3d29;
+}
+
+html[data-theme="dark"] .ct-quick-action-icon.verde svg {
+    fill: #6fd191;
+}
+
+html[data-theme="dark"] .ct-btn-eliminar-contacto {
+    background: #3a2321;
+    color: #ff8a80;
+    border-color: #6b3a36;
+}
+
+html[data-theme="dark"] .ct-btn-eliminar-contacto:hover {
+    background: #4a2d2a;
+}
+
+html[data-theme="dark"] .ct-btn-eliminar-contacto svg {
+    fill: #ff8a80;
+}
+
+html[data-theme="dark"] .ct-btn-cancelar-modal {
+    background: #282828;
+    color: #e0e0e0;
+}
+
+html[data-theme="dark"] .ct-btn-cancelar-modal:hover {
+    background: #333333;
+}
+
+html[data-theme="dark"] .ct-feedback-section {
+    background: #1c1c1c;
+    border-color: #3d3d3d;
+}
+
+html[data-theme="dark"] .ct-feedback-item {
+    color: #e0e0e0;
+}
+
+html[data-theme="dark"] .ct-feedback-item strong {
+    color: #ffffff;
+}
+
+html[data-theme="dark"] .ct-feedback-badge {
+    background: #1a3a5c;
+    color: #4fa3ff;
+}
+
+html[data-theme="dark"] .ct-btn-escuchar-repaso {
+    background: #1c1c1c;
+    border-color: #4fa3ff;
+}
+
+html[data-theme="dark"] .ct-btn-escuchar-repaso:hover {
+    background: #1a3a5c;
+}
+
+html[data-theme="dark"] .ct-recientes-search-input {
+    color: #e0e0e0;
+}
+
+html[data-theme="dark"] .ct-form-avatar-circle {
+    background: #2b241d;
+    color: #d49a6a;
+    border-color: #5a4a3a;
+}
+
+html[data-theme="dark"] .ct-form-avatar-circle:hover {
+    background: #3a3025;
+}
+
+html[data-theme="dark"] .ct-form-avatar-circle svg,
+html[data-theme="dark"] .ct-form-avatar-label,
+html[data-theme="dark"] .ct-field-label svg {
+    color: #d49a6a;
+    fill: #d49a6a;
+}
+
+html[data-theme="dark"] .ct-quick-suggest-btn {
+    background: #2b241d;
+    border-color: #8c6a44;
+    color: #e0ab73;
+}
+
+html[data-theme="dark"] .ct-quick-suggest-btn:hover {
+    background: #3a3025;
+}
+
+html[data-theme="dark"] .ct-nuevo-badge {
+    background: #1f3d29;
+    color: #6fd191;
+}
+
+html[data-theme="dark"] .ct-progress-badge,
+html[data-theme="dark"] .ct-btn-guardar {
+    background: #a9673a;
+    color: #ffffff;
+}
+
+html[data-theme="dark"] .ct-btn-guardar:hover {
+    background: #8f582c;
+}
+
+html[data-theme="dark"] .ct-btn-guardar:disabled {
+    background: #4a3d34;
+    color: #8a7f76;
+}
+
+html[data-theme="dark"] .ct-success-container {
+    background-color: #241b15;
+    border-color: #a9673a;
+}
+
+html[data-theme="dark"] .ct-success-container h2 {
+    color: #e0ab73;
+}
+
+html[data-theme="dark"] .ct-success-container p {
+    color: #cbb6a4;
+}
+
+html[data-theme="dark"] .ct-success-btn-continuar {
+    background-color: #a9673a;
+    color: #ffffff;
+}
+
+html[data-theme="dark"] .ct-success-btn-continuar:hover {
+    background-color: #bd7a4a;
+}
+
+html[data-theme="dark"] .ct-success-btn-secundario {
+    background-color: #1c1c1c;
+    color: #e0ab73;
+    border-color: #a9673a;
+}
+
+html[data-theme="dark"] .ct-success-btn-secundario:hover {
+    background-color: #2b241d;
+}
+
+html[data-theme="dark"] .ct-success-btn-terciario {
+    color: #aaaaaa;
+}
+
+html[data-theme="dark"] .ct-success-btn-terciario:hover {
+    color: #ffffff;
+}
+
+/* Los colores de acento (verde llamar, rojo colgar, azul llamada) se mantienen
+   por ser legibles sobre fondo oscuro; solo se ajusta ligeramente si aplica */
+html[data-theme="dark"] .ct-dialpad-call-btn {
+    background: #3ec46b;
+}
+
+html[data-theme="dark"] .ct-dialpad-call-btn:hover {
+    background: #35a95c;
+}
+
+html[data-theme="dark"] .ct-call-end-btn {
+    background: #f2554a;
+}
+
+html[data-theme="dark"] .ct-call-end-btn:hover {
+    background: #d13b30;
+}
+
+/* ---------- ALTO CONTRASTE ---------- */
+
+html[data-contrast="high"] .ct-search-bar,
+html[data-contrast="high"] .ct-contacts-search,
+html[data-contrast="high"] .ct-call-item,
+html[data-contrast="high"] .ct-my-info-item,
+html[data-contrast="high"] .ct-contact-item,
+html[data-contrast="high"] .ct-dialpad-key,
+html[data-contrast="high"] .ct-form-card,
+html[data-contrast="high"] .ct-form-header,
+html[data-contrast="high"] .ct-detalle-header,
+html[data-contrast="high"] .ct-detalle-card,
+html[data-contrast="high"] .ct-confirmar-card,
+html[data-contrast="high"] .ct-success-container,
+html[data-contrast="high"] .ct-field-input,
+html[data-contrast="high"] .ct-filter-tab,
+html[data-contrast="high"] .ct-create-btn,
+html[data-contrast="high"] .ct-btn-guardar,
+html[data-contrast="high"] .ct-btn-editar-header,
+html[data-contrast="high"] .ct-btn-eliminar-contacto,
+html[data-contrast="high"] .ct-btn-cancelar-modal,
+html[data-contrast="high"] .ct-btn-confirmar-eliminar,
+html[data-contrast="high"] .ct-btn-escuchar-repaso,
+html[data-contrast="high"] .ct-success-btn-continuar,
+html[data-contrast="high"] .ct-success-btn-secundario,
+html[data-contrast="high"] .ct-quick-suggest-btn,
+html[data-contrast="high"] .ct-dialpad-call-btn,
+html[data-contrast="high"] .ct-call-end-btn,
+html[data-contrast="high"] .ct-call-ctrl-btn,
+html[data-contrast="high"] .ct-call-modal,
+html[data-contrast="high"] .ct-form-avatar-circle,
+html[data-contrast="high"] button {
+    border: 3px solid #000000 !important;
+    font-weight: 800 !important;
+}
+
+html[data-theme="dark"][data-contrast="high"] .ct-search-bar,
+html[data-theme="dark"][data-contrast="high"] .ct-contacts-search,
+html[data-theme="dark"][data-contrast="high"] .ct-call-item,
+html[data-theme="dark"][data-contrast="high"] .ct-my-info-item,
+html[data-theme="dark"][data-contrast="high"] .ct-contact-item,
+html[data-theme="dark"][data-contrast="high"] .ct-dialpad-key,
+html[data-theme="dark"][data-contrast="high"] .ct-form-card,
+html[data-theme="dark"][data-contrast="high"] .ct-form-header,
+html[data-theme="dark"][data-contrast="high"] .ct-detalle-header,
+html[data-theme="dark"][data-contrast="high"] .ct-detalle-card,
+html[data-theme="dark"][data-contrast="high"] .ct-confirmar-card,
+html[data-theme="dark"][data-contrast="high"] .ct-success-container,
+html[data-theme="dark"][data-contrast="high"] .ct-field-input,
+html[data-theme="dark"][data-contrast="high"] .ct-filter-tab,
+html[data-theme="dark"][data-contrast="high"] .ct-create-btn,
+html[data-theme="dark"][data-contrast="high"] .ct-btn-guardar,
+html[data-theme="dark"][data-contrast="high"] .ct-btn-editar-header,
+html[data-theme="dark"][data-contrast="high"] .ct-btn-eliminar-contacto,
+html[data-theme="dark"][data-contrast="high"] .ct-btn-cancelar-modal,
+html[data-theme="dark"][data-contrast="high"] .ct-btn-confirmar-eliminar,
+html[data-theme="dark"][data-contrast="high"] .ct-btn-escuchar-repaso,
+html[data-theme="dark"][data-contrast="high"] .ct-success-btn-continuar,
+html[data-theme="dark"][data-contrast="high"] .ct-success-btn-secundario,
+html[data-theme="dark"][data-contrast="high"] .ct-quick-suggest-btn,
+html[data-theme="dark"][data-contrast="high"] .ct-dialpad-call-btn,
+html[data-theme="dark"][data-contrast="high"] .ct-call-end-btn,
+html[data-theme="dark"][data-contrast="high"] .ct-call-ctrl-btn,
+html[data-theme="dark"][data-contrast="high"] .ct-call-modal,
+html[data-theme="dark"][data-contrast="high"] .ct-form-avatar-circle,
+html[data-theme="dark"][data-contrast="high"] button {
+    border: 3px solid #ffffff !important;
+    color: #ffffff !important;
+}
+
+/* La escala de texto de estos elementos ya se aplica directamente en su
+   declaración original "font-size: calc(Npx * var(--font-scale, 1));". */

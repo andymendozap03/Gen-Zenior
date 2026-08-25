@@ -29,7 +29,8 @@ export function inicializarMenu() {
     });
 
     btnTrofeos.addEventListener("click", () => {
-        alert("Aquí se mostrará la pantalla de trofeos.");
+        limpiarResaltados();
+        location.hash = "/trofeos";
     });
 
     btnAjustes.addEventListener("click", () => {

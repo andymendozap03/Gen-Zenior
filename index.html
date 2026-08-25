@@ -30,6 +30,7 @@
     <link rel="stylesheet" href="./css/facebook.css">
     <link rel="stylesheet" href="./css/contacts.css">
     <link rel="stylesheet" href="./css/youtube.css">
+    <link rel="stylesheet" href="./css/trophies.css">
 
 </head>
 
@@ -47,7 +48,7 @@
              autorizan la voz si arranca desde un toque de verdad, y uno hecho
              por código no les vale. Este botón es ese toque. -->
         <button id="btnComenzar" class="carga-boton" type="button" style="display:none;">
-            <img src="./assets/img/icons/voz.svg" alt="" class="carga-boton-icono">
+            <img src="./assets/img/icons/jugar.png" alt="" class="carga-boton-icono">
             Comenzar
         </button>
     </div>
@@ -160,13 +161,170 @@
             </header>
 
             <div class="ajustes-content-body">
-                <!-- Botón principal de créditos -->
+                <!-- Panel Principal de Ajustes y Accesibilidad -->
                 <div id="ajustesMenuBody" class="ajustes-menu-body">
-                    <button class="boton-menu creditos" id="btnVerCreditos">
-                        <span class="icono"></span>
-                        <span>Créditos</span>
-                        <img src="./assets/img/icons/flecha-derecha.svg" alt="" class="icono-flecha">
-                    </button>
+
+                    <!-- 1. ASISTENTE DE VOZ (NICO) -->
+                    <div class="ajuste-card">
+                        <div class="ajuste-card-header">
+                            <img src="./assets/img/icons/altavoz-de-audio.png" alt="" class="ajuste-icon-img">
+                            <div class="ajuste-info">
+                                <h3>Asistente de Voz (Nico)</h3>
+                                <p>Escucha las instrucciones paso a paso narradas en voz alta.</p>
+                            </div>
+                            <label class="switch-accesible">
+                                <input type="checkbox" id="switchVozNico" checked>
+                                <span class="slider-accesible"></span>
+                            </label>
+                        </div>
+
+                        <!-- Velocidad dependiente de Nico -->
+                        <div id="containerVelocidadVoz" class="ajuste-subseccion">
+                            <div class="ajuste-sub-info">
+                                <h4>Velocidad de la voz:</h4>
+                                <p>Ajusta el ritmo al que habla Nico.</p>
+                            </div>
+                            <div class="ajuste-segmented-control">
+                                <button class="btn-ajuste-velocidad" data-speed="lenta">Lenta (0.65x)</button>
+                                <button class="btn-ajuste-velocidad activo" data-speed="normal">Normal (0.95x)</button>
+                                <button class="btn-ajuste-velocidad" data-speed="rapida">Rápida (1.40x)</button>
+                            </div>
+                            <button id="btnProbarVozNico" class="btn-probar-voz">
+                                <span>Probar voz de Nico</span>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- 2. TAMAÑO DE TEXTO -->
+                    <div class="ajuste-card">
+                        <div class="ajuste-card-header">
+                            <img src="./assets/img/icons/tamano_texto.svg" alt="" class="ajuste-icon-img">
+                            <div class="ajuste-info">
+                                <h3>Tamaño del Texto</h3>
+                                <p>Elige el tamaño de letra más cómodo para leer en la aplicación.</p>
+                            </div>
+                        </div>
+
+                        <div class="ajuste-segmented-control">
+                            <button class="btn-ajuste-fuente" data-font-size="pequeno">Pequeño</button>
+                            <button class="btn-ajuste-fuente activo" data-font-size="mediano">Mediano</button>
+                            <button class="btn-ajuste-fuente" data-font-size="grande">Grande</button>
+                        </div>
+
+                        <div class="ajuste-preview-box">
+                            <span class="ajuste-preview-tag">Vista previa:</span>
+                            <p class="ajuste-preview-text">¡Hola! Así se leerán los textos y las instrucciones en tus
+                                lecciones.</p>
+                        </div>
+                    </div>
+
+                    <!-- 3. ASPECTO VISUAL Y CONTRASTE -->
+                    <div class="ajuste-card">
+                        <div class="ajuste-card-header">
+                            <img src="./assets/img/icons/paleta-de-color.png" alt="" class="ajuste-icon-img">
+                            <div class="ajuste-info">
+                                <h3>Aspecto y Visibilidad</h3>
+                                <p>Modifica el contraste y colores para una mejor lectura.</p>
+                            </div>
+                        </div>
+
+                        <!-- Modo Oscuro -->
+                        <div class="ajuste-row-toggle">
+                            <div class="ajuste-row-text">
+                                <h4>Modo Oscuro</h4>
+                                <p>Reduce el brillo para descansar la vista.</p>
+                            </div>
+                            <label class="switch-accesible">
+                                <input type="checkbox" id="switchModoOscuro">
+                                <span class="slider-accesible"></span>
+                            </label>
+                        </div>
+
+                        <!-- Alto Contraste -->
+                        <div class="ajuste-row-toggle">
+                            <div class="ajuste-row-text">
+                                <h4>Modo Alto Contraste</h4>
+                                <p>Bordes reforzados y máxima diferenciación visual.</p>
+                            </div>
+                            <label class="switch-accesible">
+                                <input type="checkbox" id="switchAltoContraste">
+                                <span class="slider-accesible"></span>
+                            </label>
+                        </div>
+
+                        <!-- Color del Resaltado Guía -->
+                        <div class="ajuste-subseccion" style="margin-top: 10px;">
+                            <div class="ajuste-sub-info">
+                                <h4>Color del Resaltado Guía:</h4>
+                                <p>Color de la animación que te muestra dónde tocar.</p>
+                            </div>
+                            <div class="ajuste-color-selector">
+                                <button class="btn-ajuste-color color-amber" data-color="amber" title="Dorado Ámbar">
+                                    <span class="color-dot" style="background: #ffb300;"></span>
+                                    <span>Dorado</span>
+                                </button>
+                                <button class="btn-ajuste-color color-amarillo" data-color="amarillo"
+                                    title="Amarillo Neón">
+                                    <span class="color-dot" style="background: #ffd600;"></span>
+                                    <span>Amarillo</span>
+                                </button>
+                                <button class="btn-ajuste-color color-verde" data-color="verde" title="Verde Esmeralda">
+                                    <span class="color-dot" style="background: #00e676;"></span>
+                                    <span>Verde</span>
+                                </button>
+                                <button class="btn-ajuste-color color-azul activo" data-color="azul"
+                                    title="Azul Océano">
+                                    <span class="color-dot" style="background: #00b0ff;"></span>
+                                    <span>Azul</span>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 4. CRÉDITOS -->
+                    <div class="ajuste-card">
+                        <button class="ajuste-row-link" id="btnVerCreditos">
+                            <img src="./assets/img/icons/creditos.svg" alt="" class="ajuste-icon-img">
+                            <div class="ajuste-info">
+                                <h3>Créditos</h3>
+                                <p>Conoce al equipo que creó Gen-Zénior.</p>
+                            </div>
+                            <img src="./assets/img/icons/flecha-derecha.svg" alt="" class="ajuste-row-link-flecha">
+                        </button>
+                    </div>
+
+                    <!-- 5. ZONA DE REINICIO DE PROGRESO -->
+                    <div class="ajuste-card ajuste-card-peligro">
+                        <div class="ajuste-card-header">
+                            <img src="./assets/img/icons/advertencia.svg" alt="" class="ajuste-icon-img">
+                            <div class="ajuste-info">
+                                <h3 style="color: #d32f2f;">Reiniciar Progreso</h3>
+                                <p>Borra las estrellas y trofeos para volver a practicar los niveles desde cero.</p>
+                            </div>
+                        </div>
+                        <button id="btnReiniciarProgreso" class="btn-reiniciar-progreso">
+                            <img src="./assets/img/icons/advertencia.svg" alt=""
+                                style="width: 20px; height: 20px; filter: brightness(0) invert(1);">
+                            <span>Reiniciar todo el progreso</span>
+                        </button>
+                    </div>
+
+                </div>
+
+                <!-- Modal Accesible de Confirmación de Reinicio -->
+                <div id="modalConfirmarReinicio" class="modal-confirmar-reinicio">
+                    <div class="modal-confirmar-card">
+                        <img src="./assets/img/icons/advertencia.svg" alt=""
+                            style="width: 48px; height: 48px; margin-bottom: 8px;">
+                        <h2>¿Reiniciar todo tu progreso?</h2>
+                        <p>Se borrarán los trofeos y avances conseguidos en todos los módulos (WhatsApp, Facebook,
+                            YouTube y Contactos) para que puedas volver a practicar desde el Nivel 1.</p>
+                        <p class="modal-confirmar-advertencia"><strong>Esta acción no se puede deshacer.</strong></p>
+                        <div class="modal-confirmar-acciones">
+                            <button id="btnCancelarReinicio" class="btn-modal-cancelar">Cancelar</button>
+                            <button id="btnConfirmarReinicio" class="btn-modal-peligro">Sí, reiniciar todo</button>
+                        </div>
+                    </div>
                 </div>
 
                 <!-- Sección de créditos -->
@@ -219,6 +377,37 @@
             </div>
         </section>
 
+        <!-- PANTALLA DE TROFEOS -->
+        <section id="pantallaTrofeos" class="pantalla pantalla-trofeos">
+            <header class="encabezado-modulo" style="background: #603629; margin-bottom: 0;">
+                <div>
+                    <p>Gen-Zénior</p>
+                    <h2>Mis Trofeos</h2>
+                </div>
+                <button id="btnVolverTrofeos" class="boton-volver" aria-label="Volver al menú">
+                    <img src="./assets/img/icons/flecha-izquierda.svg" alt="" class="icono-volver">
+                </button>
+            </header>
+
+            <div class="trofeos-content-body">
+                <div class="trofeos-resumen">
+                    <div class="trofeos-resumen-item">
+                        <span class="trofeos-resumen-valor" id="trofeosResumenNiveles">0/0</span>
+                        <span class="trofeos-resumen-label">Niveles completados</span>
+                    </div>
+                    <div class="trofeos-resumen-item">
+                        <span class="trofeos-resumen-valor" id="trofeosResumenLogros">0/0</span>
+                        <span class="trofeos-resumen-label">Logros especiales</span>
+                    </div>
+                </div>
+
+                <h3 class="trofeos-seccion-titulo">Logros especiales</h3>
+                <div id="trofeosLogrosContainer" class="trofeos-logros-container"></div>
+
+                <h3 class="trofeos-seccion-titulo">Progreso por módulo</h3>
+                <div id="trofeosProgresoContainer" class="trofeos-progreso-container"></div>
+            </div>
+        </section>
 
     </main>
 

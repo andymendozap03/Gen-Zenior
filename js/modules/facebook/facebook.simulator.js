@@ -206,8 +206,15 @@ function asegurarTemplateHTML() {
                 <svg viewBox="0 0 24 24"><path d="M16 11c1.66 0 2.99-1.34 2.99-3S17.66 5 16 5c-1.66 0-3 1.34-3 3s1.34 3 3 3zm-8 0c1.66 0 2.99-1.34 2.99-3S9.66 5 8 5C6.34 5 5 6.34 5 8s1.34 3 3 3zm0 2c-2.33 0-7 1.17-7 3.5V19h14v-2.5c0-2.33-4.67-3.5-7-3.5zm8 0c-.29 0-.62.02-.97.05 1.16.84 1.97 1.97 1.97 3.45V19h6v-2.5c0-2.33-4.67-3.5-7-3.5z"/></svg>
                 <span class="fb-badge" id="fbAmigosBadge">2</span>
             </button>
-            <button class="fb-nav-tab" data-tab="video" aria-label="Video">
-                <svg viewBox="0 0 24 24"><path d="M21 3H3C2 3 1 4 1 5v14c0 1.1.9 2 2 2h18c1 0 2-1 2-2V5c0-1-1-2-2-2zm-9 13l-5-3.19V18H5V6h2v4.19L12 7l7 4.5-7 4.5z"/></svg>
+            <button class="fb-nav-tab" data-tab="video" aria-label="Reels">
+                <svg viewBox="0 0 24 24" style="width: 24px; height: 24px;">
+                    <rect x="3" y="3" width="18" height="18" rx="4.5" fill="none" stroke="currentColor" stroke-width="2"/>
+                    <line x1="3" y1="8" x2="21" y2="8" stroke="currentColor" stroke-width="2"/>
+                    <line x1="7" y1="3" x2="9.5" y2="8" stroke="currentColor" stroke-width="2"/>
+                    <line x1="12" y1="3" x2="14.5" y2="8" stroke="currentColor" stroke-width="2"/>
+                    <line x1="17" y1="3" x2="19.5" y2="8" stroke="currentColor" stroke-width="2"/>
+                    <polygon points="10,11 15.5,14 10,17" fill="currentColor"/>
+                </svg>
             </button>
             <button class="fb-nav-tab" data-tab="marketplace" aria-label="Marketplace">
                 <svg viewBox="0 0 24 24"><path d="M11 9h2V6h3V4h-3V1h-2v3H8v2h3v3zm-4 9c-1.1 0-1.99.9-1.99 2S5.9 22 7 22s2-.9 2-2-.9-2-2-2zm10 0c-1.1 0-1.99.9-1.99 2s.89 2 1.99 2 2-.9 2-2-.9-2-2-2zm-8.9-5h7.45c.75 0 1.41-.41 1.75-1.03l3.58-6.49A1 1 0 0 0 19.96 4H5.21L4.27 2H1v2h2l3.6 7.59-1.35 2.44C4.52 15.37 5.48 17 7 17h12v-2H7.42c-.14 0-.25-.11-.32-.26z"/></svg>
@@ -761,6 +768,19 @@ function asegurarTemplateHTML() {
                 <h2>¡Nivel Completado!</h2>
                 <p id="fbSuccessMessage">¡Has realizado la acción con éxito!</p>
                 <button id="fbSuccessBtnContinuar" class="fb-success-btn-continuar">Continuar</button>
+            </div>
+        </div>
+
+        <!-- Modal de confirmación al salir del nivel -->
+        <div id="fbModalConfirmarSalida" class="modal-confirmar-reinicio">
+            <div class="modal-confirmar-card">
+                <img src="./assets/img/icons/advertencia.svg" alt="" style="width: 48px; height: 48px; margin-bottom: 8px;">
+                <h2>¿Seguro que quieres salir?</h2>
+                <p>Si sales ahora, perderás el progreso de este nivel y tendrás que empezar de nuevo.</p>
+                <div class="modal-confirmar-acciones">
+                    <button id="fbBtnCancelarSalida" class="btn-modal-cancelar">Cancelar</button>
+                    <button id="fbBtnConfirmarSalida" class="btn-modal-peligro">Sí, salir</button>
+                </div>
             </div>
         </div>
     `;
@@ -2430,6 +2450,9 @@ function retornarANiveles() {
     const modalLightbox = $("#fbLightboxModal");
     if (modalLightbox) modalLightbox.classList.remove("activa");
 
+    const modalSalida = $("#fbModalConfirmarSalida");
+    if (modalSalida) modalSalida.classList.remove("activa");
+
     const sim = $("#pantallaFacebookSimulador");
     if (sim) sim.classList.remove("activa");
 
@@ -2933,11 +2956,26 @@ function inicializarListeners() {
         };
     }
 
-    // Salir del simulador
+    // Salir del simulador: pide confirmación antes de perder el progreso del nivel
     const btnSalir = $("#fbSalirBtn");
+    const modalConfirmarSalida = $("#fbModalConfirmarSalida");
     if (btnSalir) {
-        btnSalir.onclick = retornarANiveles;
+        btnSalir.onclick = () => {
+            if (modalConfirmarSalida) {
+                modalConfirmarSalida.classList.add("activa");
+            } else {
+                retornarANiveles();
+            }
+        };
     }
+
+    const btnCancelarSalida = $("#fbBtnCancelarSalida");
+    if (btnCancelarSalida) {
+        btnCancelarSalida.onclick = () => modalConfirmarSalida?.classList.remove("activa");
+    }
+
+    const btnConfirmarSalida = $("#fbBtnConfirmarSalida");
+    if (btnConfirmarSalida) btnConfirmarSalida.onclick = retornarANiveles;
 
     // Pestañas de navegación
     const navTabs = document.querySelectorAll(".fb-nav-tab");

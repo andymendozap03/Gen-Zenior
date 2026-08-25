@@ -72,7 +72,7 @@ function loadSpanishMaleVoice() {
         selectedVoice = bestVoice;
         try {
             localStorage.setItem("gz_nico_voice_uri", bestVoice.voiceURI || bestVoice.name);
-        } catch (e) {}
+        } catch (e) { }
     }
 }
 
@@ -96,7 +96,7 @@ function speakWithWebSpeech(text, onEnd, sigueVigente) {
         return;
     }
 
-    if (!selectedVoice || isFemaleVoice(selectedVoice)) {
+    if (!selectedVoice) {
         loadSpanishMaleVoice();
     }
 
@@ -104,6 +104,10 @@ function speakWithWebSpeech(text, onEnd, sigueVigente) {
     let comenzo = false;
     let vigilante = null;
     let mantenerVivo = null;
+
+    // Se calcula antes de crear la frase: así el vigilante puede reiniciarse
+    // en cuanto arranque de verdad, sin depender del orden de declaración.
+    const duracionEstimada = 3000 + text.length * 110;
 
     const triggerEnd = () => {
         if (ended) return;
@@ -120,7 +124,14 @@ function speakWithWebSpeech(text, onEnd, sigueVigente) {
     // reutilizar el mismo objeto después de descartarlo.
     const crearFrase = () => {
         const frase = new SpeechSynthesisUtterance(text);
-        frase.rate = 0.95;
+        
+        let speechRate = 0.95;
+        if (window.nicoVoiceSpeed === "lenta") {
+            speechRate = 0.65;
+        } else if (window.nicoVoiceSpeed === "rapida") {
+            speechRate = 1.4;
+        }
+        frase.rate = speechRate;
 
         if (selectedVoice) {
             frase.voice = selectedVoice;
@@ -131,7 +142,16 @@ function speakWithWebSpeech(text, onEnd, sigueVigente) {
             frase.pitch = 0.9;
         }
 
-        frase.onstart = () => { comenzo = true; yaSonoAlguna = true; };
+        frase.onstart = () => {
+            comenzo = true;
+            yaSonoAlguna = true;
+            // El margen de seguridad debe contar desde que el motor empieza
+            // a sonar de verdad: en móvil puede tardar 1-3 s en arrancar, y
+            // si no se reinicia aquí, la frase se corta antes de terminar
+            // porque el tiempo se gastó esperando a que empezara.
+            if (vigilante) clearTimeout(vigilante);
+            vigilante = setTimeout(triggerEnd, duracionEstimada);
+        };
         frase.onend = triggerEnd;
         frase.onerror = triggerEnd;
         return frase;
@@ -164,12 +184,17 @@ function speakWithWebSpeech(text, onEnd, sigueVigente) {
         if (esReintento) return;
 
         // Chrome y Safari se tragan la primera frase de la sesión: si a los
-        // 350 ms no ha empezado a sonar, se vuelve a pedir una vez. Es
-        // exactamente el caso de "la primera no suena, la segunda sí".
+        // 600 ms no ha empezado a sonar, se vuelve a pedir una vez. Es
+        // exactamente el caso de "la primera no suena, la segunda sí". El
+        // margen es algo mayor que antes porque en móvil el motor puede
+        // tardar un poco en arrancar sin que eso signifique que se perdió.
         setTimeout(() => {
             if (ended || comenzo || speechSynthesis.speaking) return;
+            // Por si quedó algo a medio encolar que nunca llegó a sonar: se
+            // limpia antes de reintentar para no acabar con dos frases a la vez.
+            try { speechSynthesis.cancel(); } catch (e) { }
             lanzar(true);
-        }, 350);
+        }, 600);
     };
 
     // Se lanza AHORA, sin esperar: si se retrasa, iOS ya no lo considera parte
@@ -183,9 +208,9 @@ function speakWithWebSpeech(text, onEnd, sigueVigente) {
         speechSynthesis.resume();
     }, 8000);
 
-    // Red de seguridad: si el navegador nunca avisa de que terminó, la guía
-    // no se puede quedar bloqueada. Se calcula por longitud del texto.
-    const duracionEstimada = 3000 + text.length * 110;
+    // Red de seguridad: si el navegador nunca avisa de que terminó (ni de que
+    // empezó), la guía no se puede quedar bloqueada. Se reinicia con la
+    // misma duración en cuanto la frase arranca de verdad (ver onstart).
     vigilante = setTimeout(triggerEnd, duracionEstimada);
 }
 
@@ -217,8 +242,15 @@ let yaSonoAlguna = false;
  * de verdad, pero a volumen cero para que nadie la oiga: así la que se traga
  * es esta y la siguiente, la que importa, suena.
  */
+// despertarVoz(), prepararVoz() y la primera frase real pueden llamar a esto
+// por caminos distintos: sin este candado se encolaban varios "Hola" seguidos
+// y Nico tardaba de más en arrancar, porque el motor los dice uno detrás de
+// otro antes de llegar a la frase de verdad. Con uno solo por sesión basta.
+let cebado = false;
+
 function cebarMotor() {
-    if (!("speechSynthesis" in window)) return;
+    if (cebado || !("speechSynthesis" in window)) return;
+    cebado = true;
 
     try {
         const cebo = new SpeechSynthesisUtterance("Hola");
@@ -228,7 +260,8 @@ function cebarMotor() {
         if (selectedVoice) cebo.voice = selectedVoice;
         speechSynthesis.speak(cebo);
     } catch (e) {
-        // Si el navegador no lo permite, se reintentará con la siguiente frase
+        // Si el navegador no lo permite, se reintenta la próxima vez
+        cebado = false;
     }
 }
 
@@ -377,6 +410,14 @@ async function obtenerAudioEleven(texto, cfg) {
 function reproducirAudio(url, texto, onEnd, miTurno) {
     const audio = new Audio(url);
     currentAudio = audio;
+
+    if (window.nicoVoiceSpeed === "lenta") {
+        audio.playbackRate = 0.75;
+    } else if (window.nicoVoiceSpeed === "rapida") {
+        audio.playbackRate = 1.35;
+    } else {
+        audio.playbackRate = 1.0;
+    }
 
     let terminado = false;
     const terminar = () => {

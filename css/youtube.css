@@ -102,7 +102,7 @@
 }
 
 .yt-logo-text {
-    font-size: 20px;
+    font-size: calc(20px * var(--font-scale, 1));
     font-weight: 800;
     letter-spacing: -0.8px;
     font-family: "Oswald", "Nunito Sans", sans-serif;
@@ -157,7 +157,7 @@
     background: #f2f2f2;
     border: none;
     border-radius: 8px;
-    font-size: 14px;
+    font-size: calc(14px * var(--font-scale, 1));
     font-weight: 600;
     color: #0f0f0f;
     cursor: pointer;
@@ -212,7 +212,7 @@
     right: 8px;
     background: rgba(0, 0, 0, 0.8);
     color: #ffffff;
-    font-size: 12px;
+    font-size: calc(12px * var(--font-scale, 1));
     font-weight: 600;
     padding: 2px 6px;
     border-radius: 4px;
@@ -236,7 +236,7 @@
     justify-content: center;
     color: #ffffff;
     font-weight: 700;
-    font-size: 15px;
+    font-size: calc(15px * var(--font-scale, 1));
     flex-shrink: 0;
 }
 
@@ -246,7 +246,7 @@
 }
 
 .yt-video-title {
-    font-size: 15px;
+    font-size: calc(15px * var(--font-scale, 1));
     font-weight: 600;
     line-height: 1.35;
     color: #0f0f0f;
@@ -258,7 +258,7 @@
 }
 
 .yt-video-meta {
-    font-size: 12px;
+    font-size: calc(12px * var(--font-scale, 1));
     color: #606060;
     line-height: 1.4;
 }
@@ -279,7 +279,7 @@
 }
 
 .yt-player-title {
-    font-size: 18px;
+    font-size: calc(18px * var(--font-scale, 1));
     font-weight: 700;
     color: #0f0f0f;
     line-height: 1.35;
@@ -287,7 +287,7 @@
 }
 
 .yt-player-metadata {
-    font-size: 13px;
+    font-size: calc(13px * var(--font-scale, 1));
     color: #606060;
     margin-bottom: 12px;
 }
@@ -306,7 +306,7 @@
 }
 
 .yt-channel-subs-count {
-    font-size: 12px;
+    font-size: calc(12px * var(--font-scale, 1));
     color: #606060;
     margin-top: 1px;
 }
@@ -317,7 +317,7 @@
     border: none;
     border-radius: 18px;
     padding: 8px 16px;
-    font-size: 13px;
+    font-size: calc(13px * var(--font-scale, 1));
     font-weight: 700;
     cursor: pointer;
 }
@@ -350,7 +350,7 @@
     border: none;
     border-radius: 18px;
     padding: 6px 14px;
-    font-size: 13px;
+    font-size: calc(13px * var(--font-scale, 1));
     font-weight: 600;
     color: #0f0f0f;
     cursor: pointer;
@@ -384,7 +384,7 @@
 }
 
 .yt-comments-preview-title {
-    font-size: 14px;
+    font-size: calc(14px * var(--font-scale, 1));
     font-weight: 700;
     color: #0f0f0f;
 }
@@ -396,7 +396,7 @@
 }
 
 .yt-comments-preview-arrow {
-    font-size: 16px;
+    font-size: calc(16px * var(--font-scale, 1));
     color: #0f0f0f;
     font-weight: 700;
 }
@@ -413,7 +413,7 @@
     border-radius: 50%;
     background: #9c27b0;
     color: #ffffff;
-    font-size: 11px;
+    font-size: calc(11px * var(--font-scale, 1));
     font-weight: 700;
     display: flex;
     align-items: center;
@@ -422,7 +422,7 @@
 }
 
 .yt-comments-preview-text {
-    font-size: 13px;
+    font-size: calc(13px * var(--font-scale, 1));
     color: #0f0f0f;
     line-height: 1.35;
     flex: 1;
@@ -473,7 +473,7 @@
 }
 
 .yt-drawer-title {
-    font-size: 18px;
+    font-size: calc(18px * var(--font-scale, 1));
     font-weight: 800;
     color: #0f0f0f;
 }
@@ -484,7 +484,7 @@
     border: none;
     background: none;
     cursor: pointer;
-    font-size: 20px;
+    font-size: calc(20px * var(--font-scale, 1));
     font-weight: 700;
     color: #0f0f0f;
     display: flex;
@@ -502,7 +502,7 @@
 .yt-comments-warning-banner {
     background: #f8f9fa;
     padding: 10px 16px;
-    font-size: 12px;
+    font-size: calc(12px * var(--font-scale, 1));
     color: #606060;
     line-height: 1.4;
     border-bottom: 1px solid #f2f2f2;
@@ -539,7 +539,7 @@
     border-radius: 50%;
     background: #9c27b0;
     color: #ffffff;
-    font-size: 14px;
+    font-size: calc(14px * var(--font-scale, 1));
     font-weight: 700;
     display: flex;
     align-items: center;
@@ -560,18 +560,18 @@
 }
 
 .yt-comment-author {
-    font-size: 12px;
+    font-size: calc(12px * var(--font-scale, 1));
     font-weight: 700;
     color: #0f0f0f;
 }
 
 .yt-comment-time {
-    font-size: 11px;
+    font-size: calc(11px * var(--font-scale, 1));
     color: #606060;
 }
 
 .yt-comment-text {
-    font-size: 14px;
+    font-size: calc(14px * var(--font-scale, 1));
     color: #0f0f0f;
     line-height: 1.45;
     margin-bottom: 8px;
@@ -591,7 +591,7 @@
     border: none;
     cursor: pointer;
     font-family: inherit;
-    font-size: 12px;
+    font-size: calc(12px * var(--font-scale, 1));
     color: #606060;
     padding: 4px 6px;
 }
@@ -623,7 +623,7 @@
     border-radius: 50%;
     background: #6200ee;
     color: #ffffff;
-    font-size: 13px;
+    font-size: calc(13px * var(--font-scale, 1));
     font-weight: 700;
     display: flex;
     align-items: center;
@@ -637,7 +637,7 @@
     border: none;
     border-radius: 18px;
     padding: 8px 16px;
-    font-size: 13px;
+    font-size: calc(13px * var(--font-scale, 1));
     color: #0f0f0f;
     outline: none;
     font-family: inherit;
@@ -702,7 +702,7 @@
 }
 
 .yt-nav-tab span {
-    font-size: 11px;
+    font-size: calc(11px * var(--font-scale, 1));
     font-weight: 500;
 }
 
@@ -716,7 +716,7 @@
     display: flex;
     align-items: center;
     gap: 12px;
-    font-size: 14px;
+    font-size: calc(14px * var(--font-scale, 1));
     color: #4b2e22;
     z-index: 15;
     flex-shrink: 0;
@@ -732,7 +732,7 @@
     padding: 4px 8px;
     border-radius: 8px;
     font-weight: bold;
-    font-size: 11px;
+    font-size: calc(11px * var(--font-scale, 1));
     cursor: pointer;
     flex-shrink: 0;
 }
@@ -757,7 +757,7 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 64px;
+    font-size: calc(64px * var(--font-scale, 1));
     line-height: 1;
     text-shadow: 0 4px 12px rgba(0, 0, 0, 0.25);
     user-select: none;
@@ -782,7 +782,7 @@
     border: 2px solid #d9d9d9;
     border-radius: 22px;
     padding: 10px 16px;
-    font-size: 16px;
+    font-size: calc(16px * var(--font-scale, 1));
     font-family: inherit;
     color: #0f0f0f;
     outline: none;
@@ -818,7 +818,7 @@
 
 .yt-search-chips-title {
     margin: 0 0 10px;
-    font-size: 13px;
+    font-size: calc(13px * var(--font-scale, 1));
     font-weight: 700;
     color: #606060;
     text-transform: uppercase;
@@ -835,7 +835,7 @@
     border-radius: 12px;
     padding: 12px 14px;
     margin-bottom: 8px;
-    font-size: 16px;
+    font-size: calc(16px * var(--font-scale, 1));
     font-family: inherit;
     color: #0f0f0f;
     text-align: left;
@@ -865,7 +865,7 @@
 }
 
 .yt-player-emoji {
-    font-size: 88px;
+    font-size: calc(88px * var(--font-scale, 1));
     line-height: 1;
     user-select: none;
     transition: transform 0.4s ease;
@@ -934,7 +934,7 @@
 
 .yt-time-label {
     color: #ffffff;
-    font-size: 12px;
+    font-size: calc(12px * var(--font-scale, 1));
     font-weight: 600;
     white-space: nowrap;
     flex-shrink: 0;
@@ -1018,7 +1018,7 @@
 }
 
 .yt-comment-heart {
-    font-size: 14px;
+    font-size: calc(14px * var(--font-scale, 1));
     line-height: 1;
 }
 
@@ -1040,18 +1040,18 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 18px;
+    font-size: calc(18px * var(--font-scale, 1));
     font-weight: 700;
 }
 
 .yt-lib-name {
-    font-size: 16px;
+    font-size: calc(16px * var(--font-scale, 1));
     font-weight: 700;
     color: #0f0f0f;
 }
 
 .yt-lib-mail {
-    font-size: 13px;
+    font-size: calc(13px * var(--font-scale, 1));
     color: #606060;
 }
 
@@ -1090,17 +1090,17 @@
 
 .yt-lib-option-text strong {
     display: block;
-    font-size: 16px;
+    font-size: calc(16px * var(--font-scale, 1));
     color: #0f0f0f;
 }
 
 .yt-lib-option-text small {
-    font-size: 13px;
+    font-size: calc(13px * var(--font-scale, 1));
     color: #606060;
 }
 
 .yt-lib-arrow {
-    font-size: 24px;
+    font-size: calc(24px * var(--font-scale, 1));
     color: #909090;
     flex-shrink: 0;
 }
@@ -1112,7 +1112,7 @@
 .yt-lib-saved-title {
     margin: 0;
     padding: 12px 16px 4px;
-    font-size: 15px;
+    font-size: calc(15px * var(--font-scale, 1));
     font-weight: 700;
     color: #0f0f0f;
 }
@@ -1120,7 +1120,7 @@
 .yt-lib-vacio {
     padding: 20px 16px;
     color: #606060;
-    font-size: 15px;
+    font-size: calc(15px * var(--font-scale, 1));
 }
 
 .yt-lib-saved-section .yt-feed {
@@ -1136,7 +1136,7 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 11px;
+    font-size: calc(11px * var(--font-scale, 1));
     font-weight: 700;
 }
 
@@ -1151,7 +1151,7 @@
     max-width: 86%;
     background: rgba(15, 15, 15, 0.92);
     color: #ffffff;
-    font-size: 14px;
+    font-size: calc(14px * var(--font-scale, 1));
     font-weight: 600;
     padding: 12px 18px;
     border-radius: 10px;
@@ -1218,13 +1218,13 @@
 
 .yt-success-container h2 {
     margin: 0 0 10px;
-    font-size: 24px;
+    font-size: calc(24px * var(--font-scale, 1));
     color: #ff0000;
 }
 
 .yt-success-container p {
     margin: 0 0 22px;
-    font-size: 16px;
+    font-size: calc(16px * var(--font-scale, 1));
     line-height: 1.4;
     color: #0f0f0f;
 }
@@ -1237,7 +1237,7 @@
     border-bottom: 5px solid #b71c1c;
     border-radius: 14px;
     padding: 14px;
-    font-size: 18px;
+    font-size: calc(18px * var(--font-scale, 1));
     font-weight: 800;
     font-family: inherit;
     cursor: pointer;
@@ -1355,7 +1355,7 @@
     border-radius: 12px;
     padding: 16px 12px;
     font-family: inherit;
-    font-size: 16px;
+    font-size: calc(16px * var(--font-scale, 1));
     font-weight: 600;
     color: #0f0f0f;
     text-align: left;
@@ -1412,7 +1412,7 @@
 }
 
 .yt-share-title {
-    font-size: 18px;
+    font-size: calc(18px * var(--font-scale, 1));
     font-weight: 800;
     color: #0f0f0f;
 }
@@ -1431,7 +1431,7 @@
     background: transparent;
     border: none;
     font-family: inherit;
-    font-size: 13px;
+    font-size: calc(13px * var(--font-scale, 1));
     font-weight: 600;
     color: #0f0f0f;
     cursor: pointer;
@@ -1445,7 +1445,7 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 26px;
+    font-size: calc(26px * var(--font-scale, 1));
 }
 
 .yt-share-contacto {
@@ -1470,7 +1470,7 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 18px;
+    font-size: calc(18px * var(--font-scale, 1));
     font-weight: 700;
     flex-shrink: 0;
 }
@@ -1478,7 +1478,7 @@
 .yt-share-contacto-nombre {
     flex: 1;
     min-width: 0;
-    font-size: 16px;
+    font-size: calc(16px * var(--font-scale, 1));
     font-weight: 600;
     color: #0f0f0f;
 }
@@ -1486,7 +1486,7 @@
 .yt-share-contacto-enviar {
     background: #065fd4;
     color: #ffffff;
-    font-size: 13px;
+    font-size: calc(13px * var(--font-scale, 1));
     font-weight: 700;
     padding: 7px 16px;
     border-radius: 16px;
@@ -1571,7 +1571,7 @@
 
 .yt-volumen-titulo {
     margin: 0 0 12px;
-    font-size: 20px;
+    font-size: calc(20px * var(--font-scale, 1));
     font-weight: 800;
     color: #ff0000;
 }
@@ -1579,7 +1579,7 @@
 
 .yt-volumen-texto {
     margin: 0 0 12px;
-    font-size: 16px;
+    font-size: calc(16px * var(--font-scale, 1));
     line-height: 1.45;
     color: #0f0f0f;
     text-align: left;
@@ -1593,7 +1593,7 @@
     border-bottom: 5px solid #b71c1c;
     border-radius: 14px;
     padding: 14px;
-    font-size: 17px;
+    font-size: calc(17px * var(--font-scale, 1));
     font-weight: 800;
     font-family: inherit;
     cursor: pointer;
@@ -1627,7 +1627,7 @@
 
 .yt-volumen-figura figcaption {
     margin-top: 6px;
-    font-size: 12px;
+    font-size: calc(12px * var(--font-scale, 1));
     font-weight: 700;
     color: #606060;
     line-height: 1.3;
@@ -1667,6 +1667,276 @@
 
 .yt-cargando-texto {
     color: #ffffff;
-    font-size: 14px;
+    font-size: calc(14px * var(--font-scale, 1));
     font-weight: 600;
 }
+
+/* ===================== MODO OSCURO Y ALTO CONTRASTE (YouTube) ===================== */
+
+/* ---- MODO OSCURO ---- */
+html[data-theme="dark"] .pantalla-youtube {
+    background: #121212;
+    color: #e0e0e0;
+}
+
+html[data-theme="dark"] .yt-header,
+html[data-theme="dark"] .yt-categories-container,
+html[data-theme="dark"] .yt-feed,
+html[data-theme="dark"] .yt-player-view,
+html[data-theme="dark"] .yt-search-header,
+html[data-theme="dark"] .yt-bottom-nav {
+    background: #121212;
+    border-color: #3d3d3d;
+}
+
+html[data-theme="dark"] .yt-logo-text,
+html[data-theme="dark"] .yt-back-btn svg,
+html[data-theme="dark"] .yt-header-icon svg {
+    color: #ffffff;
+    fill: #ffffff;
+}
+
+html[data-theme="dark"] .yt-back-btn:hover {
+    background: #2b2b2b;
+}
+
+html[data-theme="dark"] .yt-pill {
+    background: #2b2b2b;
+    color: #e0e0e0;
+}
+
+html[data-theme="dark"] .yt-pill.active {
+    background: #ffffff;
+    color: #121212;
+}
+
+html[data-theme="dark"] .yt-video-thumbnail-container {
+    background: #282828;
+}
+
+html[data-theme="dark"] .yt-video-title,
+html[data-theme="dark"] .yt-player-title,
+html[data-theme="dark"] .yt-comments-preview-title,
+html[data-theme="dark"] .yt-comments-preview-arrow,
+html[data-theme="dark"] .yt-drawer-title,
+html[data-theme="dark"] .yt-drawer-close-btn,
+html[data-theme="dark"] .yt-comment-author,
+html[data-theme="dark"] .yt-comment-text,
+html[data-theme="dark"] .yt-comment-input-field,
+html[data-theme="dark"] .yt-lib-name,
+html[data-theme="dark"] .yt-lib-option-text strong,
+html[data-theme="dark"] .yt-lib-saved-title,
+html[data-theme="dark"] .yt-share-title,
+html[data-theme="dark"] .yt-share-app,
+html[data-theme="dark"] .yt-share-contacto-nombre,
+html[data-theme="dark"] .yt-comment-menu-opcion,
+html[data-theme="dark"] .yt-volumen-texto,
+html[data-theme="dark"] .yt-search-chip,
+html[data-theme="dark"] .yt-comments-preview-text {
+    color: #ffffff;
+}
+
+html[data-theme="dark"] .yt-video-meta,
+html[data-theme="dark"] .yt-player-metadata,
+html[data-theme="dark"] .yt-channel-subs-count,
+html[data-theme="dark"] .yt-comments-preview-count,
+html[data-theme="dark"] .yt-comment-time,
+html[data-theme="dark"] .yt-comment-action-btn,
+html[data-theme="dark"] .yt-lib-mail,
+html[data-theme="dark"] .yt-lib-option-text small,
+html[data-theme="dark"] .yt-lib-vacio,
+html[data-theme="dark"] .yt-search-chips-title,
+html[data-theme="dark"] .yt-comments-warning-banner,
+html[data-theme="dark"] .yt-volumen-figura figcaption {
+    color: #aaaaaa;
+}
+
+html[data-theme="dark"] .yt-comment-action-btn svg,
+html[data-theme="dark"] .yt-comment-menu-btn svg,
+html[data-theme="dark"] .yt-lib-option svg,
+html[data-theme="dark"] .yt-lib-arrow,
+html[data-theme="dark"] .yt-search-chip svg {
+    fill: #aaaaaa;
+    color: #aaaaaa;
+}
+
+html[data-theme="dark"] .yt-comment-menu-opcion svg {
+    fill: #ffffff;
+}
+
+html[data-theme="dark"] .yt-subscribe-btn {
+    background: #ff4c4c;
+    color: #ffffff;
+}
+
+html[data-theme="dark"] .yt-subscribe-btn.subscribed {
+    background: #2b2b2b;
+    color: #e0e0e0;
+}
+
+html[data-theme="dark"] .yt-action-pill {
+    background: #2b2b2b;
+    color: #e0e0e0;
+}
+
+html[data-theme="dark"] .yt-action-pill svg {
+    fill: #e0e0e0;
+}
+
+html[data-theme="dark"] .yt-action-pill.activo {
+    background: #143a5c;
+    color: #6ab3ff;
+}
+
+html[data-theme="dark"] .yt-comments-preview-box {
+    background: #1c1c1c;
+}
+
+html[data-theme="dark"] .yt-comments-preview-box:hover {
+    background: #282828;
+}
+
+html[data-theme="dark"] .yt-comments-drawer,
+html[data-theme="dark"] .yt-comment-menu-panel,
+html[data-theme="dark"] .yt-share-panel,
+html[data-theme="dark"] .yt-volumen-panel {
+    background: #1c1c1c;
+    border-color: #3d3d3d;
+}
+
+html[data-theme="dark"] .yt-drawer-header,
+html[data-theme="dark"] .yt-share-header {
+    border-color: #3d3d3d;
+}
+
+html[data-theme="dark"] .yt-drawer-close-btn:hover {
+    background: #2b2b2b;
+}
+
+html[data-theme="dark"] .yt-comments-warning-banner {
+    background: #1c1c1c;
+    border-color: #3d3d3d;
+}
+
+html[data-theme="dark"] .yt-comment-item-mio {
+    background: #23233a;
+}
+
+html[data-theme="dark"] .yt-comment-input-bar {
+    background: #121212;
+    border-color: #3d3d3d;
+}
+
+html[data-theme="dark"] .yt-comment-input-field {
+    background: #2b2b2b;
+    color: #ffffff;
+}
+
+html[data-theme="dark"] .yt-comment-input-field::placeholder {
+    color: #aaaaaa;
+}
+
+html[data-theme="dark"] .yt-bell-btn {
+    background: #2b2b2b;
+}
+
+html[data-theme="dark"] .yt-bell-btn svg {
+    fill: #ffffff;
+}
+
+html[data-theme="dark"] .yt-search-input {
+    background: #1c1c1c;
+    border-color: #3d3d3d;
+    color: #ffffff;
+}
+
+html[data-theme="dark"] .yt-search-chip {
+    background: #1c1c1c;
+    border-color: #3d3d3d;
+}
+
+html[data-theme="dark"] .yt-lib-option {
+    border-color: #3d3d3d;
+}
+
+html[data-theme="dark"] .yt-lib-option svg {
+    fill: #e0e0e0;
+}
+
+html[data-theme="dark"] .yt-share-contacto {
+    border-color: #3d3d3d;
+}
+
+html[data-theme="dark"] .yt-nav-tab {
+    color: #e0e0e0;
+}
+
+html[data-theme="dark"] .yt-success-container {
+    background: #1c1c1c;
+}
+
+html[data-theme="dark"] .yt-success-container p {
+    color: #e0e0e0;
+}
+
+html[data-theme="dark"] .yt-instructions-bar {
+    background-color: #2b2318;
+    border-color: #6b4a3a;
+    color: #f0dfc8;
+}
+
+/* ---- ALTO CONTRASTE ---- */
+html[data-contrast="high"] .yt-video-card,
+html[data-contrast="high"] .yt-subscribe-btn,
+html[data-contrast="high"] .yt-action-pill,
+html[data-contrast="high"] .yt-pill,
+html[data-contrast="high"] .yt-bell-btn,
+html[data-contrast="high"] .yt-search-chip,
+html[data-contrast="high"] .yt-search-input,
+html[data-contrast="high"] .yt-search-go-btn,
+html[data-contrast="high"] .yt-comment-action-btn,
+html[data-contrast="high"] .yt-comment-send-btn,
+html[data-contrast="high"] .yt-comment-input-field,
+html[data-contrast="high"] .yt-lib-option,
+html[data-contrast="high"] .yt-share-app,
+html[data-contrast="high"] .yt-share-contacto,
+html[data-contrast="high"] .yt-share-contacto-enviar,
+html[data-contrast="high"] .yt-comment-menu-opcion,
+html[data-contrast="high"] .yt-success-btn-continuar,
+html[data-contrast="high"] .yt-volumen-btn,
+html[data-contrast="high"] .yt-nav-tab,
+html[data-contrast="high"] .yt-back-btn,
+html[data-contrast="high"] .yt-header-icon,
+html[data-contrast="high"] button {
+    border: 3px solid #000000 !important;
+    font-weight: 800 !important;
+}
+
+html[data-theme="dark"][data-contrast="high"] .yt-video-card,
+html[data-theme="dark"][data-contrast="high"] .yt-subscribe-btn,
+html[data-theme="dark"][data-contrast="high"] .yt-action-pill,
+html[data-theme="dark"][data-contrast="high"] .yt-pill,
+html[data-theme="dark"][data-contrast="high"] .yt-bell-btn,
+html[data-theme="dark"][data-contrast="high"] .yt-search-chip,
+html[data-theme="dark"][data-contrast="high"] .yt-search-input,
+html[data-theme="dark"][data-contrast="high"] .yt-search-go-btn,
+html[data-theme="dark"][data-contrast="high"] .yt-comment-action-btn,
+html[data-theme="dark"][data-contrast="high"] .yt-comment-send-btn,
+html[data-theme="dark"][data-contrast="high"] .yt-comment-input-field,
+html[data-theme="dark"][data-contrast="high"] .yt-lib-option,
+html[data-theme="dark"][data-contrast="high"] .yt-share-app,
+html[data-theme="dark"][data-contrast="high"] .yt-share-contacto,
+html[data-theme="dark"][data-contrast="high"] .yt-share-contacto-enviar,
+html[data-theme="dark"][data-contrast="high"] .yt-comment-menu-opcion,
+html[data-theme="dark"][data-contrast="high"] .yt-success-btn-continuar,
+html[data-theme="dark"][data-contrast="high"] .yt-volumen-btn,
+html[data-theme="dark"][data-contrast="high"] .yt-nav-tab,
+html[data-theme="dark"][data-contrast="high"] .yt-back-btn,
+html[data-theme="dark"][data-contrast="high"] .yt-header-icon,
+html[data-theme="dark"][data-contrast="high"] button {
+    border: 3px solid #ffffff !important;
+    color: #ffffff !important;
+}
+
+/* La escala de texto de estos elementos ya se aplica directamente en su
+   declaración original "font-size: calc(Npx * var(--font-scale, 1));". */

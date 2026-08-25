@@ -1,5 +1,7 @@
 import { $ } from "../utils/dom.js";
 import { abrirPantallaNiveles, abrirNivel } from "../controllers/levels.controller.js";
+import { renderizarValoresAjustes } from "../controllers/settings.controller.js";
+import { renderizarTrofeos } from "../controllers/trophies.controller.js";
 import { stopSpeech } from "./speech.service.js";
 import { limpiarResaltados } from "./guide-highlight.service.js";
 
@@ -40,12 +42,20 @@ function procesarRuta(hash) {
     // 2. Ajustes
     if (ruta === "ajustes") {
         cambiarPantalla("pantallaAjustes");
+        renderizarValoresAjustes();
         const menuBody = $("#ajustesMenuBody");
         const creditosSec = $("#creditosSeccion");
         const title = $("#ajustesTitle");
         if (menuBody) menuBody.style.display = "flex";
         if (creditosSec) creditosSec.style.display = "none";
-        if (title) title.textContent = "Ajustes";
+        if (title) title.textContent = "Ajustes y Accesibilidad";
+        return;
+    }
+
+    // 2.1. Trofeos
+    if (ruta === "trofeos") {
+        cambiarPantalla("pantallaTrofeos");
+        renderizarTrofeos();
         return;
     }
 

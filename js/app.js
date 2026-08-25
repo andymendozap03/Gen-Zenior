@@ -1,6 +1,9 @@
 import { inicializarMenu } from "./controllers/menu.controller.js";
 import { inicializarNiveles } from "./controllers/levels.controller.js";
+import { inicializarAjustes } from "./controllers/settings.controller.js";
+import { inicializarTrofeos } from "./controllers/trophies.controller.js";
 import { inicializarRouter } from "./services/router.service.js";
+import { cargarAjustes, aplicarAjustesGlobales } from "./services/settings.service.js";
 import { precargarRecursos, precargarEnSegundoPlano } from "./services/preload.service.js";
 import { speak } from "./services/speech.service.js";
 
@@ -15,6 +18,10 @@ import { speak } from "./services/speech.service.js";
  * Por eso la primera frase se quedaba muda y la segunda sí sonaba.
  */
 document.addEventListener("DOMContentLoaded", async () => {
+    // 1. Cargar y aplicar ajustes de accesibilidad de inmediato
+    cargarAjustes();
+    aplicarAjustesGlobales();
+
     const pantallaCarga = document.getElementById("pantallaCarga");
     const barra = document.getElementById("cargaProgreso");
     const texto = document.getElementById("cargaTexto");
@@ -23,6 +30,8 @@ document.addEventListener("DOMContentLoaded", async () => {
 
     inicializarMenu();
     inicializarNiveles();
+    inicializarAjustes();
+    inicializarTrofeos();
 
     try {
         await precargarRecursos(porcentaje => {

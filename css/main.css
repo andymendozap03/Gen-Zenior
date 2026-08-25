@@ -51,40 +51,150 @@ button {
 }
 
 /* ==========================================================================
+   CONFIGURACIÓN DE ACCESIBILIDAD (ESCALA TIPOGRÁFICA Y TEMAS)
+   ========================================================================== */
+
+:root {
+    --font-scale: 1;
+}
+
+html[data-font-size="pequeno"] {
+    --font-scale: 0.9;
+    font-size: 14.5px;
+}
+
+html[data-font-size="mediano"] {
+    --font-scale: 1;
+    font-size: 16px;
+}
+
+html[data-font-size="grande"] {
+    --font-scale: 1.15;
+    font-size: 18px;
+}
+
+/* La escala de texto se aplica directamente en cada declaración
+   "font-size: calc(Npx * var(--font-scale, 1));" de cada archivo CSS,
+   en vez de mantener aquí una lista de selectores: así queda garantizado
+   que absolutamente todo el texto de la app (incluidos los simuladores)
+   responde al ajuste de tamaño, sin depender de no olvidar ninguna clase. */
+
+/* Modo Oscuro Global - Todos los módulos */
+html[data-theme="dark"] body {
+    background: #121212;
+    color: #e0e0e0;
+}
+
+html[data-theme="dark"] .app {
+    background: #1c1c1c;
+    color: #e0e0e0;
+    box-shadow: 0 0 30px rgba(0, 0, 0, 0.85);
+}
+
+html[data-theme="dark"] .pantalla {
+    background: #1c1c1c;
+    color: #e0e0e0;
+}
+
+html[data-theme="dark"] .pantalla-menu,
+html[data-theme="dark"] .pantalla-niveles,
+html[data-theme="dark"] .pantalla-ajustes,
+html[data-theme="dark"] .pantalla-contactos {
+    background: #1c1c1c;
+}
+
+html[data-theme="dark"] .boton-menu {
+    background: #2b2b2b;
+    color: #ffffff;
+    border: 1px solid #3d3d3d;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+}
+
+html[data-theme="dark"] .mensaje-nico {
+    background: #282828;
+    color: #ffffff;
+    border-color: #444444;
+}
+
+html[data-theme="dark"] .item-nivel {
+    background: #282828;
+    border-color: #3d3d3d;
+    color: #ffffff;
+}
+
+html[data-theme="dark"] .item-nivel-info h3 {
+    color: #ffffff;
+}
+
+html[data-theme="dark"] .item-nivel-info p {
+    color: #aaaaaa;
+}
+
+html[data-theme="dark"] .barra-inferior {
+    background: #141414;
+    border-top: 1px solid #333333;
+}
+
+html[data-theme="dark"] .boton-abajo {
+    color: #aaaaaa;
+}
+
+html[data-theme="dark"] .boton-abajo.activo {
+    color: #ffb300;
+}
+
+html[data-theme="dark"] .credito-card {
+    background: #282828;
+    border-color: #3d3d3d;
+}
+
+html[data-theme="dark"] .card-name {
+    color: #ffffff;
+}
+
+html[data-theme="dark"] .card-email {
+    color: #aaaaaa;
+}
+
+/* Modo Alto Contraste Global - Todos los módulos */
+html[data-contrast="high"] .boton-menu,
+html[data-contrast="high"] .ajuste-card,
+html[data-contrast="high"] .item-nivel,
+html[data-contrast="high"] .circulo-nivel,
+html[data-contrast="high"] .credito-card,
+html[data-contrast="high"] .mensaje-nico,
+html[data-contrast="high"] button {
+    border: 3px solid #000000 !important;
+    font-weight: 800 !important;
+}
+
+html[data-theme="dark"][data-contrast="high"] .boton-menu,
+html[data-theme="dark"][data-contrast="high"] .ajuste-card,
+html[data-theme="dark"][data-contrast="high"] .item-nivel,
+html[data-theme="dark"][data-contrast="high"] .circulo-nivel,
+html[data-theme="dark"][data-contrast="high"] .credito-card,
+html[data-theme="dark"][data-contrast="high"] .mensaje-nico,
+html[data-theme="dark"][data-contrast="high"] button {
+    border: 3px solid #ffffff !important;
+    color: #ffffff !important;
+}
+
+/* ==========================================================================
    GUÍA VISUAL Y RESALTADO DE NICO (ANIMACIONES INTERACTIVAS)
    ========================================================================== */
 
-@keyframes nicoPulseGlow {
+@keyframes nicoPulseGlowAzul {
     0% {
         box-shadow: 0 0 0 0 rgba(0, 180, 255, 0.85), 0 0 16px rgba(0, 210, 255, 0.7);
         transform: scale(1);
     }
-
     50% {
-        box-shadow: 0 0 0 10px rgba(0, 180, 255, 0), 0 0 28px rgba(0, 210, 255, 1);
-        transform: scale(1.05);
+        box-shadow: 0 0 0 12px rgba(0, 180, 255, 0), 0 0 30px rgba(0, 210, 255, 1);
+        transform: scale(1.06);
     }
-
     100% {
         box-shadow: 0 0 0 0 rgba(0, 180, 255, 0), 0 0 16px rgba(0, 210, 255, 0.7);
         transform: scale(1);
-    }
-}
-
-@keyframes nicoPulseGlowCentered {
-    0% {
-        box-shadow: 0 0 0 0 rgba(0, 180, 255, 0.85), 0 0 16px rgba(0, 210, 255, 0.7);
-        transform: translate(-50%, -50%) scale(1);
-    }
-
-    50% {
-        box-shadow: 0 0 0 10px rgba(0, 180, 255, 0), 0 0 28px rgba(0, 210, 255, 1);
-        transform: translate(-50%, -50%) scale(1.06);
-    }
-
-    100% {
-        box-shadow: 0 0 0 0 rgba(0, 180, 255, 0), 0 0 16px rgba(0, 210, 255, 0.7);
-        transform: translate(-50%, -50%) scale(1);
     }
 }
 
@@ -93,22 +203,65 @@ button {
         box-shadow: 0 0 0 0 rgba(255, 170, 0, 0.85), 0 0 16px rgba(255, 193, 7, 0.7);
         transform: scale(1);
     }
-
     50% {
         box-shadow: 0 0 0 12px rgba(255, 170, 0, 0), 0 0 30px rgba(255, 193, 7, 1);
         transform: scale(1.06);
     }
-
     100% {
         box-shadow: 0 0 0 0 rgba(255, 170, 0, 0), 0 0 16px rgba(255, 193, 7, 0.7);
         transform: scale(1);
     }
 }
 
+@keyframes nicoPulseGlowAmarillo {
+    0% {
+        box-shadow: 0 0 0 0 rgba(255, 235, 59, 0.85), 0 0 16px rgba(255, 235, 59, 0.7);
+        transform: scale(1);
+    }
+    50% {
+        box-shadow: 0 0 0 12px rgba(255, 235, 59, 0), 0 0 30px rgba(255, 235, 59, 1);
+        transform: scale(1.06);
+    }
+    100% {
+        box-shadow: 0 0 0 0 rgba(255, 235, 59, 0), 0 0 16px rgba(255, 235, 59, 0.7);
+        transform: scale(1);
+    }
+}
+
+@keyframes nicoPulseGlowVerde {
+    0% {
+        box-shadow: 0 0 0 0 rgba(0, 230, 118, 0.85), 0 0 16px rgba(0, 230, 118, 0.7);
+        transform: scale(1);
+    }
+    50% {
+        box-shadow: 0 0 0 12px rgba(0, 230, 118, 0), 0 0 30px rgba(0, 230, 118, 1);
+        transform: scale(1.06);
+    }
+    100% {
+        box-shadow: 0 0 0 0 rgba(0, 230, 118, 0), 0 0 16px rgba(0, 230, 118, 0.7);
+        transform: scale(1);
+    }
+}
+
+@keyframes nicoPulseGlowCentered {
+    0% {
+        box-shadow: 0 0 0 0 rgba(255, 170, 0, 0.85), 0 0 16px rgba(255, 193, 7, 0.7);
+        transform: translate(-50%, -50%) scale(1);
+    }
+    50% {
+        box-shadow: 0 0 0 12px rgba(255, 170, 0, 0), 0 0 30px rgba(255, 193, 7, 1);
+        transform: translate(-50%, -50%) scale(1.06);
+    }
+    100% {
+        box-shadow: 0 0 0 0 rgba(255, 170, 0, 0), 0 0 16px rgba(255, 193, 7, 0.7);
+        transform: translate(-50%, -50%) scale(1);
+    }
+}
+
 .nico-highlight-target {
     z-index: 25 !important;
-    animation: nicoPulseGlow 1.4s infinite ease-in-out !important;
-    outline: 3px solid rgba(0, 195, 255, 0.9) !important;
+    animation: nicoPulseGlowAmber 1.4s infinite ease-in-out !important;
+    outline: 3px solid rgba(255, 180, 0, 0.95) !important;
     outline-offset: 3px !important;
     transition: transform 0.25s ease, box-shadow 0.25s ease !important;
 }
@@ -116,6 +269,21 @@ button {
 .nico-highlight-target.amber {
     animation: nicoPulseGlowAmber 1.4s infinite ease-in-out !important;
     outline: 3px solid rgba(255, 180, 0, 0.95) !important;
+}
+
+.nico-highlight-target.amarillo {
+    animation: nicoPulseGlowAmarillo 1.4s infinite ease-in-out !important;
+    outline: 3px solid rgba(255, 235, 59, 0.95) !important;
+}
+
+.nico-highlight-target.verde {
+    animation: nicoPulseGlowVerde 1.4s infinite ease-in-out !important;
+    outline: 3px solid rgba(0, 230, 118, 0.95) !important;
+}
+
+.nico-highlight-target.azul {
+    animation: nicoPulseGlowAzul 1.4s infinite ease-in-out !important;
+    outline: 3px solid rgba(0, 195, 255, 0.95) !important;
 }
 
 .circulo-nivel.nico-highlight-target {
@@ -190,7 +358,7 @@ button {
 
 .carga-texto {
     margin: 0;
-    font-size: 17px;
+    font-size: calc(17px * var(--font-scale, 1));
     font-weight: 700;
     color: #4b2e22;
     text-align: center;
@@ -207,7 +375,7 @@ button {
     border-bottom: 6px solid #5c7a2e;
     border-radius: 16px;
     padding: 16px 38px;
-    font-size: 22px;
+    font-size: calc(22px * var(--font-scale, 1));
     font-weight: 800;
     font-family: inherit;
     cursor: pointer;

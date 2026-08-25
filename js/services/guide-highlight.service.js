@@ -15,7 +15,7 @@ export function limpiarResaltados() {
     }
     const elementos = document.querySelectorAll(".nico-highlight-target");
     elementos.forEach(el => {
-        el.classList.remove("nico-highlight-target", "amber");
+        el.classList.remove("nico-highlight-target", "amber", "amarillo", "verde", "azul");
     });
 }
 
@@ -25,7 +25,7 @@ export function limpiarResaltados() {
  * @param {Object} [opciones={}] - Opciones de configuración.
  * @param {boolean} [opciones.limpiarAnteriores=true] - Si se deben limpiar resaltados previos.
  * @param {boolean} [opciones.scroll=false] - Si se debe centrar el elemento en pantalla.
- * @param {string} [opciones.variant="default"] - 'default' (azul/cian) o 'amber' (dorado/ámbar).
+ * @param {string} [opciones.variant="default"] - 'default' (usa ajuste de usuario), 'amber', 'amarillo', 'verde', 'azul'.
  * @param {number|null} [opciones.duracion=null] - Duración en milisegundos para auto-remover el efecto.
  */
 export function resaltarElemento(objetivo, opciones = {}) {
@@ -54,11 +54,14 @@ export function resaltarElemento(objetivo, opciones = {}) {
 
     if (elementos.length === 0) return;
 
+    // Determinar la variante de color: si es default, usar la configurada por el usuario
+    const activeColor = (variant === "default") ? (window.nicoHighlightColor || "azul") : variant;
+
     elementos.forEach(el => {
         if (!el) return;
         el.classList.add("nico-highlight-target");
-        if (variant === "amber") {
-            el.classList.add("amber");
+        if (activeColor) {
+            el.classList.add(activeColor);
         }
     });
 
@@ -73,7 +76,7 @@ export function resaltarElemento(objetivo, opciones = {}) {
     if (duracion && typeof duracion === "number") {
         activeHighlightTimeout = setTimeout(() => {
             elementos.forEach(el => {
-                el.classList.remove("nico-highlight-target", "amber");
+                el.classList.remove("nico-highlight-target", "amber", "amarillo", "verde", "azul");
             });
         }, duracion);
     }

@@ -28,20 +28,39 @@
     position: absolute;
     top: 10px;
     right: 0;
-    width: 64px;
-    height: 64px;
-    border: none;
-    border-radius: 14px;
-    background: #7b9f42;
-    color: white;
-    font-weight: bold;
-    box-shadow: 0 4px 8px rgba(0, 0, 0, .2);
-    transition: all 0.25s ease;
+    width: 66px;
+    height: 66px;
+    border: 0;
+    border-radius: 16px;
+    background: #76b95d;
+    color: #ffffff;
+    font-weight: 800;
+    box-shadow: 0 4px 0 #4d843d, 0 4px 8px rgba(0, 0, 0, 0.15);
+    transition: all 0.2s ease;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 8px 0;
+    cursor: pointer;
     z-index: 310;
 }
 
+.boton-nico:active {
+    transform: translateY(2px);
+    box-shadow: 0 2px 0 #4d843d, 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.boton-nico .icono-nico {
+    width: 28px;
+    height: 28px;
+    margin-bottom: 2px;
+}
+
 .boton-nico small {
-    font-size: 15px;
+    font-size: calc(14px * var(--font-scale, 1));
+    text-transform: none;
+    font-weight: 700;
 }
 
 .menu-principal {
@@ -64,7 +83,7 @@
     padding: 12px 18px;
     background: #d5c19f;
     color: #000;
-    font-size: 22px;
+    font-size: calc(22px * var(--font-scale, 1));
     font-weight: 700;
     box-shadow: 0 4px 10px rgba(0, 0, 0, .20);
     text-align: left;
@@ -114,7 +133,7 @@
     border-radius: 16px;
     background: #603629;
     color: white;
-    font-size: 20px;
+    font-size: calc(20px * var(--font-scale, 1));
     font-weight: 700;
     box-shadow: 0 4px 10px rgba(0, 0, 0, .20);
     transition: all 0.25s ease;
@@ -122,7 +141,7 @@
 
 .icono-abajo {
     display: block;
-    font-size: 34px;
+    font-size: calc(34px * var(--font-scale, 1));
     margin-bottom: 4px;
 }
 
@@ -138,7 +157,7 @@
     color: #4b2e22;
     border: 2px solid #6b4a3a;
     border-radius: 12px;
-    font-size: 15px;
+    font-size: calc(15px * var(--font-scale, 1));
     font-weight: 700;
     line-height: 1.3;
     box-shadow: 0 4px 8px rgba(0, 0, 0, .18);
@@ -188,7 +207,7 @@
     display: flex;
     align-items: center;
     gap: 12px;
-    font-size: 14px;
+    font-size: calc(14px * var(--font-scale, 1));
     color: #4b2e22;
     z-index: 15;
     flex-shrink: 0;
@@ -203,7 +222,7 @@
     padding: 4px 8px;
     border-radius: 8px;
     font-weight: bold;
-    font-size: 11px;
+    font-size: calc(11px * var(--font-scale, 1));
     user-select: none;
     cursor: pointer;
     transition: transform 0.2s ease, background-color 0.2s ease;
@@ -270,38 +289,534 @@
 .ajustes-menu-body {
     display: flex;
     flex-direction: column;
+    gap: 18px;
+    width: 100%;
+    max-width: 480px;
+    margin: 0 auto;
+    padding-bottom: 20px;
+}
+
+/* Tarjetas de Ajustes */
+.ajuste-card {
+    background: #ffffff;
+    border-radius: 18px;
+    padding: 18px 20px;
+    box-shadow: 0 4px 14px rgba(75, 46, 34, 0.08);
+    border: 2px solid rgba(96, 54, 41, 0.12);
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    transition: all 0.2s ease;
+}
+
+.ajuste-card-header {
+    display: flex;
     align-items: center;
-    justify-content: center;
+    gap: 14px;
+    justify-content: space-between;
+}
+
+.ajuste-icon-img {
+    width: 28px;
+    height: 28px;
+    flex-shrink: 0;
+    object-fit: contain;
+}
+
+.ajuste-info {
     flex: 1;
 }
 
-/* Botón gigante de créditos */
-.btn-ver-creditos-large {
-    width: 100%;
-    max-width: 380px;
-    background: linear-gradient(135deg, #ff9100, #ff3d00);
-    border: 3px solid #6b4a3a;
-    border-radius: 20px;
+.ajuste-info h3 {
+    margin: 0 0 4px;
+    font-size: calc(17px * var(--font-scale, 1));
+    font-weight: 700;
+    color: #43281c;
+}
+
+.ajuste-info p {
+    margin: 0;
+    font-size: calc(13.5px * var(--font-scale, 1));
+    color: #6b4a3a;
+    line-height: 1.35;
+}
+
+/* Switch Accesible Grande */
+.switch-accesible {
+    position: relative;
+    display: inline-block;
+    width: 56px;
+    height: 32px;
+    flex-shrink: 0;
+}
+
+.switch-accesible input {
+    opacity: 0;
+    width: 0;
+    height: 0;
+}
+
+.slider-accesible {
+    position: absolute;
+    cursor: pointer;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: #d1c4b9;
+    transition: .3s;
+    border-radius: 34px;
+}
+
+.slider-accesible:before {
+    position: absolute;
+    content: "";
+    height: 24px;
+    width: 24px;
+    left: 4px;
+    bottom: 4px;
+    background-color: white;
+    transition: .3s;
+    border-radius: 50%;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.25);
+}
+
+input:checked + .slider-accesible {
+    background-color: #ff9800;
+}
+
+input:checked + .slider-accesible:before {
+    transform: translateX(24px);
+}
+
+/* Subsecciones dependientes (Velocidad, etc.) */
+.ajuste-subseccion {
+    border-top: 1px solid rgba(96, 54, 41, 0.1);
+    padding-top: 14px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    transition: opacity 0.25s ease;
+}
+
+.ajuste-subseccion.deshabilitado {
+    opacity: 0.35;
+    pointer-events: none;
+    user-select: none;
+}
+
+.ajuste-sub-info h4 {
+    margin: 0 0 2px;
+    font-size: calc(14.5px * var(--font-scale, 1));
+    font-weight: 700;
+    color: #43281c;
+}
+
+.ajuste-sub-info p {
+    margin: 0;
+    font-size: calc(12.5px * var(--font-scale, 1));
+    color: #6b4a3a;
+}
+
+/* Segmented Controls Accesibles */
+.ajuste-segmented-control {
+    display: flex;
+    background: #f4ece1;
+    border-radius: 12px;
+    padding: 4px;
+    gap: 4px;
+}
+
+.ajuste-segmented-control button {
+    flex: 1;
+    background: none;
+    border: none;
+    padding: 10px 6px;
+    font-size: calc(13.5px * var(--font-scale, 1));
+    font-weight: 600;
+    color: #6b4a3a;
+    border-radius: 8px;
+    transition: all 0.2s ease;
+    cursor: pointer;
+    text-align: center;
+}
+
+.ajuste-segmented-control button.activo {
+    background: #ff9800;
     color: #ffffff;
-    font-size: 20px;
     font-weight: 800;
-    padding: 22px 30px;
+    box-shadow: 0 2px 6px rgba(255, 152, 0, 0.4);
+}
+
+/* Botón Probar Voz */
+.btn-probar-voz {
     display: flex;
     align-items: center;
     justify-content: center;
-    gap: 12px;
+    gap: 8px;
+    background: #fdf6ec;
+    border: 1.5px solid #ffb300;
+    color: #bf360c;
+    border-radius: 10px;
+    padding: 10px 14px;
+    font-size: calc(14px * var(--font-scale, 1));
+    font-weight: 700;
     cursor: pointer;
-    box-shadow: 0 6px 18px rgba(255, 61, 0, 0.4);
-    transition: all 0.25s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    transition: all 0.2s;
 }
 
-.btn-ver-creditos-large:active {
+.btn-probar-voz:hover {
+    background: #ffecb3;
+}
+
+.btn-probar-voz:active {
+    transform: scale(0.98);
+}
+
+/* Vista previa de tamaño de fuente */
+.ajuste-preview-box {
+    background: #fcf8f2;
+    border: 1.5px dashed #d7ccc8;
+    border-radius: 12px;
+    padding: 14px 16px;
+    margin-top: 4px;
+}
+
+.ajuste-preview-tag {
+    font-size: calc(11px * var(--font-scale, 1));
+    font-weight: 800;
+    text-transform: uppercase;
+    color: #8d6e63;
+    letter-spacing: 0.5px;
+    display: block;
+    margin-bottom: 4px;
+}
+
+.ajuste-preview-text {
+    margin: 0;
+    font-size: calc(15px * var(--font-scale, 1));
+    color: #3e2723;
+    line-height: 1.4;
+    font-weight: 500;
+    transition: font-size 0.2s ease;
+}
+
+/* Filas de Toggle (Modo Oscuro / Alto Contraste) */
+.ajuste-row-toggle {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 8px 0;
+    border-bottom: 1px solid rgba(96, 54, 41, 0.08);
+}
+
+.ajuste-row-toggle:last-of-type {
+    border-bottom: none;
+}
+
+.ajuste-row-text h4 {
+    margin: 0 0 2px;
+    font-size: calc(15px * var(--font-scale, 1));
+    font-weight: 700;
+    color: #43281c;
+}
+
+.ajuste-row-text p {
+    margin: 0;
+    font-size: calc(12.5px * var(--font-scale, 1));
+    color: #6b4a3a;
+}
+
+/* Selector de Color de Guía */
+.ajuste-color-selector {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 8px;
+    margin-top: 6px;
+}
+
+.btn-ajuste-color {
+    background: #fdf6ec;
+    border: 2px solid transparent;
+    border-radius: 12px;
+    padding: 8px 4px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+    font-size: calc(12px * var(--font-scale, 1));
+    font-weight: 700;
+    color: #5d4037;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.btn-ajuste-color .color-dot {
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+.btn-ajuste-color.activo {
+    border-color: #ff9800;
+    background: #fff3e0;
+    box-shadow: 0 2px 8px rgba(255, 152, 0, 0.3);
+}
+
+/* Fila de navegación (Créditos y futuros accesos dentro de una ajuste-card) */
+.ajuste-row-link {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    width: calc(100% + 24px);
+    background: none;
+    border: none;
+    padding: 12px;
+    margin: -12px;
+    text-align: left;
+    cursor: pointer;
+    font-family: inherit;
+    border-radius: 14px;
+    transition: background 0.15s ease;
+}
+
+.ajuste-row-link:hover,
+.ajuste-row-link:focus-visible {
+    background: rgba(96, 54, 41, 0.06);
+}
+
+.ajuste-row-link:active {
     transform: translateY(1px);
 }
 
-.btn-ver-creditos-large .star-icon {
-    font-size: 24px;
-    color: #ffd084;
+.ajuste-row-link-flecha {
+    width: 18px;
+    height: 18px;
+    flex-shrink: 0;
+    opacity: 0.55;
+}
+
+/* Zona de peligro (Reiniciar Progreso) */
+.ajuste-card-peligro {
+    border-color: #ffcdd2;
+    background: #fff9f9;
+}
+
+.btn-reiniciar-progreso {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    background: #d32f2f;
+    color: #ffffff;
+    border: none;
+    border-radius: 12px;
+    padding: 14px 20px;
+    font-size: calc(15px * var(--font-scale, 1));
+    font-weight: 800;
+    cursor: pointer;
+    box-shadow: 0 4px 12px rgba(211, 47, 47, 0.35);
+    transition: all 0.2s ease;
+}
+
+.btn-reiniciar-progreso:hover {
+    background: #b71c1c;
+}
+
+.btn-reiniciar-progreso:active {
+    transform: scale(0.98);
+}
+
+/* Modal de Confirmación de Reinicio */
+.modal-confirmar-reinicio {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.65);
+    backdrop-filter: blur(4px);
+    z-index: 1000;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+}
+
+.modal-confirmar-reinicio.activa {
+    display: flex;
+}
+
+.modal-confirmar-card {
+    background: #ffffff;
+    max-width: 420px;
+    width: 100%;
+    border-radius: 20px;
+    padding: 24px;
+    text-align: center;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+    animation: modalPop 0.25s ease-out;
+}
+
+@keyframes modalPop {
+    from { transform: scale(0.9); opacity: 0; }
+    to { transform: scale(1); opacity: 1; }
+}
+
+.modal-confirmar-icon {
+    font-size: calc(44px * var(--font-scale, 1));
+    margin-bottom: 10px;
+}
+
+.modal-confirmar-card h2 {
+    margin: 0 0 10px;
+    font-size: calc(20px * var(--font-scale, 1));
+    color: #d32f2f;
+    font-weight: 800;
+}
+
+.modal-confirmar-card p {
+    font-size: calc(14px * var(--font-scale, 1));
+    color: #555555;
+    line-height: 1.4;
+    margin: 0 0 8px;
+}
+
+.modal-confirmar-advertencia {
+    color: #c62828 !important;
+    font-size: calc(13px * var(--font-scale, 1)) !important;
+    margin-bottom: 20px !important;
+}
+
+.modal-confirmar-acciones {
+    display: flex;
+    gap: 12px;
+}
+
+.btn-modal-cancelar {
+    flex: 1;
+    background: #e0e0e0;
+    color: #333333;
+    border: none;
+    border-radius: 12px;
+    padding: 12px;
+    font-size: calc(15px * var(--font-scale, 1));
+    font-weight: 700;
+    cursor: pointer;
+}
+
+.btn-modal-peligro {
+    flex: 1.2;
+    background: #d32f2f;
+    color: #ffffff;
+    border: none;
+    border-radius: 12px;
+    padding: 12px;
+    font-size: calc(15px * var(--font-scale, 1));
+    font-weight: 800;
+    cursor: pointer;
+    box-shadow: 0 3px 10px rgba(211, 47, 47, 0.4);
+}
+
+.toast-ajustes-exito {
+    position: fixed;
+    bottom: 24px;
+    left: 50%;
+    transform: translateX(-50%) translateY(100px);
+    background: #2e7d32;
+    color: #ffffff;
+    padding: 12px 22px;
+    border-radius: 30px;
+    font-size: calc(14.5px * var(--font-scale, 1));
+    font-weight: 700;
+    box-shadow: 0 6px 18px rgba(0, 0, 0, 0.3);
+    z-index: 1001;
+    opacity: 0;
+    transition: all 0.3s ease;
+    pointer-events: none;
+}
+
+.toast-ajustes-exito.mostrar {
+    transform: translateX(-50%) translateY(0);
+    opacity: 1;
+}
+
+/* Modo Oscuro para Ajustes */
+html[data-theme="dark"] .ajuste-card {
+    background: #242424;
+    border-color: #383838;
+    color: #e0e0e0;
+}
+
+html[data-theme="dark"] .ajuste-info h3,
+html[data-theme="dark"] .ajuste-sub-info h4,
+html[data-theme="dark"] .ajuste-row-text h4 {
+    color: #ffffff;
+}
+
+html[data-theme="dark"] .ajuste-info p,
+html[data-theme="dark"] .ajuste-sub-info p,
+html[data-theme="dark"] .ajuste-row-text p {
+    color: #aaaaaa;
+}
+
+html[data-theme="dark"] .ajuste-segmented-control {
+    background: #181818;
+}
+
+html[data-theme="dark"] .ajuste-segmented-control button {
+    color: #bbbbbb;
+}
+
+html[data-theme="dark"] .ajuste-segmented-control button.activo {
+    background: #ff9800;
+    color: #000000;
+}
+
+html[data-theme="dark"] .ajuste-preview-box {
+    background: #181818;
+    border-color: #444444;
+}
+
+html[data-theme="dark"] .ajuste-preview-text {
+    color: #ffffff;
+}
+
+html[data-theme="dark"] .btn-probar-voz {
+    background: #2c2c2c;
+    border-color: #ffb300;
+    color: #ffb300;
+}
+
+html[data-theme="dark"] .btn-ajuste-color {
+    background: #181818;
+    color: #cccccc;
+}
+
+html[data-theme="dark"] .btn-ajuste-color.activo {
+    background: #333333;
+    border-color: #ff9800;
+    color: #ffffff;
+}
+
+html[data-theme="dark"] .ajuste-card-peligro {
+    background: #2b1717;
+    border-color: #5c2020;
+}
+
+html[data-theme="dark"] .modal-confirmar-card {
+    background: #222222;
+    color: #e0e0e0;
+}
+
+html[data-theme="dark"] .modal-confirmar-card p {
+    color: #bbbbbb;
+}
+
+html[data-theme="dark"] .btn-modal-cancelar {
+    background: #444444;
+    color: #ffffff;
 }
 
 /* Sección de créditos en pantalla completa */
@@ -316,7 +831,7 @@
     background: none;
     border: none;
     color: #6b4a3a;
-    font-size: 16px;
+    font-size: calc(16px * var(--font-scale, 1));
     font-weight: 800;
     cursor: pointer;
     padding: 6px 0;
@@ -327,7 +842,7 @@
 }
 
 .creditos-titulo {
-    font-size: 24px;
+    font-size: calc(24px * var(--font-scale, 1));
     font-weight: 800;
     color: #4b2e22;
     text-align: center;
@@ -372,7 +887,7 @@
 
 .card-avatar::before {
     content: "👤";
-    font-size: 28px;
+    font-size: calc(28px * var(--font-scale, 1));
     z-index: 0;
 }
 
@@ -388,14 +903,14 @@
 }
 
 .card-name {
-    font-size: 14px;
+    font-size: calc(14px * var(--font-scale, 1));
     font-weight: 800;
     color: #4b2e22;
     margin-bottom: 4px;
 }
 
 .card-email {
-    font-size: 12px;
+    font-size: calc(12px * var(--font-scale, 1));
     font-weight: 600;
     color: #7b9f42;
     margin-bottom: 8px;
@@ -404,7 +919,7 @@
 .card-badge {
     background: #fdf2e9;
     color: #e28743;
-    font-size: 10px;
+    font-size: calc(10px * var(--font-scale, 1));
     font-weight: 800;
     padding: 2px 8px;
     border-radius: 10px;
@@ -488,8 +1003,9 @@
    ====================================================== */
 @media (hover: hover) and (pointer: fine) {
     .boton-nico:hover {
-        background: #89b84c;
-        transform: scale(1.05);
+        background: #84cc69;
+        transform: translateY(-2px);
+        box-shadow: 0 6px 0 #4d843d, 0 6px 12px rgba(0, 0, 0, 0.18);
     }
 
     .boton-menu:hover {
