@@ -87,6 +87,59 @@ if ("speechSynthesis" in window) {
 }
 
 /**
+ * Trocea un texto largo en fragmentos cortos (por frase, y si una frase es
+ * demasiado larga, por palabras) para que el motor de voz nunca tenga que
+ * decir un único audio kilométrico.
+ *
+ * Chrome en Android corta a la mitad las frases largas (bug conocido del
+ * motor: crbug.com/679437 y variantes). En desktop el truco era "pausar y
+ * reanudar" cada pocos segundos para despertarlo, pero en Android ese mismo
+ * pause()/resume() es poco fiable y a veces corta el audio en vez de
+ * mantenerlo vivo (por eso en Firefox Android no pasaba: no necesita el
+ * truco porque no tiene el bug de origen). La forma robusta de evitarlo por
+ * completo es que ningún fragmento individual sea lo bastante largo como
+ * para llegar al punto donde el motor se cuelga.
+ */
+function dividirEnFragmentos(texto, maxLen = 130) {
+    const frases = texto.match(/[^.!?]+[.!?]*\s*/g) || [texto];
+    const fragmentos = [];
+    let actual = "";
+
+    frases.forEach(fraseCruda => {
+        const frase = fraseCruda.trim();
+        if (!frase) return;
+
+        if ((actual ? actual + " " + frase : frase).length <= maxLen) {
+            actual = actual ? actual + " " + frase : frase;
+            return;
+        }
+
+        if (actual) fragmentos.push(actual);
+
+        if (frase.length <= maxLen) {
+            actual = frase;
+            return;
+        }
+
+        // La propia frase es demasiado larga (sin puntuación intermedia):
+        // se corta por palabras para no pasarse del límite.
+        let trozo = "";
+        frase.split(" ").forEach(palabra => {
+            if (trozo && (trozo + " " + palabra).length > maxLen) {
+                fragmentos.push(trozo);
+                trozo = palabra;
+            } else {
+                trozo = trozo ? trozo + " " + palabra : palabra;
+            }
+        });
+        actual = trozo;
+    });
+
+    if (actual) fragmentos.push(actual);
+    return fragmentos.length ? fragmentos : [texto];
+}
+
+/**
  * @param {Function} sigueVigente devuelve false si el usuario ya avanzó y esta
  *        frase quedó obsoleta mientras esperaba su turno para sonar.
  */
@@ -100,118 +153,123 @@ function speakWithWebSpeech(text, onEnd, sigueVigente) {
         loadSpanishMaleVoice();
     }
 
-    let ended = false;
-    let comenzo = false;
-    let vigilante = null;
-    let mantenerVivo = null;
+    const fragmentos = dividirEnFragmentos(text);
 
-    // Se calcula antes de crear la frase: así el vigilante puede reiniciarse
-    // en cuanto arranque de verdad, sin depender del orden de declaración.
-    const duracionEstimada = 3000 + text.length * 110;
+    let terminado = false;
+    let algunFragmentoComenzo = false;
 
-    const triggerEnd = () => {
-        if (ended) return;
-        ended = true;
-        if (comenzo) yaSonoAlguna = true;
-
-        if (vigilante) clearTimeout(vigilante);
-        if (mantenerVivo) clearInterval(mantenerVivo);
-
+    const terminarTodo = () => {
+        if (terminado) return;
+        terminado = true;
+        if (algunFragmentoComenzo) yaSonoAlguna = true;
         if (typeof onEnd === "function") onEnd();
     };
 
-    // Se crea una frase nueva en cada intento: algunos motores no aceptan
-    // reutilizar el mismo objeto después de descartarlo.
-    const crearFrase = () => {
-        const frase = new SpeechSynthesisUtterance(text);
-        
-        let speechRate = 0.95;
-        if (window.nicoVoiceSpeed === "lenta") {
-            speechRate = 0.65;
-        } else if (window.nicoVoiceSpeed === "rapida") {
-            speechRate = 1.4;
-        }
-        frase.rate = speechRate;
+    // Dice un fragmento y, cuando termina (o si nunca avisa de nada), pasa
+    // al siguiente. Solo cuando ya no quedan fragmentos se llama a onEnd.
+    const hablarFragmento = (indice) => {
+        if (terminado) return;
 
-        if (selectedVoice) {
-            frase.voice = selectedVoice;
-            frase.lang = selectedVoice.lang;
-            frase.pitch = isFemaleVoice(selectedVoice) ? 0.8 : 1.0;
-        } else {
-            frase.lang = "es-ES";
-            frase.pitch = 0.9;
-        }
-
-        frase.onstart = () => {
-            comenzo = true;
-            yaSonoAlguna = true;
-            // El margen de seguridad debe contar desde que el motor empieza
-            // a sonar de verdad: en móvil puede tardar 1-3 s en arrancar, y
-            // si no se reinicia aquí, la frase se corta antes de terminar
-            // porque el tiempo se gastó esperando a que empezara.
-            if (vigilante) clearTimeout(vigilante);
-            vigilante = setTimeout(triggerEnd, duracionEstimada);
-        };
-        frase.onend = triggerEnd;
-        frase.onerror = triggerEnd;
-        return frase;
-    };
-
-    const lanzar = (esReintento) => {
-        // El usuario ya avanzó mientras esperábamos: esta frase ya no toca
+        // El usuario ya avanzó mientras esperábamos: el resto de fragmentos
+        // ya no toca decirlos.
         if (typeof sigueVigente === "function" && !sigueVigente()) {
-            triggerEnd();
+            terminarTodo();
             return;
         }
 
-        try {
-            // resume() saca al motor de un estado pausado, en el que a veces
-            // se queda tras un cancel()
-            speechSynthesis.resume();
-        } catch (e) { /* no todos los motores lo permiten */ }
-
-        // Mientras no se haya oído ninguna frase, se quema un turno antes de
-        // cada intento: si el navegador va a descartar una, que descarte el cebo.
-        if (!yaSonoAlguna && !esReintento) cebarMotor();
-
-        try {
-            speechSynthesis.speak(crearFrase());
-        } catch (e) {
-            triggerEnd();
+        if (indice >= fragmentos.length) {
+            terminarTodo();
             return;
         }
 
-        if (esReintento) return;
+        const textoFragmento = fragmentos[indice];
+        // Presupuesto de tiempo de este fragmento: sirve tanto de red de
+        // seguridad (si nunca avisa de que empezó o terminó) como para
+        // reiniciarse en cuanto arranca de verdad, igual que antes.
+        const duracionFragmento = 2500 + textoFragmento.length * 130;
 
-        // Chrome y Safari se tragan la primera frase de la sesión: si a los
-        // 600 ms no ha empezado a sonar, se vuelve a pedir una vez. Es
-        // exactamente el caso de "la primera no suena, la segunda sí". El
-        // margen es algo mayor que antes porque en móvil el motor puede
-        // tardar un poco en arrancar sin que eso signifique que se perdió.
-        setTimeout(() => {
-            if (ended || comenzo || speechSynthesis.speaking) return;
-            // Por si quedó algo a medio encolar que nunca llegó a sonar: se
-            // limpia antes de reintentar para no acabar con dos frases a la vez.
-            try { speechSynthesis.cancel(); } catch (e) { }
-            lanzar(true);
-        }, 600);
+        let avanzado = false;
+        let comenzoFragmento = false;
+        let vigilanteFragmento = null;
+
+        const avanzar = () => {
+            if (avanzado) return;
+            avanzado = true;
+            if (vigilanteFragmento) clearTimeout(vigilanteFragmento);
+            hablarFragmento(indice + 1);
+        };
+
+        const lanzarFragmento = (esReintento) => {
+            if (terminado) return;
+
+            try {
+                // resume() saca al motor de un estado pausado, en el que a
+                // veces se queda tras un cancel()
+                speechSynthesis.resume();
+            } catch (e) { /* no todos los motores lo permiten */ }
+
+            // Mientras no se haya oído ninguna frase, se quema un turno antes
+            // del primer fragmento: si el navegador va a descartar uno, que
+            // descarte el cebo.
+            if (!yaSonoAlguna && !esReintento && indice === 0) cebarMotor();
+
+            const frase = new SpeechSynthesisUtterance(textoFragmento);
+
+            let speechRate = 0.95;
+            if (window.nicoVoiceSpeed === "lenta") {
+                speechRate = 0.65;
+            } else if (window.nicoVoiceSpeed === "rapida") {
+                speechRate = 1.4;
+            }
+            frase.rate = speechRate;
+
+            if (selectedVoice) {
+                frase.voice = selectedVoice;
+                frase.lang = selectedVoice.lang;
+                frase.pitch = isFemaleVoice(selectedVoice) ? 0.8 : 1.0;
+            } else {
+                frase.lang = "es-ES";
+                frase.pitch = 0.9;
+            }
+
+            frase.onstart = () => {
+                comenzoFragmento = true;
+                algunFragmentoComenzo = true;
+                yaSonoAlguna = true;
+                // Igual que antes: el margen se reinicia en cuanto el
+                // fragmento arranca de verdad, no desde que se pidió.
+                if (vigilanteFragmento) clearTimeout(vigilanteFragmento);
+                vigilanteFragmento = setTimeout(avanzar, duracionFragmento);
+            };
+            frase.onend = avanzar;
+            frase.onerror = avanzar;
+
+            try {
+                speechSynthesis.speak(frase);
+            } catch (e) {
+                avanzar();
+                return;
+            }
+
+            if (esReintento) return;
+
+            // Chrome y Safari se tragan la primera frase de la sesión: si a
+            // los 600 ms no ha empezado a sonar, se vuelve a pedir una vez.
+            setTimeout(() => {
+                if (avanzado || comenzoFragmento || speechSynthesis.speaking) return;
+                try { speechSynthesis.cancel(); } catch (e) { }
+                lanzarFragmento(true);
+            }, 600);
+        };
+
+        lanzarFragmento(false);
+
+        // Red de seguridad: si este fragmento nunca avisa de nada (ni de que
+        // empezó ni de que terminó), no se puede quedar la guía colgada.
+        vigilanteFragmento = setTimeout(avanzar, duracionFragmento + 1200);
     };
 
-    // Se lanza AHORA, sin esperar: si se retrasa, iOS ya no lo considera parte
-    // del toque del usuario y no deja sonar la primera frase.
-    lanzar(false);
-
-    // Chrome corta las frases largas pasados unos segundos si no se le insiste
-    mantenerVivo = setInterval(() => {
-        if (ended || !speechSynthesis.speaking) return;
-        speechSynthesis.pause();
-        speechSynthesis.resume();
-    }, 8000);
-
-    // Red de seguridad: si el navegador nunca avisa de que terminó (ni de que
-    // empezó), la guía no se puede quedar bloqueada. Se reinicia con la
-    // misma duración en cuanto la frase arranca de verdad (ver onstart).
-    vigilante = setTimeout(triggerEnd, duracionEstimada);
+    hablarFragmento(0);
 }
 
 /* ----------------------------------------------------------------------
