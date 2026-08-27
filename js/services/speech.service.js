@@ -1,6 +1,77 @@
 let selectedVoice = null;
 let currentAudio = null;
 
+/* ----------------------------------------------------------------------
+   VOZ NATIVA (solo dentro del APK de Android/iOS con Capacitor)
+
+   Dentro del WebView que usa Capacitor para empaquetar la app, la API de
+   voz del navegador (`speechSynthesis`) directamente no existe en muchos
+   dispositivos (a diferencia de abrir la misma página en Chrome). Por eso
+   Nico se quedaba mudo solo en el APK exportado, aunque todo funcionara
+   bien en la web. La solución es hablar con el motor de voz real de
+   Android a través del plugin de Capacitor, en vez de la API del
+   navegador, pero solo cuando esta última no está disponible: en el
+   navegador todo sigue funcionando exactamente igual que antes.
+   ---------------------------------------------------------------------- */
+function motorNativoDisponible() {
+    try {
+        return Boolean(
+            window.Capacitor &&
+            typeof window.Capacitor.isNativePlatform === "function" &&
+            window.Capacitor.isNativePlatform() &&
+            window.Capacitor.Plugins &&
+            window.Capacitor.Plugins.TextToSpeech
+        );
+    } catch (e) {
+        return false;
+    }
+}
+
+/**
+ * Habla usando el motor de voz nativo de Android/iOS (plugin de Capacitor).
+ * A diferencia de la voz del navegador, el motor nativo no se traga la
+ * primera frase ni corta las frases largas, así que no hace falta ninguno
+ * de los trucos de "cebado" ni de troceado de texto.
+ */
+async function speakWithNativeTTS(text, onEnd, sigueVigente) {
+    const tts = window.Capacitor.Plugins.TextToSpeech;
+
+    let speechRate = 0.95;
+    if (window.nicoVoiceSpeed === "lenta") {
+        speechRate = 0.65;
+    } else if (window.nicoVoiceSpeed === "rapida") {
+        speechRate = 1.4;
+    }
+
+    try {
+        await tts.speak({
+            text,
+            lang: "es-ES",
+            rate: speechRate,
+            pitch: 1.0,
+            volume: 1.0,
+            category: "ambient"
+        });
+    } catch (e) {
+        console.warn("El motor de voz nativo no pudo hablar:", e);
+    }
+
+    yaSonoAlguna = true;
+    if (typeof onEnd === "function") onEnd();
+}
+
+/**
+ * Elige entre el motor nativo (dentro del APK) y la voz del navegador
+ * (en la web), según cuál esté realmente disponible.
+ */
+function speakConMotorDisponible(text, onEnd, sigueVigente) {
+    if (motorNativoDisponible()) {
+        speakWithNativeTTS(text, onEnd, sigueVigente);
+    } else {
+        speakWithWebSpeech(text, onEnd, sigueVigente);
+    }
+}
+
 const MALE_KEYWORDS = [
     "alvaro", "jorge", "raul", "carlos", "miguel", "diego", "gonzalo",
     "mateo", "alonso", "julio", "arnau", "pablo", "tomas", "enrique",
@@ -493,7 +564,7 @@ function reproducirAudio(url, texto, onEnd, miTurno) {
         // ningún toque en la página): se recurre a la voz del sistema
         if (currentAudio === audio) currentAudio = null;
         if (turnoVoz === miTurno) {
-            speakWithWebSpeech(texto, onEnd, () => turnoVoz === miTurno);
+            speakConMotorDisponible(texto, onEnd, () => turnoVoz === miTurno);
         } else {
             terminar();
         }
@@ -548,13 +619,13 @@ function decir(texto, onEnd, protegida) {
         // Todavía no sabemos si hay ElevenLabs configurado. No se espera: se
         // habla ya con la voz del navegador y se averigua para las siguientes.
         obtenerConfigEleven();
-        speakWithWebSpeech(texto, onEnd, vigente);
+        speakConMotorDisponible(texto, onEnd, vigente);
         return;
     }
 
     if (!configEleven) {
-        // Caso normal: voz del navegador, dicha en el acto
-        speakWithWebSpeech(texto, onEnd, vigente);
+        // Caso normal: voz del navegador (o la nativa dentro del APK)
+        speakConMotorDisponible(texto, onEnd, vigente);
         return;
     }
 
@@ -566,7 +637,7 @@ function decir(texto, onEnd, protegida) {
         })
         .catch(err => {
             console.warn("ElevenLabs no disponible, se usa la voz del navegador:", err.message);
-            if (turnoVoz === miTurno) speakWithWebSpeech(texto, onEnd, vigente);
+            if (turnoVoz === miTurno) speakConMotorDisponible(texto, onEnd, vigente);
         });
 }
 
@@ -583,6 +654,12 @@ function callar() {
     // seguidos hace que Chrome descarte la frase nueva.
     if ("speechSynthesis" in window && (speechSynthesis.speaking || speechSynthesis.pending)) {
         speechSynthesis.cancel();
+    }
+
+    if (motorNativoDisponible()) {
+        try {
+            window.Capacitor.Plugins.TextToSpeech.stop();
+        } catch (e) { /* no pasa nada si no había nada sonando */ }
     }
 }
 

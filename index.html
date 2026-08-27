@@ -411,6 +411,12 @@
 
     </main>
 
+    <!-- Puente de Capacitor + plugin de voz nativa: solo hacen algo dentro
+         del APK (en el navegador, Capacitor detecta plataforma "web" y no
+         interfiere). Sirven para que Nico hable en el WebView de Android,
+         donde `speechSynthesis` del navegador no existe. -->
+    <script src="./js/vendor/capacitor-core.js"></script>
+    <script src="./js/vendor/capacitor-tts.js"></script>
     <script type="module" src="./js/app.js"></script>
 </body>
 

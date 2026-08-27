@@ -310,7 +310,9 @@
    ====================================================== */
 .trofeo-toast {
     position: fixed;
-    top: 18px;
+    /* Fijo respecto a toda la pantalla (está pegado al body, no a .app), así
+       que necesita su propio respeto a la barra de estado en Android. */
+    top: calc(18px + env(safe-area-inset-top, 0px));
     left: 50%;
     transform: translateX(-50%) translateY(-140%);
     display: flex;

@@ -30,6 +30,10 @@ body {
     box-shadow: 0 0 30px rgba(75, 46, 34, 0.18);
     position: relative;
     overflow-x: hidden;
+    /* En el APK de Android (Capacitor) la app dibuja su contenido por
+       debajo de la barra de estado del sistema ("edge to edge"); en la web
+       normal esta variable vale 0, así que aquí no cambia nada. */
+    padding-top: env(safe-area-inset-top, 0px);
 }
 
 .pantalla {

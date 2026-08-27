@@ -2509,7 +2509,7 @@ function iniciarEsperaRespuestaJuan(chat) {
             // Ahora Juan empieza a redactar su respuesta.
             if (statusEl) statusEl.textContent = "escribiendo...";
 
-            const textoEscribiendo = "Mira, junto al nombre de Juan ahora dice \"escribiendo...\". Eso quiere decir que te está por responder.";
+            const textoEscribiendo = "Mira, junto al nombre de Juan ahora dice escribiendo... Eso quiere decir que te está por responder.";
             if (textEl) textEl.textContent = textoEscribiendo;
 
             limpiarResaltados();
