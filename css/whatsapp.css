@@ -585,6 +585,21 @@
     fill: #53bdeb;
 }
 
+/* Indicador de estado (relojito/palomitas) en notas de voz que uno mismo envía */
+.ws-audio-check-wrap {
+    width: 26px;
+    height: 26px;
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.ws-audio-check-wrap .ws-msg-checkmark {
+    width: 18px;
+    height: 18px;
+}
+
 /* Metadatos de la burbuja (Hora y Checkmark) */
 .ws-msg-meta {
     align-self: flex-end;

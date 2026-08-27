@@ -936,24 +936,24 @@ function actualizarBarraInstrucciones(autoSpeak = true) {
     } else if (nivelActual === "enviar-mensaje") {
         if (subPasoNivel1 === 1) {
             instruccion = estaEnChat
-                ? "Escribe un mensaje de saludo a Juan y presiona enviar."
+                ? "Escribe un saludo para Juan. Cuando termines, toca el botón verde para enviarlo."
                 : "Toca el chat de Juan para empezar a escribirle.";
         } else if (subPasoNivel1 === 2) {
-            instruccion = "Espera un momento a que Juan lea tu mensaje y responda.";
+            instruccion = "Mira junto a tu mensaje: un relojito es que se está enviando. Un visto, que ya se envió. Dos vistos grises, que ya le llegó a Juan. Espera un momento, se pondrán azules cuando él lo lea.";
         } else if (subPasoNivel1 === 3) {
-            instruccion = "Juan te ha respondido. Escríbele contándole cómo estás y presiona enviar.";
+            instruccion = "¡Mira, los vistos se pusieron azules! Eso quiere decir que Juan ya leyó tu mensaje. Ahora escríbele cómo estás, y toca enviar.";
         } else if (subPasoNivel1 === 4) {
-            instruccion = "Regresa a la lista de chats presionando la flecha arriba a la izquierda.";
+            instruccion = "Muy bien. Ahora toca la flecha de arriba a la izquierda para volver a la lista de chats.";
         } else if (subPasoNivel1 === 4.5) {
-            instruccion = "Espera a recibir un nuevo mensaje en la lista de chats.";
+            instruccion = "Espera un momento, te va a llegar un mensaje nuevo.";
         } else if (subPasoNivel1 >= 5) {
             if (estaEnChat && chatSeleccionado && chatSeleccionado.id !== "familia-mendoza") {
-                instruccion = "Regresa a la lista de chats presionando la flecha arriba a la izquierda.";
+                instruccion = "Toca la flecha de arriba a la izquierda para volver a la lista de chats.";
             } else {
                 if (subPasoNivel1 === 5) {
-                    instruccion = "Toca el chat de la Familia Mendoza para abrir los nuevos mensajes.";
+                    instruccion = "Te llegó un mensaje nuevo. Toca el chat de 'Familia Mendoza' para leerlo.";
                 } else if (subPasoNivel1 === 6) {
-                    instruccion = "Responde en el grupo confirmando tu asistencia y presiona enviar.";
+                    instruccion = "Escribe que sí vas a la cena, y toca enviar.";
                 }
             }
         }
@@ -1272,7 +1272,7 @@ function renderizarListaChats() {
 
         const ultimoMsg = chat.mensajes[chat.mensajes.length - 1];
         const checkmarkHTML = ultimoMsg && ultimoMsg.sender === "enviada"
-            ? `<svg class="ws-msg-checkmark" viewBox="0 0 24 24" style="width: 15px; height: 15px; margin-right: 2px;"><path d="M0.293,12.293L1.707,10.88L6,15.17L18.293,2.88L19.707,4.293L6,18L0.293,12.293Z"/></svg>`
+            ? `<span style="width: 15px; height: 15px; margin-right: 2px; display: inline-flex;">${crearCheckmarkHTML(ultimoMsg.status)}</span>`
             : "";
 
         const timeClass = chat.unreadCount > 0 ? "ws-chat-time unread" : "ws-chat-time";
@@ -1381,8 +1381,20 @@ function renderizarMensajes() {
         bubble.dataset.msgIndex = index;
 
         if (msg.type === "audio") {
-            const avatarInitials = msg.sender === "recibida" ? chatSeleccionado.iniciales : "YO";
-            const avatarClass = msg.sender === "recibida" ? chatSeleccionado.avatarClass : "ws-avatar-color-7";
+            const esEnviado = msg.sender === "enviada";
+            // En los mensajes que la persona envía se muestra el mismo
+            // indicador de estado (relojito/vistos) que en un mensaje de
+            // texto. En los que llegan del contacto se muestra su avatar con
+            // el iconito de micrófono, para saber de un vistazo que es un
+            // audio y quién lo mandó (a los propios no hace falta, ya se sabe).
+            const indicadorHTML = esEnviado
+                ? `<div class="ws-audio-check-wrap">${crearCheckmarkHTML(msg.status)}</div>`
+                : `
+                    <div style="position: relative; width: 26px; height: 26px;">
+                        <div class="ws-avatar ${chatSeleccionado.avatarClass}" style="width: 100%; height: 100%; font-size: 10px;">${chatSeleccionado.iniciales}</div>
+                        <svg viewBox="0 0 24 24" style="position: absolute; bottom:-4px; right:-4px; width: 14px; height: 14px; fill: #53bdeb;"><path d="M12 14c1.66 0 3-1.34 3-3V5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3zm5.3-3c0 3-2.54 5.1-5.3 5.1S6.7 14 6.7 11H5c0 3.41 2.72 6.23 6 6.72V21h2v-3.28c3.28-.48 6-3.3 6-6.72h-1.7z"/></svg>
+                    </div>
+                `;
             bubble.innerHTML = `
                 <div class="ws-msg-audio-player">
                     <button class="ws-audio-btn" data-estado="detenido" aria-label="Reproducir nota de voz">
@@ -1398,10 +1410,7 @@ function renderizarMensajes() {
                             <span>${msg.time}</span>
                         </div>
                     </div>
-                    <div style="position: relative; width: 26px; height: 26px;">
-                        <div class="ws-avatar ${avatarClass}" style="width: 100%; height: 100%; font-size: 10px;">${avatarInitials}</div>
-                        <svg viewBox="0 0 24 24" style="position: absolute; bottom:-4px; right:-4px; width: 14px; height: 14px; fill: #53bdeb;"><path d="M12 14c1.66 0 3-1.34 3-3V5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3zm5.3-3c0 3-2.54 5.1-5.3 5.1S6.7 14 6.7 11H5c0 3.41 2.72 6.23 6 6.72V21h2v-3.28c3.28-.48 6-3.3 6-6.72h-1.7z"/></svg>
-                    </div>
+                    ${indicadorHTML}
                 </div>
             `;
         } else if (msg.type === "photo") {
@@ -1420,12 +1429,12 @@ function renderizarMensajes() {
                 </div>
                 <div class="ws-msg-meta" style="margin-top: 2px; margin-right: 0;">
                     <span>${msg.time}</span>
-                    ${msg.sender === "enviada" ? `<svg class="ws-msg-checkmark" viewBox="0 0 24 24"><path d="M0.293,12.293L1.707,10.88L6,15.17L18.293,2.88L19.707,4.293L6,18L0.293,12.293Z"/></svg>` : ""}
+                    ${msg.sender === "enviada" ? crearCheckmarkHTML(msg.status) : ""}
                 </div>
             `;
         } else {
             const checkmarkHTML = msg.sender === "enviada"
-                ? `<svg class="ws-msg-checkmark" viewBox="0 0 24 24"><path d="M0.293,12.293L1.707,10.88L6,15.17L18.293,2.88L19.707,4.293L6,18L0.293,12.293Z"/></svg>`
+                ? crearCheckmarkHTML(msg.status)
                 : "";
 
             const senderNameHTML = msg.senderName
@@ -1459,6 +1468,30 @@ function moverChatAlTop(chatId) {
         const chat = listaChatsData.splice(index, 1)[0];
         listaChatsData.unshift(chat);
     }
+}
+
+/**
+ * Deja el botón de una nota de voz como recién detenido y avanza el nivel
+ * si corresponde. Vive fuera de simularReproduccionAudio() porque "reanudar"
+ * y "reproducir por primera vez" son clics distintos (cada uno con su
+ * propio timer/cierre), pero ambos deben terminar de la misma forma
+ * cuando la voz simulada de verdad acaba de hablar.
+ */
+function finalizarNotaDeVoz(btn, bubble, esEnviada) {
+    const progress = bubble?.querySelector(".ws-audio-progress");
+    const pin = bubble?.querySelector(".ws-audio-pin");
+    const timeline = bubble?.querySelector(".ws-audio-timeline");
+
+    btn.dataset.estado = "detenido";
+    btn.classList.remove("reproduciendo");
+    btn.innerHTML = `<svg class="ws-audio-btn-icon" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>`;
+    if (progress) progress.style.width = "0%";
+    if (pin) pin.style.left = "0%";
+    if (timeline) delete timeline.dataset.seekPercentage;
+    audioActivo = null;
+    audioActivoMsg = null;
+
+    avanzarNivel2DespuesDeAudio(esEnviada);
 }
 
 /**
@@ -1500,7 +1533,9 @@ function simularReproduccionAudio(btn, esEnviada, msg) {
             const mensajeTexto = !esEnviada && msg && msg.textToSpeak
                 ? msg.textToSpeak
                 : "Reproduciendo nota de voz.";
-            speak(mensajeTexto);
+            // Igual que en la primera reproducción: es la voz la que avisa
+            // cuándo termina de verdad, no un tiempo fijo.
+            speak(mensajeTexto, () => finalizarNotaDeVoz(btn, bubble, esEnviada));
         }
         return;
     }
@@ -1540,6 +1575,18 @@ function simularReproduccionAudio(btn, esEnviada, msg) {
     let duracion = 5000;
     let playReal = false;
 
+    // Se declaran antes de arrancar el audio o la voz: si Nico está
+    // desactivado, speak() avisa de que "terminó" en el acto (de forma
+    // síncrona), y si completarReproduccion todavía no existiera en ese
+    // momento, esto fallaría con un error.
+    const paso = 50;
+    let timer = null;
+
+    const completarReproduccion = () => {
+        if (timer) clearInterval(timer);
+        finalizarNotaDeVoz(btn, bubble, esEnviada);
+    };
+
     // Verificar si el mensaje es una nota de voz enviada con archivo real
     if (esEnviada && msg && msg.audioUrl) {
         const audio = new Audio(msg.audioUrl);
@@ -1575,26 +1622,25 @@ function simularReproduccionAudio(btn, esEnviada, msg) {
             ? msg.textToSpeak
             : (esEnviada ? "Reproduciendo nota de voz." : "Hola abuelo, muchas gracias por tu mensaje, te quiero mucho.");
 
-        speak(mensajeTexto);
-        duracion = (!esEnviada && msg && msg.duration) ? (parseInt(msg.duration.split(":")[1] || "6") * 1000) : 5000;
+        // La duración de la etiqueta ("0:06", "0:08"...) es solo un dato de
+        // adorno para mostrar junto al audio; no sirve para calcular cuánto
+        // tarda Nico en leer el texto real, que suele ser más largo de lo
+        // que dice esa etiqueta. Para que la barra avance a un ritmo
+        // parecido al de la voz de verdad (y no se quede esperando "clavada"
+        // cerca del final), se calcula a partir del propio texto a leer,
+        // con el mismo criterio que usa el motor de voz y ajustado según la
+        // velocidad elegida en Ajustes.
+        let msPorCaracter = 62;
+        if (window.nicoVoiceSpeed === "lenta") msPorCaracter = 95;
+        else if (window.nicoVoiceSpeed === "rapida") msPorCaracter = 44;
+        duracion = 1800 + mensajeTexto.length * msPorCaracter;
+
+        // Aun así, quien decide cuándo "termina" de verdad el audio
+        // simulado es la voz (ver más abajo), no esta duración: si por lo
+        // que sea Nico tarda más de lo calculado aquí, la barra se queda
+        // esperando en el 99% en vez de reiniciarse antes de tiempo.
+        speak(mensajeTexto, () => completarReproduccion());
     }
-
-    const paso = 50;
-    let timer = null;
-
-    const completarReproduccion = () => {
-        if (timer) clearInterval(timer);
-        btn.dataset.estado = "detenido";
-        btn.classList.remove("reproduciendo");
-        btn.innerHTML = `<svg class="ws-audio-btn-icon" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>`;
-        if (progress) progress.style.width = "0%";
-        if (pin) pin.style.left = "0%";
-        if (timeline) delete timeline.dataset.seekPercentage;
-        audioActivo = null;
-        audioActivoMsg = null;
-
-        avanzarNivel2DespuesDeAudio(esEnviada);
-    };
 
     timer = setInterval(() => {
         const currentEstado = btn.dataset.estado;
@@ -1622,13 +1668,12 @@ function simularReproduccionAudio(btn, esEnviada, msg) {
             if (progress) progress.style.width = `${pct}%`;
             if (pin) pin.style.left = `${pct}%`;
         } else {
+            // Aquí quien decide que terminó es la voz (ver speak(...,
+            // completarReproduccion) más arriba), así que la barra no pasa
+            // del 99%: si llegara sola al 100% y disparara el final, el
+            // audio se daría por terminado aunque Nico siguiera hablando.
             const incremento = (paso / duracion) * 100;
-            pct += incremento;
-            if (pct >= 100) {
-                pct = 100;
-                completarReproduccion();
-                return;
-            }
+            pct = Math.min(pct + incremento, 99);
             if (progress) progress.style.width = `${pct}%`;
             if (pin) pin.style.left = `${pct}%`;
         }
@@ -1656,6 +1701,7 @@ function avanzarNivel2DespuesDeAudio(esEnviada) {
             const conversacionEl = $("#wsChatConversation");
             if (conversacionEl && conversacionEl.classList.contains("activa") && chatSeleccionado && chatSeleccionado.id === "juan-nieto" && subPasoNivel2 === 4) {
                 if (statusEl) statusEl.textContent = "en línea";
+                marcarChatComoLeido(chatSeleccionado);
 
                 const hora = obtenerHoraActual();
                 chatSeleccionado.mensajes.push({
@@ -1675,7 +1721,7 @@ function avanzarNivel2DespuesDeAudio(esEnviada) {
                 subPasoNivel2 = 5;
                 actualizarBarraInstrucciones(true); // Nico: "Toca reproducir en el audio recibido..."
             }
-        }, 6000);
+        }, 8000);
     } else if (!esEnviada && subPasoNivel2 === 5) {
         // Escuchó el audio recibido de Juan
         subPasoNivel2 = 6;
@@ -1819,13 +1865,13 @@ function inicializarListeners() {
                             {
                                 sender: "recibida",
                                 type: "audio",
-                                duration: "0:06",
+                                duration: "0:08",
                                 time: hora,
                                 senderName: "Dr. Martínez",
                                 textToSpeak: "Hola, le hablo del consultorio médico. Por favor confirme por nota de voz si asistirá a su consulta de mañana."
                             }
                         ];
-                        drChat.preview = "Dr. Martínez: Nota de voz recibida (0:06)";
+                        drChat.preview = "Dr. Martínez: Nota de voz recibida (0:08)";
                         drChat.hora = hora;
                         drChat.unreadCount = 1;
 
@@ -2303,6 +2349,212 @@ function inicializarListeners() {
 }
 
 /**
+ * Devuelve el SVG del estado de un mensaje enviado, igual que en WhatsApp
+ * real: relojito mientras se envía, un visto cuando se envió, dos vistos
+ * grises cuando le llegó al contacto, y dos vistos azules cuando el
+ * contacto ya lo leyó.
+ */
+function crearCheckmarkHTML(status) {
+    const RELOJ = `<svg class="ws-msg-checkmark gris" viewBox="0 0 24 24"><path d="M12 20c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8zm.5-13H11v6l5.25 3.15.75-1.23-4.5-2.67z"/></svg>`;
+    const UNA_PALOMITA = `<svg class="ws-msg-checkmark gris" viewBox="0 0 24 24"><path d="M0.293,12.293L1.707,10.88L6,15.17L18.293,2.88L19.707,4.293L6,18L0.293,12.293Z"/></svg>`;
+    const DOS_PALOMITAS = `<svg class="ws-msg-checkmark gris" viewBox="0 0 24 24"><path d="M18 7l-1.41-1.41-6.34 6.34 1.41 1.41L18 7zm4.24-1.41L11.66 16.17 7.48 12l-1.41 1.41L11.66 19l12-12-1.42-1.41zM.41 13.41L6 19l1.41-1.41L1.83 12 .41 13.41z"/></svg>`;
+    const DOS_PALOMITAS_AZULES = `<svg class="ws-msg-checkmark" viewBox="0 0 24 24"><path d="M18 7l-1.41-1.41-6.34 6.34 1.41 1.41L18 7zm4.24-1.41L11.66 16.17 7.48 12l-1.41 1.41L11.66 19l12-12-1.42-1.41zM.41 13.41L6 19l1.41-1.41L1.83 12 .41 13.41z"/></svg>`;
+
+    switch (status) {
+        case "enviando": return RELOJ;
+        case "enviado": return UNA_PALOMITA;
+        case "leido": return DOS_PALOMITAS_AZULES;
+        case "entregado":
+        default: return DOS_PALOMITAS;
+    }
+}
+
+/**
+ * Redibuja el chat y la lista si el chat en cuestión sigue a la vista.
+ * Se llama cada vez que el "estado" de un mensaje cambia solo, con el
+ * tiempo, para que la persona vea el relojito y los vistos moverse.
+ */
+function refrescarSiChatVisible(chat) {
+    if (chatSeleccionado === chat && $("#wsChatConversation")?.classList.contains("activa")) {
+        renderizarMensajes();
+    }
+    renderizarListaChats();
+}
+
+/**
+ * Hace que un mensaje recién enviado pase, solo, por los mismos estados
+ * que en WhatsApp real: enviando -> enviado -> entregado. Se queda en
+ * "entregado" hasta que el contacto lo lea de verdad (ver
+ * marcarChatComoLeido), igual que pasa en la vida real.
+ */
+function iniciarProgresoEstadoMensaje(mensaje, chat) {
+    mensaje.status = "enviando";
+    setTimeout(() => {
+        if (mensaje.status !== "enviando") return;
+        mensaje.status = "enviado";
+        refrescarSiChatVisible(chat);
+
+        setTimeout(() => {
+            if (mensaje.status !== "enviado") return;
+            mensaje.status = "entregado";
+            refrescarSiChatVisible(chat);
+        }, 900);
+    }, 500);
+}
+
+/**
+ * Pone en azul (leído) todos los mensajes que la persona le había
+ * enviado a este chat. Se llama justo antes de que el contacto
+ * "responda", que es el momento en que en WhatsApp real se ven azules.
+ */
+function marcarChatComoLeido(chat) {
+    if (!chat) return;
+    chat.mensajes.forEach(m => {
+        if (m.sender === "enviada" && m.status && m.status !== "leido") {
+            m.status = "leido";
+        }
+    });
+    refrescarSiChatVisible(chat);
+}
+
+// Selector del icono de estado (relojito/vistos) del mensaje que se está
+// enseñando. Se resalta por selector y no por elemento: resaltarElemento()
+// solo reconoce HTMLElement, y un <svg> es un SVGElement, así que pasarle
+// el nodo directamente no lo marcaba nunca.
+const SELECTOR_CHECKMARK_ENVIADO = ".ws-msg-bubble.enviada .ws-msg-checkmark";
+
+/**
+ * Explica el primer mensaje que la persona manda en el Nivel 1, un estado
+ * a la vez: aparece el relojito y Nico lo explica; en cuanto termina de
+ * hablar, pasa al visto y lo explica; y así hasta los dos vistos grises.
+ * La guía visual (el resaltado) siempre marca el icono del que se está
+ * hablando, para que la persona sepa exactamente dónde mirar.
+ */
+function enseñarEstadosDeMensaje(mensaje, chat) {
+    const sigueEnEsteMomento = () =>
+        chatSeleccionado === chat &&
+        subPasoNivel1 === 2 &&
+        $("#wsChatConversation")?.classList.contains("activa");
+
+    const explicarPaso = (status, texto, siguientePaso) => {
+        if (!sigueEnEsteMomento()) return;
+
+        mensaje.status = status;
+        renderizarMensajes();
+
+        const textEl = $("#wsInstructionsText");
+        if (textEl) textEl.textContent = texto;
+
+        limpiarResaltados();
+        resaltarElemento(SELECTOR_CHECKMARK_ENVIADO, { scroll: true });
+
+        speak(texto, () => {
+            if (siguientePaso) siguientePaso();
+        });
+    };
+
+    explicarPaso(
+        "enviando",
+        "Mira, apareció un relojito junto a tu mensaje. Eso significa que se está enviando.",
+        () => explicarPaso(
+            "enviado",
+            "Ahora aparece un visto. Quiere decir que tu mensaje ya se envió.",
+            () => explicarPaso(
+                "entregado",
+                "Ahora aparecen dos vistos grises. Eso significa que el mensaje ya le llegó a Juan.",
+                () => {
+                    if (!sigueEnEsteMomento()) return;
+                    limpiarResaltados();
+                    iniciarEsperaRespuestaJuan(chat);
+                }
+            )
+        )
+    );
+}
+
+/**
+ * Espera unos segundos y hace que Juan responda al primer mensaje,
+ * explicando cada cosa a su tiempo, igual que los estados del mensaje:
+ * primero que lo leyó (vistos azules), después que está escribiendo
+ * (mostrando dónde se ve eso), y solo entonces llega su respuesta.
+ */
+function iniciarEsperaRespuestaJuan(chat) {
+    const statusEl = $("#wsChatConversation")?.querySelector(".ws-chat-contact-status");
+    const textEl = $("#wsInstructionsText");
+
+    const sigueVigente = () => {
+        const conversacionEl = $("#wsChatConversation");
+        return conversacionEl && conversacionEl.classList.contains("activa") &&
+            chatSeleccionado === chat && chatSeleccionado.id === "juan-nieto" && subPasoNivel1 === 2;
+    };
+
+    // Simula que Juan abrió el chat y leyó el mensaje un momento después
+    // de que le llegó (antes de esto se queda en dos vistos grises).
+    juanResponseTimeout = setTimeout(() => {
+        if (!sigueVigente()) return;
+
+        // En WhatsApp real es justo cuando el contacto abre el chat que
+        // nuestros vistos se ponen azules.
+        marcarChatComoLeido(chat);
+
+        const textoLeido = "¡Mira, tus vistos se pusieron azules! Eso significa que Juan ya leyó tu mensaje.";
+        if (textEl) textEl.textContent = textoLeido;
+
+        limpiarResaltados();
+        resaltarElemento(SELECTOR_CHECKMARK_ENVIADO, { scroll: true });
+
+        speak(textoLeido, () => {
+            if (!sigueVigente()) return;
+
+            // Ahora Juan empieza a redactar su respuesta.
+            if (statusEl) statusEl.textContent = "escribiendo...";
+
+            const textoEscribiendo = "Mira, junto al nombre de Juan ahora dice \"escribiendo...\". Eso quiere decir que te está por responder.";
+            if (textEl) textEl.textContent = textoEscribiendo;
+
+            limpiarResaltados();
+            resaltarElemento(".ws-chat-contact-status", { scroll: true });
+
+            speak(textoEscribiendo, () => {
+                if (!sigueVigente()) return;
+
+                // Un momento más "escribiendo" antes de que llegue su respuesta.
+                setTimeout(() => {
+                    if (!sigueVigente()) return;
+
+                    if (statusEl) statusEl.textContent = "en línea";
+
+                    const horaResp = obtenerHoraActual();
+                    chat.mensajes.push({
+                        sender: "recibida",
+                        text: "¡Hola abuelo! Qué bueno que me escribes. ¿Cómo has estado?",
+                        time: horaResp
+                    });
+                    chat.preview = "¡Hola abuelo! Qué bueno que me escribes. ¿Cómo has estado?";
+                    chat.hora = horaResp;
+
+                    moverChatAlTop("juan-nieto");
+                    guardar(`gz_whatsapp_chats_${nivelActual}`, listaChatsData);
+                    renderizarMensajes();
+
+                    subPasoNivel1 = 3;
+
+                    const textoSiguiente = "Ahora escríbele cómo estás, y toca enviar.";
+                    if (textEl) textEl.textContent = textoSiguiente;
+                    ultimaInstruccionHablada = textoSiguiente;
+
+                    limpiarResaltados();
+                    const inputVal = $("#wsInputMensaje") ? $("#wsInputMensaje").value.trim() : "";
+                    resaltarElemento(inputVal.length > 0 ? "#wsEnviarMensajeBtn" : "#wsInputMensaje");
+
+                    speak(textoSiguiente);
+                }, 2500);
+            });
+        });
+    }, 1800);
+}
+
+/**
  * Obtiene la hora actual formateada
  */
 function obtenerHoraActual() {
@@ -2332,6 +2584,15 @@ function enviarMensajeTexto(texto) {
     moverChatAlTop(chatSeleccionado.id);
     guardar(`gz_whatsapp_chats_${nivelActual}`, listaChatsData);
 
+    // El primer mensaje del Nivel 1 explica los estados paso a paso con voz
+    // propia (ver enseñarEstadosDeMensaje); el resto de mensajes sigue el
+    // progreso automático normal, sin narración.
+    const esPrimerMensajeDeEnseñanza =
+        nivelActual === "enviar-mensaje" && chatSeleccionado.id === "juan-nieto" && subPasoNivel1 === 1;
+    if (!esPrimerMensajeDeEnseñanza) {
+        iniciarProgresoEstadoMensaje(nuevoMensaje, chatSeleccionado);
+    }
+
     const campoTexto = $("#wsInputMensaje");
     if (campoTexto) campoTexto.value = "";
     const micIcon = $("#wsMicIcon");
@@ -2344,43 +2605,12 @@ function enviarMensajeTexto(texto) {
     if (nivelActual === "enviar-mensaje") {
         if (chatSeleccionado.id === "juan-nieto" && subPasoNivel1 === 1) {
             subPasoNivel1 = 2;
-            actualizarBarraInstrucciones(true);
-
-            const statusEl = $("#wsChatConversation").querySelector(".ws-chat-contact-status");
-            if (statusEl) {
-                statusEl.textContent = "escribiendo...";
-            }
-
-            // Simular respuesta de Juan tras 6 segundos
-            juanResponseTimeout = setTimeout(() => {
-                const conversacionEl = $("#wsChatConversation");
-                if (conversacionEl && conversacionEl.classList.contains("activa") && chatSeleccionado && chatSeleccionado.id === "juan-nieto" && subPasoNivel1 === 2) {
-
-                    if (statusEl) {
-                        statusEl.textContent = "en línea";
-                    }
-
-                    const horaResp = obtenerHoraActual();
-                    chatSeleccionado.mensajes.push({
-                        sender: "recibida",
-                        text: "¡Hola abuelo! Qué bueno que me escribes. ¿Cómo has estado?",
-                        time: horaResp
-                    });
-                    chatSeleccionado.preview = "¡Hola abuelo! Qué bueno que me escribes. ¿Cómo has estado?";
-                    chatSeleccionado.hora = horaResp;
-
-                    moverChatAlTop("juan-nieto");
-                    guardar(`gz_whatsapp_chats_${nivelActual}`, listaChatsData);
-                    renderizarMensajes();
-
-                    subPasoNivel1 = 3;
-                    actualizarBarraInstrucciones(true);
-                }
-            }, 6000);
+            enseñarEstadosDeMensaje(nuevoMensaje, chatSeleccionado);
         } else if (chatSeleccionado.id === "juan-nieto" && subPasoNivel1 === 3) {
             subPasoNivel1 = 4;
             actualizarBarraInstrucciones(true);
         } else if (chatSeleccionado.id === "familia-mendoza" && subPasoNivel1 === 6) {
+            marcarChatComoLeido(chatSeleccionado);
             completarNivelActual("¡Has completado toda la conversación y confirmaste tu asistencia a la cena!");
         }
     } else {
@@ -2468,6 +2698,7 @@ async function enviarMensajeVoz() {
 
         moverChatAlTop(chatSeleccionado.id);
         guardar(`gz_whatsapp_chats_${nivelActual}`, listaChatsData);
+        iniciarProgresoEstadoMensaje(nuevoMensaje, chatSeleccionado);
         renderizarMensajes();
 
         // Control de pasos de Nivel 2
@@ -2482,6 +2713,7 @@ async function enviarMensajeVoz() {
                 }
             } else if (chatSeleccionado.id === "dr-martinez") {
                 if (subPasoNivel2 >= 9) {
+                    marcarChatComoLeido(chatSeleccionado);
                     completarNivelActual("¡Has grabado, enviado y escuchado notas de voz reales y confirmaste tu consulta médica!");
                 }
             }
@@ -2544,6 +2776,7 @@ function enviarFotoReal(photoUrl, caption) {
 
     moverChatAlTop(chatSeleccionado.id);
     guardar(`gz_whatsapp_chats_${nivelActual}`, listaChatsData);
+    iniciarProgresoEstadoMensaje(nuevoMensaje, chatSeleccionado);
     renderizarMensajes();
 
     if (nivelActual === "enviar-foto" && chatSeleccionado.id === "juan-nieto") {
@@ -2558,6 +2791,7 @@ function enviarFotoReal(photoUrl, caption) {
 
         setTimeout(() => {
             if (statusEl) statusEl.textContent = "en línea";
+            marcarChatComoLeido(chatSeleccionado);
 
             const horaResp = obtenerHoraActual();
             const mensajeFotoJuan = {
