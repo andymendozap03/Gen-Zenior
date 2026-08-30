@@ -29,6 +29,7 @@ let isMicMuted = false;
 let contactoEnDetalle = null;
 let modoEdicion = false;
 let contactoEditandoOriginal = null;
+let fotoSeleccionadaEnFormulario = null;
 
 // Callbacks para los botones del modal
 let modalAccionPrincipal = null;
@@ -172,10 +173,41 @@ function aplicarResaltado(selector) {
     resaltarElemento(selector);
 }
 
+// ---- HELPER PARA VALIDAR TELÉFONO EN EDICIÓN (CON O SIN ESPACIOS) ----
+function esTelefonoValidoEdicion(telIngresado, telMeta, telOriginal = null) {
+    if (!telIngresado) return false;
+    const cleanIngresado = String(telIngresado).replace(/\D/g, "");
+    if (cleanIngresado.length < 6) return false;
+
+    // Si aún tiene el número original sin editar, requiere cambiarlo
+    if (telOriginal) {
+        const cleanOriginal = String(telOriginal).replace(/\D/g, "");
+        if (cleanIngresado === cleanOriginal) return false;
+    }
+
+    if (telMeta) {
+        const cleanMeta = String(telMeta).replace(/\D/g, "");
+        if (cleanIngresado === cleanMeta || cleanIngresado.endsWith(cleanMeta) || cleanMeta.endsWith(cleanIngresado)) {
+            return true;
+        }
+    }
+    return cleanIngresado.length >= 7;
+}
+
 // ---- FUNCIÓN CENTRAL: REPETIR GUÍA ACTUAL CON VOZ Y RESALTADO ----
 function repetirGuiaActual() {
     stopSpeech();
     limpiarResaltados();
+    const modalFoto = $("#ctModalSeleccionarFoto");
+    if (modalFoto && modalFoto.classList.contains("activa")) {
+        const msg = "Elige una foto tocando sobre ella, o toca 'Sin foto' o 'Cancelar'.";
+        const badge = faseNivel === "reto-final" ? "Reto Final" : (faseNivel === "repaso" ? true : false);
+        const totalRondas = (faseNivel === "repaso" && nivelActual === "eliminar-contacto") ? 2 : (faseNivel === "reto-final" ? 5 : TOTAL_RONDAS);
+        actualizarInstruccionesTexto(msg, rondaActualNivel, totalRondas, badge);
+        speak(msg);
+        aplicarResaltado(".ct-foto-opt-btn, #ctBtnSinFoto, #ctBtnCancelarFoto");
+        return;
+    }
     if (faseNivel === "reto-final") {
         actualizarGuiaRetoFinal(true);
     } else if (nivelActual === "guardar-contacto") {
@@ -449,6 +481,35 @@ function asegurarTemplateHTML() {
             </div>
         </div>
 
+        <!-- MODAL SELECCIONAR FOTO DE PERFIL -->
+        <div id="ctModalSeleccionarFoto" class="ct-modal-foto">
+            <div class="ct-foto-card">
+                <h3 class="ct-foto-title">Foto de perfil</h3>
+                <p class="ct-foto-desc">Elige una foto para tu contacto o déjalo sin foto:</p>
+                <div class="ct-foto-grid">
+                    <button type="button" class="ct-foto-opt-btn" data-foto="./assets/img/contacts/photo_perfil1.jpg" aria-label="Elegir Foto 1">
+                        <img src="./assets/img/contacts/photo_perfil1.jpg" alt="Foto 1" class="ct-foto-opt-img">
+                        <span class="ct-foto-opt-label">Foto 1</span>
+                    </button>
+                    <button type="button" class="ct-foto-opt-btn" data-foto="./assets/img/contacts/photo_perfil2.jpg" aria-label="Elegir Foto 2">
+                        <img src="./assets/img/contacts/photo_perfil2.jpg" alt="Foto 2" class="ct-foto-opt-img">
+                        <span class="ct-foto-opt-label">Foto 2</span>
+                    </button>
+                    <button type="button" class="ct-foto-opt-btn" data-foto="./assets/img/contacts/photo_perfil3.jpg" aria-label="Elegir Foto 3">
+                        <img src="./assets/img/contacts/photo_perfil3.jpg" alt="Foto 3" class="ct-foto-opt-img">
+                        <span class="ct-foto-opt-label">Foto 3</span>
+                    </button>
+                </div>
+                <div class="ct-foto-actions">
+                    <button type="button" class="ct-btn-sin-foto" id="ctBtnSinFoto">
+                        <svg viewBox="0 0 24 24"><path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+                        <span>Sin foto</span>
+                    </button>
+                    <button type="button" class="ct-btn-cancelar-foto" id="ctBtnCancelarFoto">Cancelar</button>
+                </div>
+            </div>
+        </div>
+
         <!-- MODAL DE CONFIRMACIÓN AL SALIR DEL NIVEL -->
         <div id="ctModalConfirmarSalida" class="modal-confirmar-reinicio">
             <div class="modal-confirmar-card">
@@ -462,6 +523,44 @@ function asegurarTemplateHTML() {
             </div>
         </div>
     `;
+}
+
+// ---- MANEJO DE FOTO DE PERFIL EN FORMULARIO ----
+function actualizarAvatarCirculoFormulario() {
+    const circle = $("#ctAvatarCircle");
+    const label = document.querySelector("#pantallaContactosSimulador .ct-form-avatar-label");
+    if (!circle) return;
+    if (fotoSeleccionadaEnFormulario) {
+        circle.innerHTML = `<img src="${fotoSeleccionadaEnFormulario}" class="ct-form-avatar-img-preview" alt="Foto de perfil">`;
+        circle.classList.add("con-foto");
+        if (label) label.textContent = "Cambiar foto";
+    } else {
+        circle.innerHTML = `<svg viewBox="0 0 24 24"><path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/></svg>`;
+        circle.classList.remove("con-foto");
+        if (label) label.textContent = "Agregar foto (opcional)";
+    }
+}
+
+function abrirModalSeleccionarFoto() {
+    const modal = $("#ctModalSeleccionarFoto");
+    if (modal) {
+        modal.classList.add("activa");
+        document.querySelectorAll("#pantallaContactosSimulador .ct-foto-opt-btn").forEach(btn => {
+            btn.classList.toggle("seleccionada", btn.dataset.foto === fotoSeleccionadaEnFormulario);
+        });
+    }
+    const msg = "Elige una foto tocando sobre ella, o toca 'Sin foto' o 'Cancelar'.";
+    const badge = faseNivel === "reto-final" ? "Reto Final" : (faseNivel === "repaso" ? true : false);
+    const totalRondas = (faseNivel === "repaso" && nivelActual === "eliminar-contacto") ? 2 : (faseNivel === "reto-final" ? 5 : TOTAL_RONDAS);
+    actualizarInstruccionesTexto(msg, rondaActualNivel, totalRondas, badge);
+    speak(msg);
+    aplicarResaltado(".ct-foto-opt-btn, #ctBtnSinFoto, #ctBtnCancelarFoto");
+}
+
+function cerrarModalSeleccionarFoto() {
+    const modal = $("#ctModalSeleccionarFoto");
+    if (modal) modal.classList.remove("activa");
+    limpiarResaltados();
 }
 
 // ---- AVISO DE ACCIÓN BLOQUEADA ----
@@ -479,12 +578,18 @@ function renderizarLlamadas(filtro = "") {
     const row = $("#ctFavoritesRow");
     if (row) {
         const favsFiltrados = FAVORITOS_DEFECTO.filter(f => f.nombre.toLowerCase().includes(filtro.toLowerCase()));
-        row.innerHTML = favsFiltrados.map(f => `
-            <div class="ct-fav-item" data-fav-nombre="${f.nombre}">
-                <div class="ct-fav-avatar" style="background:${f.color};">${f.iniciales}</div>
-                <span class="ct-fav-name">${f.nombre}</span>
-            </div>
-        `).join("") + `
+        row.innerHTML = favsFiltrados.map(f => {
+            const avatarInner = f.foto
+                ? `<img src="${f.foto}" alt="${f.nombre}" class="ct-fav-avatar-img">`
+                : f.iniciales;
+            const bgStyle = f.foto ? "background:#eaeaea;" : `background:${f.color};`;
+            return `
+                <div class="ct-fav-item" data-fav-nombre="${f.nombre}">
+                    <div class="ct-fav-avatar" style="${bgStyle}">${avatarInner}</div>
+                    <span class="ct-fav-name">${f.nombre}</span>
+                </div>
+            `;
+        }).join("") + `
             <div class="ct-fav-item" id="ctFavAgregar">
                 <div class="ct-fav-add">
                     <svg viewBox="0 0 24 24"><path d="M15 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm-9-2V7H4v3H1v2h3v3h2v-3h3v-2H6zm9 4c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/></svg>
@@ -567,9 +672,13 @@ function renderizarContactos(filtro = "", nuevoNombreDestacado = null) {
 
 function contactoHTML(c, isFirst, isLast, isSolo, esNuevo = false) {
     const telFormateado = formatearTelefonoEcuador(c.telefono);
+    const avatarInner = c.foto
+        ? `<img src="${c.foto}" alt="${c.nombre}" class="ct-contact-avatar-img">`
+        : c.iniciales;
+    const bgStyle = c.foto ? "background:#eaeaea;" : `background:${c.color};`;
     return `
         <div class="ct-contact-item" data-nombre="${c.nombre}" data-color="${c.color}" data-iniciales="${c.iniciales}">
-            <div class="ct-contact-avatar" style="background:${c.color};">${c.iniciales}</div>
+            <div class="ct-contact-avatar" style="${bgStyle}">${avatarInner}</div>
             <div class="ct-contact-info">
                 <div class="ct-contact-name">${c.nombre}${esNuevo ? `<span class="ct-nuevo-badge">¡Nuevo!</span>` : ""}</div>
                 ${c.telefono ? `<div class="ct-contact-phone">Celular ${telFormateado}</div>` : ""}
@@ -625,7 +734,16 @@ function abrirDetalleContacto(nombre) {
     const avatarEl = $("#ctDetalleAvatarLarge");
     const nombreEl = $("#ctDetalleNombre");
     const telEl = $("#ctDetalleTelefono");
-    if (avatarEl) { avatarEl.style.background = contacto.color; avatarEl.textContent = contacto.iniciales; }
+    if (avatarEl) {
+        if (contacto.foto) {
+            avatarEl.innerHTML = `<img src="${contacto.foto}" class="ct-detalle-avatar-img" alt="${contacto.nombre}">`;
+            avatarEl.style.background = "#eaeaea";
+        } else {
+            avatarEl.innerHTML = "";
+            avatarEl.style.background = contacto.color;
+            avatarEl.textContent = contacto.iniciales;
+        }
+    }
     if (nombreEl) nombreEl.textContent = contacto.nombre;
     if (telEl) telEl.textContent = formatearTelefonoEcuador(contacto.telefono);
 
@@ -717,6 +835,7 @@ function abrirFormularioCrearContacto(contactoParaEditar = null) {
     if (contactoParaEditar) {
         modoEdicion = true;
         contactoEditandoOriginal = contactoParaEditar;
+        fotoSeleccionadaEnFormulario = contactoParaEditar.foto || null;
         let nuevoTelMeta = "098 111 2233";
         if (faseNivel === "reto-final") {
             nuevoTelMeta = RETO_FINAL_DATA[3].nuevoTel;
@@ -737,6 +856,7 @@ function abrirFormularioCrearContacto(contactoParaEditar = null) {
     } else {
         modoEdicion = false;
         contactoEditandoOriginal = null;
+        fotoSeleccionadaEnFormulario = null;
         let metaNom = "Dra. Carmen Gómez";
         let metaTel = "099 876 5432";
 
@@ -764,6 +884,8 @@ function abrirFormularioCrearContacto(contactoParaEditar = null) {
             btnSugerirTel.textContent = `💡 Toca para escribir "${metaTel}"`;
         }
     }
+
+    actualizarAvatarCirculoFormulario();
 
     if (faseNivel === "reto-final") {
         subPaso = 3;
@@ -796,12 +918,22 @@ function guardarFormularioContacto() {
         telefono = formatearTelefonoEcuador(telefono);
         contactoEditandoOriginal.nombre = nombre;
         contactoEditandoOriginal.telefono = telefono;
+        contactoEditandoOriginal.foto = fotoSeleccionadaEnFormulario;
 
         const contacto = CONTACTOS.find(c => c === contactoEditandoOriginal);
         if (contacto) {
             cambiarVista("ctViewDetalleContacto");
             const avatarEl = $("#ctDetalleAvatarLarge"); const nombreEl = $("#ctDetalleNombre"); const telEl = $("#ctDetalleTelefono");
-            if (avatarEl) { avatarEl.style.background = contacto.color; avatarEl.textContent = contacto.iniciales; }
+            if (avatarEl) {
+                if (contacto.foto) {
+                    avatarEl.innerHTML = `<img src="${contacto.foto}" class="ct-detalle-avatar-img" alt="${contacto.nombre}">`;
+                    avatarEl.style.background = "#eaeaea";
+                } else {
+                    avatarEl.innerHTML = "";
+                    avatarEl.style.background = contacto.color;
+                    avatarEl.textContent = contacto.iniciales;
+                }
+            }
             if (nombreEl) nombreEl.textContent = contacto.nombre;
             if (telEl) telEl.textContent = formatearTelefonoEcuador(contacto.telefono);
         }
@@ -856,7 +988,7 @@ function guardarFormularioContacto() {
         telefono = formatearTelefonoEcuador(telefono);
         const iniciales = nombre.split(" ").map(w => w[0]).filter(Boolean).slice(0, 2).join("").toUpperCase() || "C";
         const colores = ["#7b4b24", "#2e7d32", "#1565c0", "#6a1b9a", "#c2185b", "#ef6c00"];
-        CONTACTOS.unshift({ nombre, iniciales, color: colores[Math.floor(Math.random() * colores.length)], telefono, fav: false });
+        CONTACTOS.unshift({ nombre, iniciales, color: colores[Math.floor(Math.random() * colores.length)], telefono, fav: false, foto: fotoSeleccionadaEnFormulario });
 
         cambiarVista("ctViewContactos");
         renderizarContactos("", nombre);
@@ -1005,7 +1137,17 @@ function abrirLlamada(nombre, color, iniciales) {
     if (btnAltavoz) btnAltavoz.classList.remove("activo");
     if (btnSilenciar) btnSilenciar.classList.remove("activo");
 
-    if (avatarEl) { avatarEl.style.background = color; avatarEl.textContent = iniciales; }
+    if (avatarEl) {
+        const cEncontrado = CONTACTOS.find(c => c.nombre === nombre);
+        if (cEncontrado && cEncontrado.foto) {
+            avatarEl.innerHTML = `<img src="${cEncontrado.foto}" class="ct-call-avatar-img" alt="${nombre}">`;
+            avatarEl.style.background = "#eaeaea";
+        } else {
+            avatarEl.innerHTML = "";
+            avatarEl.style.background = color;
+            avatarEl.textContent = iniciales;
+        }
+    }
     if (nameEl) nameEl.textContent = nombre;
     if (statusEl) statusEl.textContent = "Llamando...";
     if (textCallNico) textCallNico.textContent = `Llamando a ${nombre}... Espera un momento a que conteste.`;
@@ -1032,7 +1174,9 @@ function abrirLlamada(nombre, color, iniciales) {
         else if (faseNivel === "practica") saludo = PRACTICAS_LLAMAR[rondaActualNivel - 1]?.saludo || saludo;
         else saludo = REPASO_NIVEL_3[2].saludo;
 
-        if (textCallNico) textCallNico.textContent = `${nombre} dice: "${saludo}"`;
+        const msgSaludo = `${nombre} dice: "${saludo}"`;
+        if (textCallNico) textCallNico.textContent = msgSaludo;
+        actualizarInstruccionesTexto(msgSaludo, rondaActualNivel, TOTAL_RONDAS, badgeTipo);
 
         speak(saludo, () => {
             setTimeout(() => {
@@ -1181,14 +1325,14 @@ function actualizarGuiaNivel1(forzarVoz = false) {
             subPaso = 3;
             texto = `Escribe el nombre '${meta.nombre}'. Puedes tocar la sugerencia de abajo.`;
             aplicarResaltado("#ctSugerirNombre, #ctInputNombre");
-        } else if (!inputTel || inputTel.value.trim().length < 6) {
+        } else if (!inputTel || inputTel.value.replace(/\D/g, "").length < 6) {
             subPaso = 4;
             texto = `Ahora escribe el teléfono '${meta.telefono}'. Puedes tocar la sugerencia de abajo.`;
             aplicarResaltado("#ctSugerirTelefono, #ctInputTelefono");
         } else {
             subPaso = 5;
-            texto = `¡Muy bien! Ahora presiona el botón 'Guardar' arriba a la derecha.`;
-            aplicarResaltado("#ctBtnGuardarContacto");
+            texto = `¡Muy bien! Opcionalmente puedes agregar una foto tocando el círculo, o presionar 'Guardar' arriba a la derecha.`;
+            aplicarResaltado("#ctAvatarCircle, #ctBtnGuardarContacto");
         }
     } else {
         texto = `Toca 'Contactos' abajo para continuar guardando a ${meta.nombre}.`;
@@ -1278,7 +1422,7 @@ function actualizarGuiaNivel3(forzarVoz = false) {
                 renderizarLlamadas();
             }
             subPaso = 1;
-            texto = `Práctica 1: Toca a '${meta.nombre}' en tus Favoritos arriba para llamarla.`;
+            texto = `Toca a '${meta.nombre}' en tus Favoritos arriba para llamarla.`;
             aplicarResaltado(`.ct-fav-item[data-fav-nombre="${meta.nombre}"]`);
         } else if (rondaActualNivel === 2) {
             if (viewActiva !== "ctViewRecientes") {
@@ -1286,12 +1430,12 @@ function actualizarGuiaNivel3(forzarVoz = false) {
                 renderizarLlamadas();
             }
             subPaso = 1;
-            texto = `Práctica 2: Toca el botón de teléfono junto a '${meta.nombre}'.`;
+            texto = `Toca el botón de teléfono junto a '${meta.nombre}' en las llamadas recientes.`;
             aplicarResaltado(`.ct-call-phone-btn[data-nombre="${meta.nombre}"]`);
         } else if (rondaActualNivel === 3) {
             if (viewActiva === "ctViewRecientes") {
                 subPaso = 1;
-                texto = `Práctica 3: Ve a 'Contactos' abajo para llamar a '${meta.nombre}'.`;
+                texto = `Ve a 'Contactos' abajo para llamar a '${meta.nombre}'.`;
                 aplicarResaltado("#ctNavContactos, #ctVerContactosBtn");
             } else if (viewActiva === "ctViewContactos") {
                 subPaso = 2;
@@ -1329,8 +1473,8 @@ function actualizarGuiaNivel3(forzarVoz = false) {
                     aplicarResaltado("#ctSugerirTelefono, #ctInputTelefono");
                 } else {
                     subPaso = 5;
-                    texto = `Presiona el botón 'Guardar' arriba a la derecha.`;
-                    aplicarResaltado("#ctBtnGuardarContacto");
+                    texto = `Opcionalmente puedes agregar una foto tocando el círculo, o presionar 'Guardar' arriba a la derecha.`;
+                    aplicarResaltado("#ctAvatarCircle, #ctBtnGuardarContacto");
                 }
             }
         } else if (rondaActualNivel === 2) {
@@ -1399,14 +1543,14 @@ function actualizarGuiaNivel4(forzarVoz = false) {
         }
     } else if (viewActiva === "ctViewCrearContacto") {
         const inputTel = $("#ctInputTelefono");
-        if (!inputTel || inputTel.value.trim() !== meta.nuevoTel) {
+        if (!inputTel || !esTelefonoValidoEdicion(inputTel.value, meta.nuevoTel, contactoEditandoOriginal?.telefono)) {
             subPaso = 3;
-            texto = `Cambia el teléfono a '${meta.nuevoTel}'. Puedes tocar la sugerencia de abajo.`;
+            texto = `Cambia el teléfono a '${meta.nuevoTel}'. Puedes escribirlo o tocar la sugerencia de abajo.`;
             aplicarResaltado("#ctSugerirTelefono, #ctInputTelefono");
         } else {
             subPaso = 4;
-            texto = `¡Listo! Presiona el botón 'Guardar' arriba a la derecha.`;
-            aplicarResaltado("#ctBtnGuardarContacto");
+            texto = `¡Listo! Opcionalmente puedes cambiar la foto tocando el círculo, o presionar 'Guardar' arriba a la derecha.`;
+            aplicarResaltado("#ctAvatarCircle, #ctBtnGuardarContacto");
         }
     } else {
         texto = `Ve a 'Contactos' para editar a ${meta.nombre}.`;
@@ -1472,14 +1616,14 @@ function actualizarGuiaNivel5(forzarVoz = false) {
                 }
             } else if (viewActiva === "ctViewCrearContacto") {
                 const inputTel = $("#ctInputTelefono");
-                if (!inputTel || inputTel.value.trim() !== meta.nuevoTel) {
+                if (!inputTel || !esTelefonoValidoEdicion(inputTel.value, meta.nuevoTel, contactoEditandoOriginal?.telefono)) {
                     subPaso = 3;
-                    texto = `Cambia el teléfono a '${meta.nuevoTel}' tocando la sugerencia de abajo.`;
+                    texto = `Cambia el teléfono a '${meta.nuevoTel}' escribiéndolo o tocando la sugerencia de abajo.`;
                     aplicarResaltado("#ctSugerirTelefono, #ctInputTelefono");
                 } else {
                     subPaso = 4;
-                    texto = `Presiona el botón 'Guardar' arriba a la derecha.`;
-                    aplicarResaltado("#ctBtnGuardarContacto");
+                    texto = `Opcionalmente puedes cambiar la foto tocando el círculo, o presionar 'Guardar' arriba a la derecha.`;
+                    aplicarResaltado("#ctAvatarCircle, #ctBtnGuardarContacto");
                 }
             }
         } else if (rondaActualNivel === 2) {
@@ -1532,8 +1676,8 @@ function actualizarGuiaRetoFinal(forzarVoz = false) {
                 texto = `Escribe el teléfono '${meta.telefono}'. Puedes tocar la sugerencia de abajo.`;
                 aplicarResaltado("#ctSugerirTelefono, #ctInputTelefono");
             } else {
-                texto = `Presiona el botón 'Guardar' arriba a la derecha.`;
-                aplicarResaltado("#ctBtnGuardarContacto");
+                texto = `Opcionalmente puedes agregar una foto tocando el círculo, o presionar 'Guardar' arriba a la derecha.`;
+                aplicarResaltado("#ctAvatarCircle, #ctBtnGuardarContacto");
             }
         }
     } else if (rondaActualNivel === 2) {
@@ -1595,12 +1739,12 @@ function actualizarGuiaRetoFinal(forzarVoz = false) {
             }
         } else if (viewActiva === "ctViewCrearContacto") {
             const inputTel = $("#ctInputTelefono");
-            if (!inputTel || inputTel.value.trim() !== meta.nuevoTel) {
-                texto = `Cambia el teléfono a '${meta.nuevoTel}' tocando la sugerencia de abajo.`;
+            if (!inputTel || !esTelefonoValidoEdicion(inputTel.value, meta.nuevoTel, contactoEditandoOriginal?.telefono)) {
+                texto = `Cambia el teléfono a '${meta.nuevoTel}' escribiéndolo o tocando la sugerencia de abajo.`;
                 aplicarResaltado("#ctSugerirTelefono, #ctInputTelefono");
             } else {
-                texto = `Presiona el botón 'Guardar' arriba a la derecha.`;
-                aplicarResaltado("#ctBtnGuardarContacto");
+                texto = `Opcionalmente puedes cambiar la foto tocando el círculo, o presionar 'Guardar' arriba a la derecha.`;
+                aplicarResaltado("#ctAvatarCircle, #ctBtnGuardarContacto");
             }
         }
     } else if (rondaActualNivel === 5) {
@@ -1674,7 +1818,9 @@ function mostrarModalOpciones({ titulo, mensaje, textoPrincipal, onPrincipal, te
     modalAccionTerciaria = onTerciario || null;
 
     $("#ctModalExito")?.classList.add("activa");
-    speak(`${titulo}. ${mensaje}`);
+    const textoCompleto = `${titulo}. ${mensaje}`;
+    actualizarInstruccionesTexto(textoCompleto);
+    speak(textoCompleto);
 }
 
 // ---- COMPLETAR NIVEL ----
@@ -1849,12 +1995,23 @@ function inicializarListeners() {
     const btnCancelarCrear = $("#ctBtnCancelarCrear");
     if (btnCancelarCrear) {
         btnCancelarCrear.onclick = () => {
+            fotoSeleccionadaEnFormulario = null;
+            cerrarModalSeleccionarFoto();
             if (modoEdicion && contactoEditandoOriginal) {
                 const c = contactoEditandoOriginal;
                 contactoEnDetalle = c;
                 cambiarVista("ctViewDetalleContacto");
                 const avatarEl = $("#ctDetalleAvatarLarge"); const nombreEl = $("#ctDetalleNombre"); const telEl = $("#ctDetalleTelefono");
-                if (avatarEl) { avatarEl.style.background = c.color; avatarEl.textContent = c.iniciales; }
+                if (avatarEl) {
+                    if (c.foto) {
+                        avatarEl.innerHTML = `<img src="${c.foto}" class="ct-detalle-avatar-img" alt="${c.nombre}">`;
+                        avatarEl.style.background = "#eaeaea";
+                    } else {
+                        avatarEl.innerHTML = "";
+                        avatarEl.style.background = c.color;
+                        avatarEl.textContent = c.iniciales;
+                    }
+                }
                 if (nombreEl) nombreEl.textContent = c.nombre;
                 if (telEl) telEl.textContent = formatearTelefonoEcuador(c.telefono);
                 if (faseNivel === "reto-final") { subPaso = 2; actualizarGuiaRetoFinal(true); }
@@ -2080,7 +2237,8 @@ function inicializarListeners() {
     const inputTel = $("#ctInputTelefono");
     if (inputTel) {
         inputTel.addEventListener("input", () => {
-            if (inputTel.value.trim().length >= 6) {
+            const cleanDigits = inputTel.value.replace(/\D/g, "");
+            if (cleanDigits.length >= 6) {
                 if (faseNivel === "reto-final") {
                     if (rondaActualNivel === 1 && subPaso === 4) { subPaso = 5; actualizarGuiaRetoFinal(true); }
                     else if (rondaActualNivel === 4 && subPaso === 3) { subPaso = 4; actualizarGuiaRetoFinal(true); }
@@ -2099,6 +2257,63 @@ function inicializarListeners() {
                 }
             }
         });
+    }
+
+    // Círculo de avatar del formulario: abrir modal de fotos
+    const avatarCircle = $("#ctAvatarCircle");
+    if (avatarCircle) {
+        avatarCircle.onclick = () => {
+            abrirModalSeleccionarFoto();
+        };
+    }
+
+    // Opciones de foto dentro del modal
+    document.querySelectorAll("#pantallaContactosSimulador .ct-foto-opt-btn").forEach(btn => {
+        btn.onclick = () => {
+            fotoSeleccionadaEnFormulario = btn.dataset.foto;
+            actualizarAvatarCirculoFormulario();
+            cerrarModalSeleccionarFoto();
+            mostrarToast("Foto de perfil seleccionada 📷");
+
+            const msg = "¡Foto elegida! Ahora presiona 'Guardar' arriba a la derecha.";
+            const badge = faseNivel === "reto-final" ? "Reto Final" : (faseNivel === "repaso" ? true : false);
+            const totalRondas = (faseNivel === "repaso" && nivelActual === "eliminar-contacto") ? 2 : (faseNivel === "reto-final" ? 5 : TOTAL_RONDAS);
+            actualizarInstruccionesTexto(msg, rondaActualNivel, totalRondas, badge);
+            speak(msg);
+            aplicarResaltado("#ctBtnGuardarContacto");
+        };
+    });
+
+    // Botón Sin foto
+    const btnSinFoto = $("#ctBtnSinFoto");
+    if (btnSinFoto) {
+        btnSinFoto.onclick = () => {
+            fotoSeleccionadaEnFormulario = null;
+            actualizarAvatarCirculoFormulario();
+            cerrarModalSeleccionarFoto();
+            mostrarToast("Contacto sin foto");
+
+            const msg = "Contacto sin foto. Ahora presiona 'Guardar' arriba a la derecha.";
+            const badge = faseNivel === "reto-final" ? "Reto Final" : (faseNivel === "repaso" ? true : false);
+            const totalRondas = (faseNivel === "repaso" && nivelActual === "eliminar-contacto") ? 2 : (faseNivel === "reto-final" ? 5 : TOTAL_RONDAS);
+            actualizarInstruccionesTexto(msg, rondaActualNivel, totalRondas, badge);
+            speak(msg);
+            aplicarResaltado("#ctBtnGuardarContacto");
+        };
+    }
+
+    // Botón Cancelar en modal de fotos
+    const btnCancelarFoto = $("#ctBtnCancelarFoto");
+    if (btnCancelarFoto) {
+        btnCancelarFoto.onclick = () => {
+            cerrarModalSeleccionarFoto();
+            const msg = "¡Listo! Opcionalmente puedes tocar el círculo para elegir una foto, o presionar 'Guardar'.";
+            const badge = faseNivel === "reto-final" ? "Reto Final" : (faseNivel === "repaso" ? true : false);
+            const totalRondas = (faseNivel === "repaso" && nivelActual === "eliminar-contacto") ? 2 : (faseNivel === "reto-final" ? 5 : TOTAL_RONDAS);
+            actualizarInstruccionesTexto(msg, rondaActualNivel, totalRondas, badge);
+            speak(msg);
+            aplicarResaltado("#ctAvatarCircle, #ctBtnGuardarContacto");
+        };
     }
 
     // Guardar formulario
@@ -2316,6 +2531,7 @@ export function iniciarSimulador(idNivel) {
     llamadaContacto = null;
     contactoEnDetalle = null;
     modoEdicion = false;
+    fotoSeleccionadaEnFormulario = null;
     rondaActualNivel = 1;
     subPaso = 1;
     modalAccionPrincipal = null;
@@ -2326,6 +2542,7 @@ export function iniciarSimulador(idNivel) {
 
     reiniciarContactos();
     asegurarTemplateHTML();
+    cerrarModalSeleccionarFoto();
 
     document.querySelectorAll(".pantalla").forEach(p => p.classList.remove("activa"));
     const sim = $("#pantallaContactosSimulador");
