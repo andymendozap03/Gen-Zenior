@@ -1962,3 +1962,194 @@ html[data-theme="dark"][data-contrast="high"] button {
 
 /* La escala de texto de estos elementos ya se aplica directamente en su
    declaración original "font-size: calc(Npx * var(--font-scale, 1));". */
+
+/* ======================================================
+   PANTALLA COMPLETA
+
+   No se usa la pantalla completa del navegador (en el iPhone se comporta
+   distinto y dentro del APK sacaría a la persona de la aplicación): el
+   reproductor crece hasta ocupar toda la pantalla, dejando arriba la barra
+   de Nico para que la guía no desaparezca justo cuando más se necesita.
+   ====================================================== */
+.pantalla-youtube.yt-en-pantalla-completa .yt-player-screen {
+    position: fixed;
+    top: var(--yt-alto-barra-nico, 0px);
+    left: 0;
+    right: 0;
+    bottom: 0;
+    width: 100vw;
+    height: auto;
+    aspect-ratio: auto;
+    z-index: 380;
+    background: #000000;
+    border-radius: 0;
+}
+
+/* De lado el video se ve entero; de pie se recorta menos que con "cover" */
+.pantalla-youtube.yt-en-pantalla-completa .yt-player-video {
+    object-fit: contain;
+    background: #000000;
+}
+
+/* La barra de Nico manda: siempre por encima del video. Y se ensancha igual
+   que el video, porque si no queda una barra estrecha flotando en medio de
+   una pantalla ancha y parece de otra aplicación. */
+.pantalla-youtube.yt-en-pantalla-completa .yt-instructions-bar {
+    /* Fija, como el video: así ninguna de las dos se queda encerrada en la
+       columna de 480 px de la aplicación (que además recorta lo que se sale) */
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    width: 100vw;
+    z-index: 400;
+}
+
+/* Controles más grandes en pantalla completa: es donde el dedo tiene que
+   acertar sin la referencia del resto de la página */
+.pantalla-youtube.yt-en-pantalla-completa .yt-player-bar {
+    padding: 14px 16px calc(14px + env(safe-area-inset-bottom, 0px));
+}
+
+.pantalla-youtube.yt-en-pantalla-completa .yt-ctrl-btn {
+    width: 46px;
+    height: 46px;
+}
+
+.pantalla-youtube.yt-en-pantalla-completa .yt-ctrl-btn svg {
+    width: 28px;
+    height: 28px;
+}
+
+/* El botón de las cuatro esquinitas va al final de la barra, como en YouTube */
+.yt-fullscreen-btn {
+    margin-left: auto;
+}
+
+/* ======================================================
+   TARJETA: GIRA EL TELÉFONO DE LADO
+   Girar el teléfono es un gesto físico y no todo el mundo lo ha hecho nunca,
+   así que se explica con un dibujo antes de pedirlo.
+   ====================================================== */
+.yt-girar-card {
+    display: none;
+    position: fixed;
+    /* Empieza por debajo de la barra de Nico: si la tapara, la persona
+       perdería justo la frase que le explica lo que tiene que hacer */
+    top: var(--yt-alto-barra-nico, 0px);
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.72);
+    z-index: 420;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+}
+
+.yt-girar-card.activa {
+    display: flex;
+}
+
+.yt-girar-panel {
+    background: #ffffff;
+    border: 3px solid #ff0000;
+    border-radius: 18px;
+    padding: 20px;
+    max-width: 340px;
+    width: 100%;
+    max-height: 100%;
+    overflow-y: auto;
+    text-align: center;
+}
+
+.yt-girar-titulo {
+    margin: 0 0 14px;
+    font-size: calc(20px * var(--font-scale, 1));
+    font-weight: 800;
+    color: #ff0000;
+}
+
+.yt-girar-dibujo {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    margin-bottom: 16px;
+}
+
+/* Dos teléfonos dibujados con CSS: uno de pie y otro de lado */
+.yt-girar-tel {
+    display: block;
+    border: 3px solid #43281c;
+    border-radius: 8px;
+    background: #f3ede7;
+    flex-shrink: 0;
+}
+
+.yt-girar-tel-vertical {
+    width: 40px;
+    height: 68px;
+}
+
+.yt-girar-tel-horizontal {
+    width: 78px;
+    height: 46px;
+    background: #43281c;
+    animation: ytGirarLatido 2s ease-in-out infinite;
+}
+
+.yt-girar-flecha {
+    font-size: 30px;
+    line-height: 1;
+    color: #ff0000;
+    font-weight: 800;
+}
+
+@keyframes ytGirarLatido {
+    0%, 100% { transform: scale(1); }
+    50%      { transform: scale(1.08); }
+}
+
+.yt-girar-texto {
+    margin: 0 0 12px;
+    font-size: calc(16px * var(--font-scale, 1));
+    line-height: 1.5;
+    color: #43281c;
+}
+
+.yt-girar-btn {
+    width: 100%;
+    background: #ff0000;
+    color: #ffffff;
+    border: none;
+    border-bottom: 5px solid #b71c1c;
+    border-radius: 14px;
+    padding: 14px;
+    font-size: calc(17px * var(--font-scale, 1));
+    font-weight: 800;
+    font-family: inherit;
+    cursor: pointer;
+}
+
+.yt-girar-btn:active {
+    transform: translateY(3px);
+    border-bottom-width: 2px;
+}
+
+/* Con el teléfono ya de lado la tarjeta estorbaría: se aparta del centro y
+   deja ver el video que se acaba de agrandar */
+@media (orientation: landscape) and (max-height: 500px) {
+    .yt-girar-panel {
+        max-width: 460px;
+        padding: 14px 18px;
+    }
+
+    .yt-girar-dibujo {
+        margin-bottom: 10px;
+    }
+
+    .yt-girar-texto {
+        margin-bottom: 8px;
+    }
+}

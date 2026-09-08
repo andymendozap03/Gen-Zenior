@@ -35,16 +35,32 @@
     line-height: 1.1;
 }
 
+/* En la evaluación con usuarios no quedaba claro cómo volver al menú
+   principal: la flecha sola no se leía como "salir de aquí". Se le pone la
+   palabra al lado, igual que al botón de salir de los simuladores. */
 .boton-volver {
-    width: 44px;
+    min-width: 44px;
     height: 44px;
     border: 0;
-    border-radius: 50%;
+    border-radius: 22px;
     background: rgba(255, 255, 255, 0.22);
-    display: grid;
-    place-items: center;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 5px;
+    padding: 0 12px 0 8px;
     transition: all 0.2s ease;
     align-self: center;
+}
+
+.boton-volver::after {
+    content: "Menú";
+    color: #ffffff;
+    font-family: inherit;
+    font-size: calc(15px * var(--font-scale, 1));
+    font-weight: 800;
+    letter-spacing: 0.2px;
+    white-space: nowrap;
 }
 
 .boton-volver:hover {

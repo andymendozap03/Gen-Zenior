@@ -268,6 +268,12 @@ html[data-theme="dark"][data-contrast="high"] button {
     outline: 3px solid rgba(255, 180, 0, 0.95) !important;
     outline-offset: 3px !important;
     transition: transform 0.25s ease, box-shadow 0.25s ease !important;
+
+    /* Halo oscuro alrededor del aro. En la prueba con usuarios, el aro de
+       color se confundía con el azul de Facebook o el rojo de YouTube; este
+       borde separa la señal de Nico del color de la aplicación, sea cual sea. */
+    box-shadow: 0 0 0 6px rgba(0, 0, 0, 0.35), 0 0 18px 4px rgba(0, 0, 0, 0.25) !important;
+    border-radius: inherit;
 }
 
 .nico-highlight-target.amber {
@@ -395,4 +401,332 @@ html[data-theme="dark"][data-contrast="high"] button {
     width: 26px;
     height: 26px;
     filter: brightness(0) invert(1);
+}
+
+/* ======================================================
+   PUNTERO DE NICO (la mano que señala)
+   Nace de la prueba con usuarios: el aro de color solo no bastaba, porque
+   sobre botones pequeños parecía parte del icono. La mano no se confunde
+   con nada de la interfaz.
+   ====================================================== */
+.nico-puntero {
+    position: fixed;
+    width: 46px;
+    height: 46px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    pointer-events: none;
+    z-index: 9000;
+    opacity: 0;
+    transition: opacity 0.2s ease;
+}
+
+.nico-puntero.visible {
+    opacity: 1;
+}
+
+.nico-puntero-mano {
+    font-size: 34px;
+    line-height: 1;
+    /* Contorno claro para que se vea sobre fondos oscuros (Reels, video) */
+    filter: drop-shadow(0 0 3px rgba(255, 255, 255, 0.95))
+            drop-shadow(0 3px 6px rgba(0, 0, 0, 0.55));
+    animation: nicoPunteroSube 1.1s infinite ease-in-out;
+}
+
+/* Solo se ve una de las dos manos: la que apunta hacia el objetivo */
+.nico-puntero .nico-puntero-mano {
+    position: absolute;
+}
+
+.nico-puntero .nico-mano-abajo,
+.nico-puntero.hacia-abajo .nico-mano-arriba {
+    display: none;
+}
+
+.nico-puntero.hacia-abajo .nico-mano-abajo {
+    display: block;
+}
+
+@keyframes nicoPunteroSube {
+    0%, 100% { transform: translateY(4px); }
+    50%      { transform: translateY(-4px); }
+}
+
+/* ======================================================
+   SALIR DE UN MÓDULO
+   En la prueba, al terminar una actividad no quedaba claro cómo volver al
+   menú. Los cuatro simuladores tienen su propio botón; aquí se les da un
+   aspecto común e inconfundible, sin tocar el código de cada módulo.
+   ====================================================== */
+#wsSalirSimulador,
+#fbSalirBtn,
+#ytSalirBtn,
+#ctSalirBtn {
+    position: relative;
+    background-color: #c0392b !important;
+    border-radius: 20px !important;
+    width: auto !important;
+    min-width: 44px;
+    /* 44px es el mínimo recomendado para tocar sin fallar; en la evaluación
+       varias personas tuvieron que intentar dos veces para salir */
+    height: 44px !important;
+    padding: 0 14px 0 10px !important;
+    display: inline-flex !important;
+    align-items: center;
+    gap: 4px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.25);
+}
+
+#wsSalirSimulador::after,
+#fbSalirBtn::after,
+#ytSalirBtn::after,
+#ctSalirBtn::after {
+    content: "Salir";
+    color: #ffffff;
+    font-family: inherit;
+    font-size: calc(14px * var(--font-scale, 1));
+    font-weight: 800;
+    letter-spacing: 0.2px;
+}
+
+#wsSalirSimulador svg,
+#fbSalirBtn svg,
+#ytSalirBtn svg,
+#ctSalirBtn svg,
+#wsSalirSimulador img,
+#fbSalirBtn img,
+#ytSalirBtn img,
+#ctSalirBtn img {
+    fill: #ffffff !important;
+    width: 18px !important;
+    height: 18px !important;
+    filter: brightness(0) invert(1);
+}
+
+/* ======================================================
+   INTRODUCCIÓN DE BIENVENIDA
+   Texto grande y botones amplios: la lee gente que ve el teléfono por
+   primera vez, muchas veces sin gafas.
+   ====================================================== */
+.intro {
+    position: fixed;
+    inset: 0;
+    z-index: 9500;
+    background: #ddd0ba;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+    transition: opacity 0.35s ease;
+}
+
+.intro.oculta {
+    opacity: 0;
+    pointer-events: none;
+}
+
+.intro-tarjeta {
+    background: #fff7e9;
+    border: 3px solid #6b4a3a;
+    border-radius: 22px;
+    padding: 22px 20px 18px;
+    width: 100%;
+    max-width: 420px;
+    max-height: 100%;
+    overflow-y: auto;
+    box-shadow: 0 10px 30px rgba(75, 46, 34, 0.25);
+}
+
+.intro-progreso {
+    display: flex;
+    justify-content: center;
+    gap: 8px;
+    margin-bottom: 18px;
+}
+
+.intro-punto {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    background: #c4b295;
+    transition: all 0.25s ease;
+}
+
+.intro-punto.activo {
+    background: #7b9f42;
+    width: 28px;
+    border-radius: 6px;
+}
+
+.intro-paso {
+    display: none;
+}
+
+.intro-paso.activo {
+    display: block;
+    animation: introEntra 0.3s ease;
+}
+
+@keyframes introEntra {
+    from { opacity: 0; transform: translateX(14px); }
+    to   { opacity: 1; transform: none; }
+}
+
+.intro-ilustracion {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 96px;
+    margin-bottom: 14px;
+    position: relative;
+}
+
+.intro-emoji {
+    font-size: 68px;
+    line-height: 1;
+}
+
+.intro-escudo {
+    position: absolute;
+    right: calc(50% - 58px);
+    bottom: 4px;
+    font-size: 38px;
+    filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.25));
+}
+
+.intro-nico {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+    background: #7b9f42;
+    color: #ffffff;
+    padding: 12px 20px;
+    border-radius: 16px;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+}
+
+.intro-nico-icono {
+    width: 40px;
+    height: 40px;
+    filter: brightness(0) invert(1);
+}
+
+.intro-nico-nombre {
+    font-size: calc(15px * var(--font-scale, 1));
+    font-weight: 900;
+    letter-spacing: 1px;
+}
+
+.intro-trofeo {
+    width: 84px;
+    height: 84px;
+    filter: drop-shadow(0 6px 12px rgba(255, 193, 7, 0.45));
+    animation: introTrofeo 1.1s infinite alternate ease-in-out;
+}
+
+@keyframes introTrofeo {
+    from { transform: translateY(0); }
+    to   { transform: translateY(-8px); }
+}
+
+.intro-titulo {
+    margin: 0 0 12px;
+    font-size: calc(24px * var(--font-scale, 1));
+    font-weight: 900;
+    color: #4b2e22;
+    text-align: center;
+}
+
+.intro-texto {
+    margin: 0 0 12px;
+    font-size: calc(17px * var(--font-scale, 1));
+    line-height: 1.5;
+    color: #5b4034;
+}
+
+.intro-destacado {
+    background: #efe3c9;
+    border-left: 5px solid #7b9f42;
+    border-radius: 10px;
+    padding: 10px 12px;
+}
+
+.intro-pista {
+    font-size: calc(15px * var(--font-scale, 1));
+    color: #7a6152;
+}
+
+.intro-mano {
+    font-size: calc(20px * var(--font-scale, 1));
+}
+
+.intro-botones {
+    display: flex;
+    justify-content: space-between;
+    gap: 12px;
+    margin-top: 18px;
+}
+
+.intro-btn {
+    flex: 1;
+    background: #7b9f42;
+    color: #ffffff;
+    border: none;
+    border-bottom: 5px solid #5c7a2e;
+    border-radius: 14px;
+    padding: 15px 10px;
+    font-family: inherit;
+    font-size: calc(19px * var(--font-scale, 1));
+    font-weight: 800;
+    cursor: pointer;
+}
+
+.intro-btn:active {
+    transform: translateY(3px);
+    border-bottom-width: 2px;
+}
+
+.intro-btn-secundario {
+    flex: 0 0 34%;
+    background: #efe3c9;
+    color: #4b2e22;
+    border-bottom-color: #c4b295;
+}
+
+/* La introducción y el puntero también en modo oscuro y alto contraste,
+   para no dejar una pantalla clara de golpe a quien eligió pantalla oscura */
+html[data-theme="dark"] .intro {
+    background: #2b1d16;
+}
+
+html[data-theme="dark"] .intro-tarjeta {
+    background: #3a291f;
+    border-color: #5a4437;
+    color: #f3e9df;
+}
+
+html[data-theme="dark"] .intro-titulo,
+html[data-theme="dark"] .intro-texto {
+    color: #f3e9df;
+}
+
+html[data-theme="dark"] .intro-destacado {
+    background: #4a382c;
+    color: #f3e9df;
+}
+
+html[data-theme="dark"] .intro-pista {
+    color: #d8c7b8;
+}
+
+html[data-theme="dark"] .intro-punto {
+    background: #6b5546;
+}
+
+html[data-theme="dark"][data-contrast="high"] .intro-tarjeta {
+    border-width: 3px;
+    border-color: #ffffff;
 }

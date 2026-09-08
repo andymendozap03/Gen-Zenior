@@ -92,7 +92,7 @@ export const datosModulos = {
             {
                 id: "reaccionar-suscribir",
                 titulo: "Me gusta y suscribirse",
-                descripcion: "Apoya al creador y sigue su canal.",
+                descripcion: "Apoya al canal y mira el video en grande.",
                 imagen: "./assets/img/levels/suscribir.png"
             },
             {

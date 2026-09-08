@@ -595,8 +595,44 @@ export function speakPrioritario(text, onEnd) {
     }, true);
 }
 
+/* ---------------------------------------------------------------------
+   AVISO DE CUÁNDO ESTÁ HABLANDO NICO
+
+   Sin esto, en YouTube el video sonaba por encima de Nico y no se le
+   entendía. Quien esté reproduciendo algo puede apuntarse aquí para bajarle
+   el volumen mientras Nico habla y devolvérselo al terminar.
+   --------------------------------------------------------------------- */
+const oyentesVoz = new Set();
+let nicoHablando = false;
+
+/**
+ * @param {Function} fn Recibe true cuando Nico empieza a hablar y false
+ *        cuando termina o se le calla.
+ * @returns {Function} Función para darse de baja.
+ */
+export function alHablarNico(fn) {
+    if (typeof fn !== "function") return () => {};
+    oyentesVoz.add(fn);
+    return () => oyentesVoz.delete(fn);
+}
+
+export function nicoEstaHablando() {
+    return nicoHablando;
+}
+
+function avisarVoz(estaHablando) {
+    if (nicoHablando === estaHablando) return;
+    nicoHablando = estaHablando;
+
+    oyentesVoz.forEach(fn => {
+        // Un oyente que falle no puede dejar a Nico mudo
+        try { fn(estaHablando); } catch (e) { console.warn("Oyente de voz falló:", e); }
+    });
+}
+
 function decir(texto, onEnd, protegida) {
     if (window.nicoVoiceEnabled === false || !texto.trim()) {
+        avisarVoz(false);
         if (typeof onEnd === "function") onEnd();
         return;
     }
@@ -605,6 +641,16 @@ function decir(texto, onEnd, protegida) {
     const miTurno = ++turnoVoz;
     if (protegida) fraseProtegida = true;
     const vigente = () => turnoVoz === miTurno;
+
+    avisarVoz(true);
+
+    // Envoltorio: además de lo que pidiera quien llamó, avisa de que Nico
+    // terminó. Solo si sigue siendo su turno, para que una frase nueva no
+    // levante el volumen a mitad de la siguiente.
+    const terminar = () => {
+        if (turnoVoz === miTurno) avisarVoz(false);
+        if (typeof onEnd === "function") onEnd();
+    };
 
     // Por si el motor sigue dormido (primera frase de la sesión)
     despertarVoz();
@@ -619,13 +665,13 @@ function decir(texto, onEnd, protegida) {
         // Todavía no sabemos si hay ElevenLabs configurado. No se espera: se
         // habla ya con la voz del navegador y se averigua para las siguientes.
         obtenerConfigEleven();
-        speakConMotorDisponible(texto, onEnd, vigente);
+        speakConMotorDisponible(texto, terminar, vigente);
         return;
     }
 
     if (!configEleven) {
         // Caso normal: voz del navegador (o la nativa dentro del APK)
-        speakConMotorDisponible(texto, onEnd, vigente);
+        speakConMotorDisponible(texto, terminar, vigente);
         return;
     }
 
@@ -633,11 +679,11 @@ function decir(texto, onEnd, protegida) {
     obtenerAudioEleven(texto, configEleven)
         .then(url => {
             if (turnoVoz !== miTurno) return;
-            reproducirAudio(url, texto, onEnd, miTurno);
+            reproducirAudio(url, texto, terminar, miTurno);
         })
         .catch(err => {
             console.warn("ElevenLabs no disponible, se usa la voz del navegador:", err.message);
-            if (turnoVoz === miTurno) speakConMotorDisponible(texto, onEnd, vigente);
+            if (turnoVoz === miTurno) speakConMotorDisponible(texto, terminar, vigente);
         });
 }
 
@@ -668,4 +714,5 @@ export async function stopSpeech() {
     fraseProtegida = false;
     turnoVoz++;
     callar();
+    avisarVoz(false);
 }

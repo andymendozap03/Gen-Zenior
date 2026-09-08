@@ -53,6 +53,87 @@
         </button>
     </div>
 
+    <!-- INTRODUCCIÓN
+         Sale una sola vez, antes de entrar al menú. Responde a lo que salió en
+         la prueba con usuarios: que la app es una práctica y no la aplicación
+         real, quién es Nico y para qué sirven los trofeos. Se puede repetir
+         desde Ajustes. -->
+    <div id="pantallaIntro" class="intro" style="display:none;">
+        <div class="intro-tarjeta">
+            <div class="intro-progreso">
+                <span class="intro-punto activo"></span>
+                <span class="intro-punto"></span>
+                <span class="intro-punto"></span>
+            </div>
+
+            <!-- Paso 1: qué es esto -->
+            <section class="intro-paso activo" data-paso="1">
+                <div class="intro-ilustracion intro-ilustracion-practica">
+                    <span class="intro-emoji">📱</span>
+                    <span class="intro-escudo">🛡️</span>
+                </div>
+                <h2 class="intro-titulo">Esto es una práctica</h2>
+                <p class="intro-texto">
+                    Aquí vas a practicar con <strong>copias</strong> de WhatsApp, Facebook,
+                    YouTube y tus Contactos.
+                </p>
+                <p class="intro-texto intro-destacado">
+                    No son las aplicaciones de verdad: <strong>nada de lo que hagas
+                    aquí se envía ni lo ve nadie</strong>. Puedes tocar todo sin miedo
+                    a equivocarte.
+                </p>
+            </section>
+
+            <!-- Paso 2: quién es Nico -->
+            <section class="intro-paso" data-paso="2">
+                <div class="intro-ilustracion">
+                    <div class="intro-nico">
+                        <img src="./assets/img/icons/voz.svg" alt="" class="intro-nico-icono">
+                        <span class="intro-nico-nombre">NICO</span>
+                    </div>
+                </div>
+                <h2 class="intro-titulo">Te acompaña Nico</h2>
+                <p class="intro-texto">
+                    Nico es tu ayudante. Te dirá <strong>en voz alta</strong> qué hacer
+                    en cada paso.
+                </p>
+                <p class="intro-texto">
+                    Y te lo señalará en la pantalla con <strong>una mano</strong>
+                    <span class="intro-mano">👆</span> y un aro de color.
+                    Toca ahí y listo.
+                </p>
+                <p class="intro-texto intro-pista">
+                    Si no lo escuchaste, toca el botón verde de NICO para que lo repita.
+                </p>
+            </section>
+
+            <!-- Paso 3: los trofeos -->
+            <section class="intro-paso" data-paso="3">
+                <div class="intro-ilustracion">
+                    <img src="./assets/img/icons/trofeo.svg" alt="" class="intro-trofeo">
+                </div>
+                <h2 class="intro-titulo">Ganarás trofeos</h2>
+                <p class="intro-texto">
+                    Cada práctica que termines te da un trofeo. Sirven para que
+                    <strong>veas todo lo que ya aprendiste</strong>.
+                </p>
+                <p class="intro-texto intro-destacado">
+                    No es una competencia y no se pierden nunca. Puedes repetir
+                    cualquier práctica las veces que quieras.
+                </p>
+            </section>
+
+            <div class="intro-botones">
+                <button id="btnIntroAtras" class="intro-btn intro-btn-secundario" type="button" style="visibility:hidden;">
+                    Atrás
+                </button>
+                <button id="btnIntroSiguiente" class="intro-btn" type="button">
+                    Siguiente
+                </button>
+            </div>
+        </div>
+    </div>
+
     <main class="app">
         <section id="pantallaMenu" class="pantalla activa">
             <div class="encabezado-menu">
@@ -281,7 +362,20 @@
                         </div>
                     </div>
 
-                    <!-- 4. CRÉDITOS -->
+                    <!-- 4. VER LA INTRODUCCIÓN OTRA VEZ
+                         Para quien la pasó rápido o quiere recordar de qué va -->
+                    <div class="ajuste-card">
+                        <button class="ajuste-row-link" id="btnVerIntro">
+                            <img src="./assets/img/icons/ayuda.svg" alt="" class="ajuste-icon-img">
+                            <div class="ajuste-info">
+                                <h3>¿Cómo funciona la aplicación?</h3>
+                                <p>Vuelve a ver la explicación de Nico desde el principio.</p>
+                            </div>
+                            <img src="./assets/img/icons/flecha-derecha.svg" alt="" class="ajuste-row-link-flecha">
+                        </button>
+                    </div>
+
+                    <!-- 5. CRÉDITOS -->
                     <div class="ajuste-card">
                         <button class="ajuste-row-link" id="btnVerCreditos">
                             <img src="./assets/img/icons/creditos.svg" alt="" class="ajuste-icon-img">
@@ -293,7 +387,7 @@
                         </button>
                     </div>
 
-                    <!-- 5. ZONA DE REINICIO DE PROGRESO -->
+                    <!-- 6. ZONA DE REINICIO DE PROGRESO -->
                     <div class="ajuste-card ajuste-card-peligro">
                         <div class="ajuste-card-header">
                             <img src="./assets/img/icons/advertencia.svg" alt="" class="ajuste-icon-img">
@@ -390,6 +484,14 @@
             </header>
 
             <div class="trofeos-content-body">
+                <!-- La evaluación con usuarios mostró que no se entendía el
+                     propósito de los trofeos, así que se explica aquí mismo -->
+                <p class="trofeos-explicacion">
+                    Los trofeos son un recuerdo de lo que ya aprendiste. Ganas uno
+                    cada vez que terminas una práctica. <strong>No es una competencia
+                    y no se pierden nunca.</strong>
+                </p>
+
                 <div class="trofeos-resumen">
                     <div class="trofeos-resumen-item">
                         <span class="trofeos-resumen-valor" id="trofeosResumenNiveles">0/0</span>

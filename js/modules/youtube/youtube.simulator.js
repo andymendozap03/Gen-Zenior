@@ -1,6 +1,6 @@
 import { $ } from "../../utils/dom.js";
 import { completarNivel } from "../../services/progress.service.js";
-import { speak, speakPrioritario, stopSpeech } from "../../services/speech.service.js";
+import { speak, speakPrioritario, stopSpeech, alHablarNico, nicoEstaHablando } from "../../services/speech.service.js";
 import { resaltarElemento, limpiarResaltados } from "../../services/guide-highlight.service.js";
 
 /* ======================================================================
@@ -330,6 +330,12 @@ function asegurarTemplateHTML() {
                     </button>
                     <span class="yt-time-label" id="ytTimeLabel">0:00 / 0:00</span>
                     <div class="yt-progress-track"><div class="yt-progress-fill" id="ytProgressFill"></div></div>
+
+                    <!-- Pantalla completa: las cuatro esquinitas, como en YouTube -->
+                    <button class="yt-ctrl-btn yt-fullscreen-btn" id="ytFullscreenBtn"
+                            aria-label="Ver el video en pantalla completa">
+                        <svg id="ytFullscreenIcon" viewBox="0 0 24 24"><path d="M7 14H5v5h5v-2H7v-3zm-2-4h2V7h3V5H5v5zm12 7h-3v2h5v-5h-2v3zM14 5v2h3v3h2V5h-5z"/></svg>
+                    </button>
                 </div>
             </div>
 
@@ -521,6 +527,31 @@ function asegurarTemplateHTML() {
         <!-- ======= AVISO FLOTANTE ======= -->
         <div id="ytToast" class="yt-toast"></div>
 
+        <!-- ======= AVISO: GIRA EL TELÉFONO DE LADO ======= -->
+        <div id="ytGirarCard" class="yt-girar-card">
+            <div class="yt-girar-panel">
+                <h3 class="yt-girar-titulo">Gira tu teléfono de lado</h3>
+
+                <div class="yt-girar-dibujo">
+                    <span class="yt-girar-tel yt-girar-tel-vertical" aria-hidden="true"></span>
+                    <span class="yt-girar-flecha" aria-hidden="true">⟳</span>
+                    <span class="yt-girar-tel yt-girar-tel-horizontal" aria-hidden="true"></span>
+                </div>
+
+                <p class="yt-girar-texto">
+                    Toma el teléfono con las dos manos y <strong>gíralo de lado</strong>,
+                    como cuando miras una foto ancha.
+                </p>
+
+                <p class="yt-girar-texto">
+                    El video se acomoda solo y se ve <strong>mucho más grande</strong>.
+                    Cuando quieras, lo vuelves a poner derecho.
+                </p>
+
+                <button id="ytGirarListo" class="yt-girar-btn">Listo, ya lo giré</button>
+            </div>
+        </div>
+
         <!-- ======= AVISO: EL VOLUMEN SE SUBE CON EL TELÉFONO ======= -->
         <div id="ytVolumenCard" class="yt-volumen-card">
             <div class="yt-volumen-panel">
@@ -669,6 +700,26 @@ const PASOS = {
         4: {
             texto: "Toca la campanita que apareció al lado, para que te avisen cuando suban un video nuevo.",
             objetivo: "#ytBellBtn",
+            requierePlayer: true
+        },
+        5: {
+            texto: "Ahora vamos a verlo en grande. Primero toca el botón redondo del centro del video para ponerlo en marcha.",
+            objetivo: "#ytBigPlayBtn",
+            requierePlayer: true
+        },
+        6: {
+            texto: "Mira abajo a la derecha del video: hay un botón con cuatro esquinitas. Tócalo para ver el video en pantalla completa.",
+            objetivo: "#ytFullscreenBtn",
+            requierePlayer: true
+        },
+        7: {
+            texto: "Ahora gira tu teléfono de lado, con calma y con las dos manos. El video se acomoda solo y se ve mucho más grande.",
+            objetivo: "#ytGirarListo",
+            requierePlayer: true
+        },
+        8: {
+            texto: "¡Así se ve mucho mejor! Cuando termines, vuelve a poner el teléfono derecho y toca otra vez el botón de las cuatro esquinitas para salir de la pantalla completa.",
+            objetivo: "#ytFullscreenBtn",
             requierePlayer: true
         }
     },
@@ -1033,8 +1084,9 @@ function abrirVideo(videoId) {
         if (video.archivo) {
             mostrarCargando(true);
             elVideo.src = video.archivo;
-            elVideo.volume = 1;      // el volumen lo manda el teléfono
             elVideo.muted = false;
+            // Si Nico está presentando el video, arranca ya atenuado
+            elVideo.volume = volumenObjetivo();
             elVideo.load();
 
             // Mostramos el elemento desde ya: la portada hace de imagen
@@ -1232,21 +1284,89 @@ function alternarReproduccion() {
         } else if (esPaso("buscar-video", 7)) {
             irAPaso(8); // reanudó tras la pausa
             mostrarTarjetaVolumen(true);
+        } else if (esPaso("reaccionar-suscribir", 5)) {
+            irAPaso(6); // ya está andando: toca ponerlo en grande
         }
     }
 }
 
-/**
- * El volumen real lo maneja el teléfono con sus botones físicos, así que el
- * video se deja al máximo: lo que el usuario suba o baje con el teléfono es
- * lo que se oye. Antes había unos botones en pantalla que no existen en la
- * aplicación real de YouTube y enseñaban algo que no es cierto.
- */
-function ajustarVolumenVideo() {
+/* ---------------------------------------------------------------------
+   VOLUMEN DEL VIDEO Y TURNOS CON NICO
+
+   El volumen real lo maneja el teléfono con sus botones físicos, así que el
+   video se deja al máximo: lo que el usuario suba o baje con el teléfono es
+   lo que se oye.
+
+   Pero mientras Nico habla el video le tapaba la voz. Así que cuando Nico
+   empieza una frase el video se baja casi del todo, y al terminar vuelve a
+   subir. La subida y la bajada son suaves (en unos pocos pasos) porque un
+   corte seco se oye como un fallo del teléfono.
+   --------------------------------------------------------------------- */
+const VOLUMEN_VIDEO_NORMAL = 1;
+const VOLUMEN_VIDEO_ATENUADO = 0.08;
+const PASOS_TRANSICION_VOLUMEN = 8;
+const MS_TRANSICION_VOLUMEN = 30;
+
+let transicionVolumen = null;
+let bajaDeVolumen = null;   // función para darse de baja del aviso de voz
+
+function volumenObjetivo() {
+    return nicoEstaHablando() ? VOLUMEN_VIDEO_ATENUADO : VOLUMEN_VIDEO_NORMAL;
+}
+
+function llevarVolumenA(destino) {
     const el = $("#ytPlayerVideo");
-    if (el) {
-        el.volume = 1;
-        el.muted = false;
+    if (!el) return;
+
+    el.muted = false;
+
+    if (transicionVolumen) {
+        clearInterval(transicionVolumen);
+        transicionVolumen = null;
+    }
+
+    const inicio = typeof el.volume === "number" ? el.volume : 1;
+    const salto = (destino - inicio) / PASOS_TRANSICION_VOLUMEN;
+
+    if (Math.abs(destino - inicio) < 0.02) {
+        el.volume = destino;
+        return;
+    }
+
+    let dado = 0;
+    transicionVolumen = setInterval(() => {
+        dado += 1;
+        const valor = dado >= PASOS_TRANSICION_VOLUMEN ? destino : inicio + salto * dado;
+        // volume solo acepta de 0 a 1; fuera de ahí el navegador lanza error
+        el.volume = Math.min(1, Math.max(0, valor));
+
+        if (dado >= PASOS_TRANSICION_VOLUMEN) {
+            clearInterval(transicionVolumen);
+            transicionVolumen = null;
+        }
+    }, MS_TRANSICION_VOLUMEN);
+}
+
+function ajustarVolumenVideo() {
+    llevarVolumenA(volumenObjetivo());
+}
+
+/**
+ * Se apunta al aviso del servicio de voz una sola vez por sesión de simulador.
+ */
+function escucharTurnosDeVoz() {
+    if (bajaDeVolumen) return;
+    bajaDeVolumen = alHablarNico(() => ajustarVolumenVideo());
+}
+
+function dejarDeEscucharTurnosDeVoz() {
+    if (bajaDeVolumen) {
+        bajaDeVolumen();
+        bajaDeVolumen = null;
+    }
+    if (transicionVolumen) {
+        clearInterval(transicionVolumen);
+        transicionVolumen = null;
     }
 }
 
@@ -1257,6 +1377,176 @@ function ajustarVolumenVideo() {
 function mostrarCargando(visible) {
     const el = $("#ytCargando");
     if (el) el.classList.toggle("activa", !!visible);
+}
+
+/* ---------------------------------------------------------------------
+   PANTALLA COMPLETA Y GIRAR EL TELÉFONO
+
+   No se usa la pantalla completa del navegador: en el iPhone no funciona
+   igual y en el APK sacaría a la persona de la aplicación. Lo que se hace es
+   agrandar el reproductor hasta ocupar toda la pantalla, que es lo que la
+   persona ve y aprende a reconocer.
+
+   Lo de girar el teléfono es un gesto físico, así que se explica con un
+   dibujo y se acepta de dos maneras: girando de verdad el teléfono, o
+   tocando el botón, para quien tenga el giro bloqueado o esté practicando
+   en una tablet apoyada.
+   --------------------------------------------------------------------- */
+let enPantallaCompleta = false;
+let orientacionAlEntrar = null;
+let vigilanteOrientacion = null;
+
+function esHorizontal() {
+    if (window.matchMedia) {
+        return window.matchMedia("(orientation: landscape)").matches;
+    }
+    return window.innerWidth > window.innerHeight;
+}
+
+function mostrarTarjetaGirar(visible) {
+    const card = $("#ytGirarCard");
+    if (!card) return;
+
+    // La tarjeta vive fuera del simulador, así que necesita su propia copia
+    // de dónde acaba la barra de Nico para no taparla
+    if (visible) medirBarraDeNico();
+
+    card.classList.toggle("activa", !!visible);
+}
+
+/**
+ * El video ocupa todo menos la barra de Nico, que no puede taparse: es la que
+ * dice qué hacer para volver. Al girar el teléfono la barra cambia de alto
+ * (el texto ocupa menos líneas), así que se vuelve a medir.
+ */
+function medirBarraDeNico() {
+    const barra = $("#ytInstructionsBar");
+    const alto = barra ? Math.round(barra.getBoundingClientRect().height) : 0;
+
+    const sim = $("#pantallaYoutubeSimulador");
+    if (sim) sim.style.setProperty("--yt-alto-barra-nico", alto + "px");
+
+    const card = $("#ytGirarCard");
+    if (card) card.style.setProperty("--yt-alto-barra-nico", alto + "px");
+}
+
+function entrarPantallaCompleta() {
+    if (enPantallaCompleta) return;
+    enPantallaCompleta = true;
+
+    const sim = $("#pantallaYoutubeSimulador");
+    if (sim) sim.classList.add("yt-en-pantalla-completa");
+
+    medirBarraDeNico();
+    vigilarAltoBarra();
+    actualizarIconoPantallaCompleta();
+
+    // El video en grande sin reproducir no enseña nada
+    if (!reproduciendo) iniciarReproduccion();
+
+    if (nivelActual === "reaccionar-suscribir" && subPaso === 6) {
+        irAPaso(7);
+        pedirGirarTelefono();
+    }
+}
+
+function salirPantallaCompleta() {
+    if (!enPantallaCompleta) return;
+    enPantallaCompleta = false;
+
+    const sim = $("#pantallaYoutubeSimulador");
+    if (sim) sim.classList.remove("yt-en-pantalla-completa");
+
+    mostrarTarjetaGirar(false);
+    dejarDeVigilarOrientacion();
+    dejarDeVigilarAltoBarra();
+    actualizarIconoPantallaCompleta();
+}
+
+let vigilanteAltoBarra = null;
+
+function vigilarAltoBarra() {
+    if (vigilanteAltoBarra) return;
+    vigilanteAltoBarra = () => medirBarraDeNico();
+    window.addEventListener("resize", vigilanteAltoBarra);
+    window.addEventListener("orientationchange", vigilanteAltoBarra);
+}
+
+function dejarDeVigilarAltoBarra() {
+    if (!vigilanteAltoBarra) return;
+    window.removeEventListener("resize", vigilanteAltoBarra);
+    window.removeEventListener("orientationchange", vigilanteAltoBarra);
+    vigilanteAltoBarra = null;
+}
+
+function actualizarIconoPantallaCompleta() {
+    const btn = $("#ytFullscreenBtn");
+    if (!btn) return;
+
+    btn.setAttribute(
+        "aria-label",
+        enPantallaCompleta ? "Salir de la pantalla completa" : "Ver el video en pantalla completa"
+    );
+
+    const icono = $("#ytFullscreenIcon");
+    if (!icono) return;
+
+    // Esquinitas hacia fuera para entrar, hacia dentro para salir
+    icono.innerHTML = enPantallaCompleta
+        ? `<path d="M5 16h3v3h2v-5H5v2zm3-8H5v2h5V5H8v3zm6 11h2v-3h3v-2h-5v5zm2-11V5h-2v5h5V8h-3z"/>`
+        : `<path d="M7 14H5v5h5v-2H7v-3zm-2-4h2V7h3V5H5v5zm12 7h-3v2h5v-5h-2v3zM14 5v2h3v3h2V5h-5z"/>`;
+}
+
+function alternarPantallaCompleta() {
+    if (enPantallaCompleta) {
+        salirPantallaCompleta();
+
+        if (nivelActual === "reaccionar-suscribir" && subPaso === 8) {
+            completarNivelActual("¡Muy bien! Le diste me gusta, te suscribiste al canal y aprendiste a ver los videos en grande girando el teléfono.");
+        }
+    } else {
+        entrarPantallaCompleta();
+    }
+}
+
+function pedirGirarTelefono() {
+    mostrarTarjetaGirar(true);
+    orientacionAlEntrar = esHorizontal();
+    vigilarOrientacion();
+}
+
+/**
+ * Se da por hecho el giro solo si la orientación CAMBIA respecto a la que
+ * había al pedirlo. Así, a quien practique en una pantalla que ya está
+ * apaisada no se le salta el paso sin haber hecho nada.
+ */
+function vigilarOrientacion() {
+    dejarDeVigilarOrientacion();
+
+    vigilanteOrientacion = () => {
+        if (!enPantallaCompleta) return;
+        if (esHorizontal() === orientacionAlEntrar) return;
+        confirmarGiro();
+    };
+
+    window.addEventListener("orientationchange", vigilanteOrientacion);
+    window.addEventListener("resize", vigilanteOrientacion);
+}
+
+function dejarDeVigilarOrientacion() {
+    if (!vigilanteOrientacion) return;
+    window.removeEventListener("orientationchange", vigilanteOrientacion);
+    window.removeEventListener("resize", vigilanteOrientacion);
+    vigilanteOrientacion = null;
+}
+
+function confirmarGiro() {
+    dejarDeVigilarOrientacion();
+    mostrarTarjetaGirar(false);
+
+    if (nivelActual === "reaccionar-suscribir" && subPaso === 7) {
+        irAPaso(8);
+    }
 }
 
 function mostrarTarjetaVolumen(visible) {
@@ -1713,6 +2003,18 @@ function inicializarListeners() {
     }
 
     // "Ya lo escucho más fuerte": el usuario confirma que encontró los botones
+    // Pantalla completa
+    const fullBtn = $("#ytFullscreenBtn");
+    if (fullBtn) {
+        fullBtn.onclick = () => alternarPantallaCompleta();
+    }
+
+    // "Listo, ya lo giré": salida para quien tenga el giro bloqueado
+    const girarListo = $("#ytGirarListo");
+    if (girarListo) {
+        girarListo.onclick = () => confirmarGiro();
+    }
+
     const volumenListo = $("#ytVolumenListo");
     if (volumenListo) {
         volumenListo.onclick = () => {
@@ -1808,7 +2110,7 @@ function inicializarListeners() {
             bellBtn.classList.toggle("activa", campanaActiva);
 
             if (campanaActiva && esPaso("reaccionar-suscribir", 4)) {
-                completarNivelActual("¡Muy bien! Le diste Me gusta al video y ahora sigues el canal.");
+                irAPaso(5);   // sigue: ver el video en pantalla completa
             }
         };
     }
@@ -2012,6 +2314,8 @@ function completarNivelActual(mensajeExito) {
 
 function limpiarTodo() {
     detenerReproduccion();
+    salirPantallaCompleta();
+    mostrarTarjetaGirar(false);
 
     if (respuestaCanalTimeout) {
         clearTimeout(respuestaCanalTimeout);
@@ -2036,6 +2340,7 @@ function limpiarTodo() {
 
 function salirDelSimulador() {
     limpiarTodo();
+    dejarDeEscucharTurnosDeVoz();
     stopSpeech();
 
     const modal = $("#ytModalExito");
@@ -2096,6 +2401,9 @@ export function iniciarSimulador(idNivel) {
         inicializarListeners();
         simuladorInicializado = true;
     }
+
+    // Mientras Nico habla, el video se baja solo
+    escucharTurnosDeVoz();
 
     actualizarBarraInstrucciones(true);
 

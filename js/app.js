@@ -6,6 +6,7 @@ import { inicializarRouter } from "./services/router.service.js";
 import { cargarAjustes, aplicarAjustesGlobales } from "./services/settings.service.js";
 import { precargarRecursos, precargarEnSegundoPlano } from "./services/preload.service.js";
 import { speak } from "./services/speech.service.js";
+import { introPendiente, mostrarIntro, prepararIntro } from "./controllers/onboarding.controller.js";
 
 /**
  * Arranque de la aplicación.
@@ -32,6 +33,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     inicializarNiveles();
     inicializarAjustes();
     inicializarTrofeos();
+    prepararIntro();   // deja listo el botón de Ajustes para repetir la explicación
 
     try {
         await precargarRecursos(porcentaje => {
@@ -59,10 +61,6 @@ document.addEventListener("DOMContentLoaded", async () => {
         if (Date.now() - momentoListo < 400 || yaEntro) return;
         yaEntro = true;
 
-        // Dentro del toque, y sin nada asíncrono por delante: aquí es donde el
-        // navegador autoriza la voz para el resto de la sesión.
-    
-
         inicializarRouter();
         precargarEnSegundoPlano();
 
@@ -70,6 +68,21 @@ document.addEventListener("DOMContentLoaded", async () => {
             pantallaCarga.classList.add("oculta");
             setTimeout(() => pantallaCarga.remove(), 400);
         }
+
+        // La primera vez se explica de qué va la aplicación antes de soltar a
+        // la persona en el menú. La evaluación con usuarios mostró que sin esa
+        // explicación se confunde la práctica con la aplicación real.
+        // Además, la voz del primer paso sale de este toque, que es lo que
+        // autoriza al navegador a hablar durante el resto de la sesión.
+        if (introPendiente()) {
+            mostrarIntro(() => saludarEnElMenu());
+        } else {
+            saludarEnElMenu();
+        }
+    };
+
+    const saludarEnElMenu = () => {
+        speak("Ya puedes empezar. Toca la aplicación que quieras practicar.");
     };
 
     if (btnComenzar) {

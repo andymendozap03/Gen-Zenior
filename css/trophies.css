@@ -434,3 +434,16 @@ html[data-theme="dark"][data-contrast="high"] .trofeo-toast {
     border: 3px solid #ffffff !important;
     color: #ffffff !important;
 }
+
+/* Explicación de para qué sirven los trofeos.
+   La evaluación con usuarios mostró que su propósito no quedaba claro. */
+.trofeos-explicacion {
+    margin: 0 0 16px;
+    background: #fff7e9;
+    border-left: 5px solid #e0a800;
+    border-radius: 10px;
+    padding: 12px 14px;
+    font-size: calc(15px * var(--font-scale, 1));
+    line-height: 1.5;
+    color: #5b4034;
+}
