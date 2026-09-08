@@ -82,7 +82,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     };
 
     const saludarEnElMenu = () => {
-        speak("Ya puedes empezar. Toca la aplicación que quieras practicar.");
+        speak("");
     };
 
     if (btnComenzar) {
