@@ -27,6 +27,44 @@ function motorNativoDisponible() {
     }
 }
 
+// Índice (dentro de getSupportedVoices()) de la mejor voz masculina nativa
+// encontrada. undefined = todavía no se buscó, null = no se encontró
+// ninguna española utilizable (se deja que el sistema use su default).
+let nativeVoiceIndex;
+
+/**
+ * Busca, entre las voces que trae instaladas el propio Android/iOS, la
+ * mejor candidata masculina para Nico, con el mismo criterio que se usa
+ * en la web (ver puntuarVoz). Se hace una sola vez y se recuerda el
+ * índice, ya que consultar las voces nativas tiene un pequeño costo.
+ */
+async function elegirVozNativa(tts) {
+    if (nativeVoiceIndex !== undefined) return nativeVoiceIndex;
+
+    try {
+        const { voices } = await tts.getSupportedVoices();
+        const spanishVoices = (voices || [])
+            .map((v, indice) => ({ v, indice }))
+            .filter(({ v }) => v.lang && v.lang.toLowerCase().startsWith("es"));
+
+        let mejor = null;
+        let mejorPuntaje = -Infinity;
+        spanishVoices.forEach(({ v, indice }) => {
+            const puntaje = puntuarVoz(v);
+            if (puntaje > mejorPuntaje) {
+                mejorPuntaje = puntaje;
+                mejor = indice;
+            }
+        });
+
+        nativeVoiceIndex = mejor;
+    } catch (e) {
+        nativeVoiceIndex = null;
+    }
+
+    return nativeVoiceIndex;
+}
+
 /**
  * Habla usando el motor de voz nativo de Android/iOS (plugin de Capacitor).
  * A diferencia de la voz del navegador, el motor nativo no se traga la
@@ -43,14 +81,19 @@ async function speakWithNativeTTS(text, onEnd, sigueVigente) {
         speechRate = 1.4;
     }
 
+    const voiceIndex = await elegirVozNativa(tts);
+
     try {
         await tts.speak({
             text,
             lang: "es-ES",
             rate: speechRate,
-            pitch: 1.0,
+            // Igual que en la web: un pelín más grave que el 1.0 de fábrica
+            // para sonar a una voz masculina adulta cálida, no neutra.
+            pitch: 0.92,
             volume: 1.0,
-            category: "ambient"
+            category: "ambient",
+            ...(typeof voiceIndex === "number" ? { voice: voiceIndex } : {})
         });
     } catch (e) {
         console.warn("El motor de voz nativo no pudo hablar:", e);
@@ -75,7 +118,7 @@ function speakConMotorDisponible(text, onEnd, sigueVigente) {
 const MALE_KEYWORDS = [
     "alvaro", "jorge", "raul", "carlos", "miguel", "diego", "gonzalo",
     "mateo", "alonso", "julio", "arnau", "pablo", "tomas", "enrique",
-    "manuel", "pedro", "javier", "luis", "male", "hombre"
+    "manuel", "pedro", "javier", "luis", "andres", "fernando", "male", "hombre"
 ];
 
 const FEMALE_KEYWORDS = [
@@ -84,6 +127,15 @@ const FEMALE_KEYWORDS = [
     "conchita", "penelope", "paola", "dalia", "elvira", "victoria",
     "lupe", "ximena", "juana", "marta", "silvia", "valeria", "esperanza",
     "hilda", "francisca", "camila", "ines", "soledad", "teresa", "zira"
+];
+
+// Nombres de voces que, sin decir el género en el nombre, se sabe que
+// suenan bastante naturales (motores de calidad de cada fabricante). No
+// se llama a ninguna API externa: siguen siendo voces que el propio
+// navegador ya trae o descarga a través de speechSynthesis.
+const QUALITY_KEYWORDS = [
+    "natural", "neural", "premium", "enhanced", "online", "plus",
+    "wavenet", "studio", "hd", "microsoft"
 ];
 
 function isFemaleVoice(voice) {
@@ -100,6 +152,39 @@ function isMaleVoice(voice) {
     return !isFemaleVoice(voice) && MALE_KEYWORDS.some(k => name.includes(k) || uri.includes(k));
 }
 
+/**
+ * Puntúa qué tan buena candidata es una voz para ser la de Nico: descarta
+ * las que se sepan femeninas, premia por encima de todo a las que trae el
+ * propio motor de Google (el que usa Chrome), luego a las masculinas
+ * conocidas, a las que traen alguna otra marca de calidad en el nombre
+ * (Natural, Neural, Microsoft...) y a las que corren "en la nube" del
+ * propio sistema (`localService: false`), que casi siempre suenan mucho
+ * más humanas que la voz compacta instalada de fábrica.
+ */
+function puntuarVoz(voice) {
+    if (isFemaleVoice(voice)) return -1000;
+
+    const name = (voice.name || "").toLowerCase();
+    const uri = (voice.voiceURI || "").toLowerCase();
+    let puntos = 0;
+
+    // Se pide expresamente la voz de Google de Chrome: se le da más peso
+    // que la suma de cualquier otro criterio, para que gane siempre que
+    // esté disponible por encima de voces de otros fabricantes (Microsoft, etc.).
+    if (name.includes("google") || uri.includes("google")) puntos += 200;
+
+    if (isMaleVoice(voice)) puntos += 50;
+
+    QUALITY_KEYWORDS.forEach(k => {
+        if (name.includes(k) || uri.includes(k)) puntos += 20;
+    });
+
+    if (voice.localService === false) puntos += 15;
+    if (voice.lang && voice.lang.toLowerCase() === "es-es") puntos += 2;
+
+    return puntos;
+}
+
 function loadSpanishMaleVoice() {
     if (!("speechSynthesis" in window)) return;
     const voices = speechSynthesis.getVoices();
@@ -108,7 +193,8 @@ function loadSpanishMaleVoice() {
     const spanishVoices = voices.filter(v => v.lang && v.lang.toLowerCase().startsWith("es"));
     if (spanishVoices.length === 0) return;
 
-    // 1. Si ya teníamos una guardada en localStorage que sea válida y no femenina, conservarla
+    // Si ya teníamos una guardada en localStorage que sea válida y no
+    // femenina, se conserva: así la voz no cambia sola entre sesiones.
     const savedVoiceURI = localStorage.getItem("gz_nico_voice_uri");
     if (savedVoiceURI) {
         const found = spanishVoices.find(v => (v.voiceURI === savedVoiceURI || v.name === savedVoiceURI) && !isFemaleVoice(v));
@@ -118,26 +204,18 @@ function loadSpanishMaleVoice() {
         }
     }
 
-    // 2. Buscar voz española masculina Natural / Online / Premium / Enhanced
-    let bestVoice = spanishVoices.find(v =>
-        isMaleVoice(v) &&
-        (v.name.toLowerCase().includes("natural") || v.name.toLowerCase().includes("premium") || v.name.toLowerCase().includes("enhanced") || v.name.toLowerCase().includes("online"))
-    );
-
-    // 3. Buscar cualquier voz española masculina conocida
-    if (!bestVoice) {
-        bestVoice = spanishVoices.find(v => isMaleVoice(v));
-    }
-
-    // 4. Buscar cualquier voz en español que NO esté en la lista negra de nombres femeninos
-    if (!bestVoice) {
-        bestVoice = spanishVoices.find(v => !isFemaleVoice(v));
-    }
-
-    // 5. Fallback final si el dispositivo solo tiene una voz
-    if (!bestVoice) {
-        bestVoice = spanishVoices[0];
-    }
+    // Se puntúa cada voz en español disponible en el dispositivo y se
+    // elige la de mejor puntaje (masculina, de buena calidad conocida y,
+    // si hay empate, de red antes que local).
+    let bestVoice = null;
+    let bestScore = -Infinity;
+    spanishVoices.forEach(v => {
+        const score = puntuarVoz(v);
+        if (score > bestScore) {
+            bestScore = score;
+            bestVoice = v;
+        }
+    });
 
     if (bestVoice) {
         selectedVoice = bestVoice;
@@ -297,7 +375,10 @@ function speakWithWebSpeech(text, onEnd, sigueVigente) {
             if (selectedVoice) {
                 frase.voice = selectedVoice;
                 frase.lang = selectedVoice.lang;
-                frase.pitch = isFemaleVoice(selectedVoice) ? 0.8 : 1.0;
+                // Un tono levemente más grave que el 1.0 de fábrica sin
+                // llegar a sonar forzado: se acerca más a una voz masculina
+                // adulta cálida en vez del tono neutro/agudo por defecto.
+                frase.pitch = isFemaleVoice(selectedVoice) ? 0.8 : 0.92;
             } else {
                 frase.lang = "es-ES";
                 frase.pitch = 0.9;
