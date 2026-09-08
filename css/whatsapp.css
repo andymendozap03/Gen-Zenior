@@ -65,6 +65,22 @@
     transition: opacity 0.2s;
 }
 
+/* El botón de salir del nivel se resalta con un círculo rojo bien visible,
+   para que los adultos mayores lo distingan de un vistazo del resto de
+   íconos del encabezado. */
+#wsSalirSimulador {
+    background-color: #ff5252;
+    border-radius: 50%;
+    width: 34px;
+    height: 34px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.25);
+}
+
+#wsSalirSimulador:hover {
+    background-color: #e53935;
+    opacity: 1;
+}
+
 .ws-header-btn:hover {
     opacity: 0.85;
 }

@@ -924,25 +924,29 @@
 
 /* Botón de salir de contactos */
 .ct-salir-btn {
-    background: none;
+    background: #ff5252;
     border: none;
+    border-radius: 50%;
+    width: 32px;
+    height: 32px;
     cursor: pointer;
     padding: 0;
     display: flex;
     align-items: center;
     justify-content: center;
     flex-shrink: 0;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.25);
+    transition: background-color 0.2s;
+}
+
+.ct-salir-btn:hover {
+    background: #e53935;
 }
 
 .ct-salir-btn svg {
-    width: 22px;
-    height: 22px;
-    fill: #5f6368;
-    transition: fill 0.2s;
-}
-
-.ct-salir-btn:hover svg {
-    fill: #202124;
+    width: 20px;
+    height: 20px;
+    fill: #ffffff;
 }
 
 /* ========================================================
@@ -2103,9 +2107,12 @@ html[data-theme="dark"] .ct-detalle-info-sub,
 html[data-theme="dark"] .ct-quick-action-label,
 html[data-theme="dark"] .ct-field-label,
 html[data-theme="dark"] .ct-confirmar-card p,
-html[data-theme="dark"] .ct-salir-btn svg,
 html[data-theme="dark"] .ct-fav-name {
     color: #aaaaaa;
+}
+
+html[data-theme="dark"] .ct-salir-btn svg {
+    fill: #ffffff;
 }
 
 html[data-theme="dark"] .ct-ver-contactos-btn {

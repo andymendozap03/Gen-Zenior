@@ -74,6 +74,24 @@
     fill: #0f0f0f;
 }
 
+/* Solo el botón que sale del nivel (no el de "volver" dentro del buscador,
+   que comparte la misma clase) lleva un círculo rojo bien visible, para
+   que sea fácil de reconocer de un vistazo. */
+#ytSalirBtn {
+    background-color: #ff5252;
+    width: 32px;
+    height: 32px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.25);
+}
+
+#ytSalirBtn:hover {
+    background-color: #e53935;
+}
+
+#ytSalirBtn svg {
+    fill: #ffffff;
+}
+
 .yt-logo-container {
     display: flex;
     align-items: center;
@@ -1693,6 +1711,10 @@ html[data-theme="dark"] .yt-logo-text,
 html[data-theme="dark"] .yt-back-btn svg,
 html[data-theme="dark"] .yt-header-icon svg {
     color: #ffffff;
+    fill: #ffffff;
+}
+
+html[data-theme="dark"] #ytSalirBtn svg {
     fill: #ffffff;
 }
 

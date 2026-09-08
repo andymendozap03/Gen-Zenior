@@ -88,7 +88,7 @@
 }
 
 .fb-salir-btn {
-    background: #e4e6eb;
+    background: #ff5252;
     border: none;
     border-radius: 50%;
     width: 36px;
@@ -98,12 +98,17 @@
     justify-content: center;
     cursor: pointer;
     flex-shrink: 0;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.25);
+}
+
+.fb-salir-btn:hover {
+    background: #e53935;
 }
 
 .fb-salir-btn svg {
     width: 18px;
     height: 18px;
-    fill: #050505;
+    fill: #ffffff;
 }
 
 /* ---- NAV TABS ---- */
@@ -2954,7 +2959,6 @@ html[data-theme="dark"] .fb-messenger-aviso {
 }
 
 html[data-theme="dark"] .fb-header-btn,
-html[data-theme="dark"] .fb-salir-btn,
 html[data-theme="dark"] .fb-comments-close,
 html[data-theme="dark"] .fb-create-modal-close,
 html[data-theme="dark"] .fb-friends-filter-btn,
@@ -2968,7 +2972,6 @@ html[data-theme="dark"] .fb-create-submit-btn:disabled {
 }
 
 html[data-theme="dark"] .fb-header-btn svg,
-html[data-theme="dark"] .fb-salir-btn svg,
 html[data-theme="dark"] .fb-comments-sort svg,
 html[data-theme="dark"] .fb-comments-close,
 html[data-theme="dark"] .fb-messenger-volver svg,
@@ -2976,6 +2979,10 @@ html[data-theme="dark"] .fb-comment-menu-btn svg,
 html[data-theme="dark"] .fb-comment-menu-opcion svg,
 html[data-theme="dark"] .fb-nav-tab svg {
     fill: #e0e0e0;
+}
+
+html[data-theme="dark"] .fb-salir-btn svg {
+    fill: #ffffff;
 }
 
 html[data-theme="dark"] .fb-nav-tab.activa svg {
