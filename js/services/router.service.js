@@ -48,7 +48,7 @@ function procesarRuta(hash) {
         const title = $("#ajustesTitle");
         if (menuBody) menuBody.style.display = "flex";
         if (creditosSec) creditosSec.style.display = "none";
-        if (title) title.textContent = "Ajustes y Accesibilidad";
+        if (title) title.textContent = "Ajustes y accesibilidad";
         return;
     }
 

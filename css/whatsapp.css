@@ -630,7 +630,7 @@
     background-color: #f0f2f5;
     padding: 8px 10px calc(14px + env(safe-area-inset-bottom, 0px));
     display: flex;
-    align-items: center;
+    align-items: flex-end;
     gap: 8px;
     box-shadow: 0 -1px 3px rgba(0, 0, 0, 0.03);
 }
@@ -677,6 +677,182 @@
 
 .ws-input-field::placeholder {
     color: #8696a0;
+}
+
+/* Barra de grabación de nota de voz (papelera, onda en vivo, pausar/continuar,
+   vista previa), estilo oscuro igual que en WhatsApp real: reemplaza al campo
+   de texto mientras se graba o se pausa una nota de voz. */
+.ws-grabacion-toolbar {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.ws-grabacion-fila-preview {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    background-color: #ffffff;
+    border-radius: 20px;
+    padding: 8px 14px;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+}
+
+.ws-grabacion-fila-controles {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.ws-grabacion-icon-btn {
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 6px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+
+.ws-grabacion-play {
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+
+.ws-grabacion-onda-wrap {
+    position: relative;
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    align-items: center;
+    cursor: pointer;
+    touch-action: none;
+}
+
+.ws-grabacion-dot {
+    position: absolute;
+    top: 50%;
+    left: 0%;
+    width: 9px;
+    height: 9px;
+    border-radius: 50%;
+    background-color: #00e08a;
+    transform: translate(-50%, -50%);
+    pointer-events: none;
+    transition: left 0.1s linear;
+}
+
+.ws-waveform-canvas-preview {
+    width: 100%;
+    height: 28px;
+    display: block;
+}
+
+.ws-grabacion-pill-btn {
+    flex: 1;
+    min-width: 0;
+    background-color: #ffffff;
+    border: none;
+    border-radius: 24px;
+    padding: 6px 14px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+    cursor: pointer;
+}
+
+.ws-waveform-vivo-track {
+    flex: 1;
+    min-width: 0;
+    height: 22px;
+    position: relative;
+    overflow: hidden;
+}
+
+.ws-waveform-vivo-strip {
+    position: absolute;
+    top: 0;
+    left: 0;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    will-change: transform;
+}
+
+.ws-vivo-bar {
+    width: 2px;
+    height: 4px;
+    margin-right: 3px;
+    border-radius: 1px;
+    background-color: #8696a0;
+    flex-shrink: 0;
+}
+
+.ws-grabacion-timer {
+    font-size: calc(13px * var(--font-scale, 1));
+    color: #667781;
+    flex-shrink: 0;
+    font-variant-numeric: tabular-nums;
+}
+
+.ws-grabacion-fila-preview .ws-grabacion-timer {
+    color: #111b21;
+}
+
+.ws-grabacion-continuar {
+    flex: 1;
+    background-color: #d9fdd3;
+    color: #008069;
+    border: none;
+    border-radius: 22px;
+    padding: 10px 14px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    cursor: pointer;
+    font-size: calc(14px * var(--font-scale, 1));
+    font-weight: 600;
+    white-space: nowrap;
+}
+
+.ws-grabacion-continuar svg {
+    fill: #008069;
+}
+
+html[data-theme="dark"] .ws-grabacion-pill-btn {
+    background-color: #202c33;
+}
+
+html[data-theme="dark"] .ws-grabacion-timer {
+    color: #8696a0;
+}
+
+html[data-theme="dark"] .ws-grabacion-fila-preview {
+    background-color: #1f2c34;
+}
+
+html[data-theme="dark"] .ws-grabacion-fila-preview .ws-grabacion-timer {
+    color: #e9edef;
+}
+
+html[data-theme="dark"] .ws-grabacion-continuar {
+    background-color: #1f2c34;
+    color: #ffffff;
+}
+
+html[data-theme="dark"] .ws-grabacion-continuar svg {
+    fill: #ffffff;
 }
 
 .ws-action-circle-btn {

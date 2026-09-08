@@ -18,6 +18,10 @@ let subPasoNivel3 = 1; // 1: entrar chat o llamar, 2: conectando, 3: silenciado 
 let subPasoNivel4 = 1; // 1: entrar chat o videollamar, 2: conectando, 3: videollamada activa con PiP, 4: colgar
 let subPasoNivel5 = 1; // 1: entrar chat o adjuntar, 2: galería abierta, 3: preview de foto, 4: enviada
 
+// Evita repetir la explicación de "cuál mensaje es tuyo y cuál del otro"
+// cada vez que se reabre el chat de Juan antes de escribir el primer mensaje.
+let burbujasYaExplicadas = false;
+
 let isMicMutedInCall = true;
 let isVideoCameraOn = true;
 let isVideoMicMuted = false;
@@ -36,12 +40,45 @@ let recordingDurationInterval = null;
 let mediaRecorder = null;
 let audioChunks = [];
 let audioStream = null;
-let estaGrabandoAudio = false;
 let audioActivo = null;
 let audioActivoMsg = null; // Referencia al mensaje del audio activo
 
+// Estado de la nota de voz en curso: "inactivo" | "grabando" | "pausado".
+// Igual que en WhatsApp real, se puede pausar para escuchar antes de enviar.
+let estadoGrabacion = "inactivo";
+let tiempoGrabadoAcumuladoMs = 0;
+let previewAudioEl = null;
+let previewBlobUrl = null;
+let previewWaveformBars = [];
+let previewAnimationFrame = null;
+let arrastrandoPreview = false;
+
+// Evita repetir la explicación de pausar/continuar cada vez que se usa
+// el micrófono dentro del mismo intento de nivel.
+let pausaYaExplicada = false;
+
 // Tiempos para cálculo de duración real
 let recordingStartTime = 0;
+
+// Medidor de sonido en vivo durante la grabación (Nivel 2): analiza el
+// micrófono real para dibujar las barras y para avisar, solo con texto y
+// resaltado visual (nunca con voz), cuando la persona se queda en silencio.
+let medidorAudioContext = null;
+let medidorAnalyser = null;
+let medidorAnimationFrame = null;
+let medidorHuboVoz = false;
+let medidorSilencioDesde = null;
+let medidorAvisoMostrado = false;
+let medidorUltimoFrameMs = 0;
+let medidorNivelActual = 0;
+// Distancia recorrida en total (crece sin parar) y cuánto se le ha
+// recortado por eliminar barras viejas del DOM: la resta de las dos es
+// siempre el desplazamiento visual real, así el movimiento no da saltos
+// aunque se estén sumando o quitando barras al mismo tiempo.
+let medidorDistanciaTotalPx = 0;
+let medidorRecortadoPx = 0;
+let medidorBarrasAgregadas = 0;
+let medidorAnchoTrackPx = 0;
 
 /**
  * Devuelve un listado limpio y nuevo de chats predeterminados
@@ -279,9 +316,200 @@ async function detenerGrabacionReal() {
 }
 
 /**
+ * Pausa la grabación en curso (sin finalizarla) y arma un audio de
+ * vista previa con lo grabado hasta ahora, para escucharlo antes de
+ * decidir si enviarlo o seguir grabando. Usa requestData() para forzar
+ * a que el grabador entregue los datos acumulados sin tener que detenerlo.
+ */
+async function pausarGrabacionReal() {
+    return new Promise((resolve) => {
+        if (!mediaRecorder || mediaRecorder.state !== "recording") {
+            resolve(null);
+            return;
+        }
+
+        const alRecibirDatos = () => {
+            mediaRecorder.removeEventListener("dataavailable", alRecibirDatos);
+            const audioBlob = new Blob(audioChunks, { type: "audio/webm" });
+            resolve(URL.createObjectURL(audioBlob));
+        };
+
+        mediaRecorder.addEventListener("dataavailable", alRecibirDatos);
+        mediaRecorder.pause();
+        mediaRecorder.requestData();
+    });
+}
+
+/**
+ * Reanuda una grabación que estaba en pausa.
+ */
+function reanudarGrabacionReal() {
+    if (mediaRecorder && mediaRecorder.state === "paused") {
+        mediaRecorder.resume();
+    }
+}
+
+/**
+ * Arranca el medidor de sonido en vivo mientras se graba una nota de voz
+ * (Nivel 2 de WhatsApp): usa el propio micrófono ya abierto para dibujar
+ * barras que suben con la voz de la persona y se aplanan en cuanto se
+ * queda en silencio. El aviso de "ya puedes enviar" es solo texto y un
+ * resaltado visual, nunca voz de Nico: si Nico hablara mientras el
+ * micrófono sigue grabando, su propia voz se mezclaría en la nota de voz
+ * que la persona está enviando.
+ */
+function iniciarMedidorDeSonido() {
+    try {
+        if (!audioStream) return;
+
+        const strip = $("#wsWaveformVivoStrip");
+        const track = $("#wsWaveformVivoTrack");
+        if (!strip || !track) return;
+        strip.innerHTML = "";
+        strip.style.transform = "translateX(0px)";
+        medidorAnchoTrackPx = track.clientWidth;
+
+        medidorAudioContext = new (window.AudioContext || window.webkitAudioContext)();
+        const fuente = medidorAudioContext.createMediaStreamSource(audioStream);
+        medidorAnalyser = medidorAudioContext.createAnalyser();
+        medidorAnalyser.fftSize = 256;
+        medidorAnalyser.smoothingTimeConstant = 0.5;
+        fuente.connect(medidorAnalyser);
+
+        medidorHuboVoz = false;
+        medidorSilencioDesde = null;
+        medidorAvisoMostrado = false;
+        medidorNivelActual = 0;
+        medidorDistanciaTotalPx = 0;
+        medidorRecortadoPx = 0;
+        medidorBarrasAgregadas = 0;
+        medidorUltimoFrameMs = performance.now();
+
+        dibujarMedidorDeSonido();
+    } catch (e) {
+        console.warn("No se pudo iniciar el medidor de sonido:", e);
+    }
+}
+
+// Ancho de cada barra + su separación en el CSS (.ws-vivo-bar): debe
+// coincidir para que el conteo de barras cuadre exactamente con el
+// desplazamiento visual. Barra nueva cada 70ms: rápida, para que
+// reaccione casi al instante a la voz.
+const MEDIDOR_PITCH_PX = 5;
+const MEDIDOR_MS_POR_BARRA = 70;
+const MEDIDOR_MAX_BARRAS_DOM = 90;
+
+/**
+ * Dibuja un cuadro de la onda y revisa si hay que avisar que ya se puede
+ * enviar el audio. Se llama a sí misma con requestAnimationFrame mientras
+ * dure la grabación. Anima la pista de barras con transform (CSS), que el
+ * navegador puede mover de forma fluida, en vez de redibujar un canvas
+ * entero en cada cuadro.
+ */
+function dibujarMedidorDeSonido() {
+    if (!medidorAnalyser) return;
+
+    const datos = new Uint8Array(medidorAnalyser.fftSize);
+    medidorAnalyser.getByteTimeDomainData(datos);
+
+    // Volumen aproximado (RMS) de este instante: 0 en silencio absoluto.
+    let suma = 0;
+    for (let i = 0; i < datos.length; i++) {
+        const valor = (datos[i] - 128) / 128;
+        suma += valor * valor;
+    }
+    const rms = Math.sqrt(suma / datos.length);
+    const nivel = Math.min(1, rms * 7);
+    medidorNivelActual = nivel;
+
+    // La distancia total solo crece (nunca se resetea), así el
+    // desplazamiento visual de cada cuadro es continuo y no da saltos,
+    // sin importar cuándo se agregue o se recorte una barra del DOM.
+    const ahora = performance.now();
+    const deltaMs = ahora - medidorUltimoFrameMs;
+    medidorUltimoFrameMs = ahora;
+
+    const velocidadPxPorMs = MEDIDOR_PITCH_PX / MEDIDOR_MS_POR_BARRA;
+    medidorDistanciaTotalPx += deltaMs * velocidadPxPorMs;
+
+    const strip = $("#wsWaveformVivoStrip");
+    if (strip) {
+        const barrasDeseadas = Math.floor(medidorDistanciaTotalPx / MEDIDOR_PITCH_PX);
+        while (medidorBarrasAgregadas < barrasDeseadas) {
+            const barra = document.createElement("div");
+            barra.className = "ws-vivo-bar";
+            barra.style.height = `${Math.max(3, Math.round(medidorNivelActual * 18))}px`;
+            strip.appendChild(barra);
+            medidorBarrasAgregadas++;
+
+            if (strip.children.length > MEDIDOR_MAX_BARRAS_DOM) {
+                strip.removeChild(strip.firstElementChild);
+                medidorRecortadoPx += MEDIDOR_PITCH_PX;
+            }
+        }
+
+        // El ancho "ideal" de la pista hasta ahora (sin importar cuántas
+        // barras se hayan recortado del DOM) es la distancia recorrida.
+        // Mientras sea menor que el track, se ve tal cual, creciendo desde
+        // la izquierda; en cuanto lo supera, se ancla la barra más nueva al
+        // borde derecho (visible) y las viejas van saliendo por la
+        // izquierda, que es como se ve en WhatsApp real.
+        const anchoIdealPx = medidorDistanciaTotalPx - medidorRecortadoPx;
+        const desplazamiento = Math.min(0, medidorAnchoTrackPx - anchoIdealPx);
+        strip.style.transform = `translateX(${desplazamiento}px)`;
+    }
+
+    // Umbral por debajo del cual se considera que la persona no está
+    // hablando. Solo actúa después de haber detectado voz real primero,
+    // para no pausar antes de que diga nada.
+    const UMBRAL_VOZ = 0.06;
+    const TIEMPO_SILENCIO_MS = 3000;
+
+    if (nivel > UMBRAL_VOZ) {
+        medidorHuboVoz = true;
+        medidorSilencioDesde = null;
+    } else {
+        if (medidorSilencioDesde === null) medidorSilencioDesde = Date.now();
+
+        if (
+            medidorHuboVoz &&
+            !medidorAvisoMostrado &&
+            Date.now() - medidorSilencioDesde > TIEMPO_SILENCIO_MS
+        ) {
+            medidorAvisoMostrado = true;
+            // Deja de capturar audio en cuanto se detecta el silencio (no
+            // se sigue grabando la línea plana), y recién ahí, con el
+            // micrófono ya detenido, es seguro que Nico lo explique en
+            // voz alta sin mezclarse con la nota de voz.
+            pausarNotaDeVoz("silencio");
+            return;
+        }
+    }
+
+    medidorAnimationFrame = requestAnimationFrame(dibujarMedidorDeSonido);
+}
+
+/**
+ * Apaga el medidor de sonido y deja la barra de mensaje como estaba.
+ */
+function detenerMedidorDeSonido() {
+    if (medidorAnimationFrame) {
+        cancelAnimationFrame(medidorAnimationFrame);
+        medidorAnimationFrame = null;
+    }
+    if (medidorAudioContext) {
+        medidorAudioContext.close().catch(() => { });
+        medidorAudioContext = null;
+    }
+    medidorAnalyser = null;
+}
+
+/**
  * Detiene todos los timers activos e intervalos para prevenir fugas de ejecución
  */
 function limpiarTodosLosTimers() {
+    detenerMedidorDeSonido();
+
     if (juanResponseTimeout) {
         clearTimeout(juanResponseTimeout);
         juanResponseTimeout = null;
@@ -317,18 +545,10 @@ function limpiarTodosLosTimers() {
     }
     audioActivoMsg = null;
 
-    // Detener la grabación de audio si está en progreso
-    if (estaGrabandoAudio) {
+    // Detener la grabación de audio si está en progreso (grabando o en pausa)
+    if (estadoGrabacion !== "inactivo") {
         detenerGrabacionReal().catch(e => console.warn(e));
-        estaGrabandoAudio = false;
-
-        const sendBtn = $("#wsEnviarMensajeBtn");
-        if (sendBtn) {
-            sendBtn.style.backgroundColor = "";
-            sendBtn.innerHTML = `
-                <svg id="wsMicIcon" class="ws-action-circle-icon" viewBox="0 0 24 24"><path d="M12 14c1.66 0 3-1.34 3-3V5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3zm5.3-3c0 3-2.54 5.1-5.3 5.1S6.7 14 6.7 11H5c0 3.41 2.72 6.23 6 6.72V21h2v-3.28c3.28-.48 6-3.3 6-6.72h-1.7z"/></svg>
-            `;
-        }
+        restaurarUIGrabacionAInactivo();
     }
 
     // Liberar hardware de micrófono al salir por completo
@@ -336,6 +556,139 @@ function limpiarTodosLosTimers() {
         audioStream.getTracks().forEach(track => track.stop());
         audioStream = null;
     }
+}
+
+/**
+ * Deja toda la interfaz de grabación (barra roja, botones de pausar/
+ * continuar, vista previa) como al principio, y libera cualquier audio
+ * de vista previa que hubiera quedado cargado.
+ */
+function restaurarUIGrabacionAInactivo() {
+    const sendBtn = $("#wsEnviarMensajeBtn");
+    if (sendBtn) {
+        sendBtn.style.backgroundColor = "";
+        sendBtn.innerHTML = `
+            <svg id="wsMicIcon" class="ws-action-circle-icon" viewBox="0 0 24 24"><path d="M12 14c1.66 0 3-1.34 3-3V5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3zm5.3-3c0 3-2.54 5.1-5.3 5.1S6.7 14 6.7 11H5c0 3.41 2.72 6.23 6 6.72V21h2v-3.28c3.28-.48 6-3.3 6-6.72h-1.7z"/></svg>
+            <svg id="wsSendIcon" class="ws-action-circle-icon" viewBox="0 0 24 24" style="display: none; fill: white;"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/></svg>
+        `;
+    }
+
+    const toolbar = $("#wsGrabacionToolbar");
+    const inputContainer = $("#wsInputContainer");
+    if (toolbar) toolbar.style.display = "none";
+    if (inputContainer) inputContainer.style.display = "";
+
+    const filaPreview = $("#wsGrabacionFilaPreview");
+    if (filaPreview) filaPreview.style.display = "none";
+    const pausarBtn = $("#wsBtnPausarAudio");
+    if (pausarBtn) pausarBtn.style.display = "";
+    const continuarBtn = $("#wsBtnContinuarAudio");
+    if (continuarBtn) continuarBtn.style.display = "none";
+
+    if (previewAnimationFrame) {
+        cancelAnimationFrame(previewAnimationFrame);
+        previewAnimationFrame = null;
+    }
+    if (previewAudioEl) {
+        previewAudioEl.pause();
+        previewAudioEl = null;
+    }
+    if (previewBlobUrl) {
+        URL.revokeObjectURL(previewBlobUrl);
+        previewBlobUrl = null;
+    }
+    previewWaveformBars = [];
+
+    if (recordingDurationInterval) {
+        clearInterval(recordingDurationInterval);
+        recordingDurationInterval = null;
+    }
+
+    estadoGrabacion = "inactivo";
+    tiempoGrabadoAcumuladoMs = 0;
+    detenerMedidorDeSonido();
+}
+
+/**
+ * Analiza el audio ya grabado (webm) y calcula una lista de picos de
+ * volumen repartidos en toda la duración, para dibujar una forma de onda
+ * fija (como la de WhatsApp) en vez de solo las últimas barras en vivo.
+ */
+async function calcularFormaDeOndaEstatica(blobUrl, cantidadBarras = 44) {
+    try {
+        const respuesta = await fetch(blobUrl);
+        const arrayBuffer = await respuesta.arrayBuffer();
+        const contextoTemporal = new (window.AudioContext || window.webkitAudioContext)();
+        const audioBuffer = await contextoTemporal.decodeAudioData(arrayBuffer);
+        const datosCanal = audioBuffer.getChannelData(0);
+        const tamanoBloque = Math.max(1, Math.floor(datosCanal.length / cantidadBarras));
+
+        const picos = [];
+        for (let i = 0; i < cantidadBarras; i++) {
+            let pico = 0;
+            const inicio = i * tamanoBloque;
+            for (let j = 0; j < tamanoBloque; j++) {
+                const valor = Math.abs(datosCanal[inicio + j] || 0);
+                if (valor > pico) pico = valor;
+            }
+            picos.push(pico);
+        }
+
+        contextoTemporal.close().catch(() => { });
+
+        const maximo = Math.max(...picos, 0.01);
+        return picos.map(p => Math.min(1, (p / maximo) * 0.85 + 0.15));
+    } catch (e) {
+        console.warn("No se pudo generar la forma de onda de la nota de voz:", e);
+        return null;
+    }
+}
+
+/**
+ * Dibuja la forma de onda fija de la vista previa, coloreando en verde la
+ * parte ya reproducida (según la fracción 0-1 recibida) y en gris el resto.
+ */
+function dibujarFormaDeOndaEstatica(fraccion = 0) {
+    const canvas = $("#wsWaveformCanvasPreview");
+    if (!canvas || !previewWaveformBars.length) return;
+
+    // El ancho real en pantalla varía según el dispositivo; se ajusta aquí
+    // el tamaño del lienzo para que las líneas no salgan borrosas o
+    // estiradas por una diferencia entre el buffer y el tamaño mostrado.
+    const anchoMostrado = Math.round(canvas.clientWidth);
+    if (anchoMostrado > 0 && canvas.width !== anchoMostrado) {
+        canvas.width = anchoMostrado;
+    }
+
+    const ctx = canvas.getContext("2d");
+    const ancho = canvas.width;
+    const alto = canvas.height;
+    ctx.clearRect(0, 0, ancho, alto);
+
+    const anchoBarra = ancho / previewWaveformBars.length;
+    const anchoLinea = Math.min(2, anchoBarra - 1.5);
+    const indiceLimite = Math.floor(fraccion * previewWaveformBars.length);
+
+    previewWaveformBars.forEach((nivel, i) => {
+        ctx.fillStyle = i <= indiceLimite ? "#00e08a" : "#8696a0";
+        const alturaBarra = Math.max(2, nivel * (alto - 6));
+        const x = i * anchoBarra + (anchoBarra - anchoLinea) / 2;
+        const y = (alto - alturaBarra) / 2;
+        ctx.fillRect(x, y, Math.max(1, anchoLinea), alturaBarra);
+    });
+
+    const dot = $("#wsGrabacionDot");
+    if (dot) dot.style.left = `${Math.min(100, Math.max(0, fraccion * 100))}%`;
+}
+
+/**
+ * Da formato mm:ss a una cantidad de milisegundos.
+ */
+function formatoMmSs(ms) {
+    const totalSecs = Math.max(0, Math.round(ms / 1000));
+    const m = Math.floor(totalSecs / 60);
+    const s = (totalSecs % 60).toString().padStart(2, "0");
+    return `${m}:${s}`;
 }
 
 /**
@@ -490,7 +843,7 @@ function asegurarTemplateHTML() {
                 </header>
                 <div id="wsChatBody" class="ws-chat-body"></div>
                 <footer class="ws-chat-footer">
-                    <div class="ws-input-container">
+                    <div id="wsInputContainer" class="ws-input-container">
                         <button class="ws-input-btn" aria-label="Emojis">
                             <svg class="ws-input-btn-icon" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 16c2.2 0 4-1.8 4-4H8c0 2.2 1.8 4 4 4zm-3-6c.6 0 1-.4 1-1s-.4-1-1-1-1 .4-1 1 .4 1 1 1zm6 0c.6 0 1-.4 1-1s-.4-1-1-1-1 .4-1 1 .4 1 1 1z"/></svg>
                         </button>
@@ -502,6 +855,43 @@ function asegurarTemplateHTML() {
                             <svg class="ws-input-btn-icon" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3.2"/><path d="M9 2L7.17 4H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2h-3.17L15 2H9zm3 15c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5z"/></svg>
                         </button>
                     </div>
+
+                    <!-- Barra que reemplaza al campo de texto mientras se graba o se
+                         pausa una nota de voz, igual que en WhatsApp real -->
+                    <div id="wsGrabacionToolbar" class="ws-grabacion-toolbar" style="display: none;">
+                        <!-- Fila de vista previa: solo aparece en pausa, ocupa todo el ancho -->
+                        <div id="wsGrabacionFilaPreview" class="ws-grabacion-fila-preview" style="display: none;">
+                            <button id="wsBtnReproducirPreview" class="ws-grabacion-play" aria-label="Escuchar tu nota de voz">
+                                <svg id="wsGrabacionPlayIcon" viewBox="0 0 24 24" style="width: 20px; height: 20px; fill: #00a884;"><path d="M8 5v14l11-7z"/></svg>
+                            </button>
+                            <div class="ws-grabacion-onda-wrap">
+                                <span id="wsGrabacionDot" class="ws-grabacion-dot"></span>
+                                <canvas id="wsWaveformCanvasPreview" class="ws-waveform-canvas-preview" width="230" height="28"></canvas>
+                            </div>
+                            <span id="wsGrabacionTimer" class="ws-grabacion-timer">0:00</span>
+                        </div>
+
+                        <!-- Fila de controles: papelera, pastilla de grabación/pausa o continuar -->
+                        <div class="ws-grabacion-fila-controles">
+                            <button id="wsBtnCancelarAudio" class="ws-grabacion-icon-btn ws-grabacion-trash" aria-label="Cancelar y borrar nota de voz">
+                                <svg viewBox="0 0 24 24" style="width: 22px; height: 22px; fill: #ea0038;"><path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/></svg>
+                            </button>
+
+                            <button id="wsBtnPausarAudio" class="ws-grabacion-pill-btn" aria-label="Pausar grabación para escucharla antes de enviar">
+                                <div id="wsWaveformVivoTrack" class="ws-waveform-vivo-track">
+                                    <div id="wsWaveformVivoStrip" class="ws-waveform-vivo-strip"></div>
+                                </div>
+                                <span id="wsGrabacionTimerVivo" class="ws-grabacion-timer">0:00</span>
+                                <svg viewBox="0 0 24 24" style="width: 20px; height: 20px; fill: #00a884; flex-shrink: 0;"><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/></svg>
+                            </button>
+
+                            <button id="wsBtnContinuarAudio" class="ws-grabacion-continuar" aria-label="Continuar grabando" style="display: none;">
+                                <svg viewBox="0 0 24 24" style="width: 16px; height: 16px;"><path d="M12 14c1.66 0 3-1.34 3-3V5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3zm5.3-3c0 3-2.54 5.1-5.3 5.1S6.7 14 6.7 11H5c0 3.41 2.72 6.23 6 6.72V21h2v-3.28c3.28-.48 6-3.3 6-6.72h-1.7z"/></svg>
+                                <span>Continuar</span>
+                            </button>
+                        </div>
+                    </div>
+
                     <button id="wsEnviarMensajeBtn" class="ws-action-circle-btn" aria-label="Grabar nota de voz o Enviar">
                         <svg id="wsMicIcon" class="ws-action-circle-icon" viewBox="0 0 24 24"><path d="M12 14c1.66 0 3-1.34 3-3V5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3zm5.3-3c0 3-2.54 5.1-5.3 5.1S6.7 14 6.7 11H5c0 3.41 2.72 6.23 6 6.72V21h2v-3.28c3.28-.48 6-3.3 6-6.72h-1.7z"/></svg>
                         <svg id="wsSendIcon" class="ws-action-circle-icon" viewBox="0 0 24 24" style="display: none; fill: white;"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/></svg>
@@ -878,6 +1268,10 @@ export function iniciarSimulador(idNivel) {
     isMicMutedInCall = true;
     fotoSeleccionadaParaPreview = null;
     ultimaInstruccionHablada = "";
+    burbujasYaExplicadas = false;
+    pausaYaExplicada = false;
+    estadoGrabacion = "inactivo";
+    tiempoGrabadoAcumuladoMs = 0;
 
     if (nivelActual === "enviar-mensaje" || nivelActual === "grabar-audio") {
         try {
@@ -922,7 +1316,7 @@ function actualizarBarraInstrucciones(autoSpeak = true) {
     if (btnVolver) {
         const bloquearVolver =
             (nivelActual === "enviar-mensaje" && subPasoNivel1 === 2) ||
-            (nivelActual === "grabar-audio" && (subPasoNivel2 === 4 || estaGrabandoAudio));
+            (nivelActual === "grabar-audio" && (subPasoNivel2 === 4 || estadoGrabacion !== "inactivo"));
 
         if (bloquearVolver) {
             btnVolver.style.visibility = "hidden";
@@ -931,8 +1325,10 @@ function actualizarBarraInstrucciones(autoSpeak = true) {
         }
     }
 
-    if (estaGrabandoAudio) {
-        instruccion = "Presiona el botón rojo para detener la grabación y enviar el audio.";
+    if (estadoGrabacion === "grabando") {
+        instruccion = "Toca la flecha verde para enviar tu nota de voz, o el botón de pausa para escucharla antes.";
+    } else if (estadoGrabacion === "pausado") {
+        instruccion = "Escucha tu nota de voz, toca 'Continuar' para seguir grabando, o envíala con la flecha verde.";
     } else if (nivelActual === "enviar-mensaje") {
         if (subPasoNivel1 === 1) {
             instruccion = estaEnChat
@@ -951,7 +1347,7 @@ function actualizarBarraInstrucciones(autoSpeak = true) {
                 instruccion = "Toca la flecha de arriba a la izquierda para volver a la lista de chats.";
             } else {
                 if (subPasoNivel1 === 5) {
-                    instruccion = "Te llegó un mensaje nuevo. Toca el chat de 'Familia Mendoza' para leerlo.";
+                    instruccion = "Te llegó un mensaje nuevo. Mira ese círculo verde con un número junto al chat: te avisa cuántos mensajes sin leer tienes ahí. Toca el chat de 'Familia Mendoza' para leerlo.";
                 } else if (subPasoNivel1 === 6) {
                     instruccion = "Escribe que sí vas a la cena, y toca enviar.";
                 }
@@ -1092,7 +1488,7 @@ function actualizarGuiaVisualWhatsApp() {
     const estaEnChat = $("#wsChatConversation") && $("#wsChatConversation").classList.contains("activa");
     const inputVal = $("#wsInputMensaje") ? $("#wsInputMensaje").value.trim() : "";
 
-    if (estaGrabandoAudio) {
+    if (estadoGrabacion !== "inactivo") {
         resaltarElemento("#wsEnviarMensajeBtn");
         return;
     }
@@ -1125,7 +1521,7 @@ function actualizarGuiaVisualWhatsApp() {
                 resaltarElemento("#wsVolverChats");
             } else {
                 if (subPasoNivel1 === 5) {
-                    resaltarElemento("[data-chat-id='familia-mendoza']");
+                    resaltarElemento("[data-chat-id='familia-mendoza'] .ws-chat-badge");
                 } else if (subPasoNivel1 === 6) {
                     if (inputVal.length > 0) {
                         resaltarElemento("#wsEnviarMensajeBtn");
@@ -1340,7 +1736,10 @@ function abrirConversacion(chatId) {
 
     if (nivelActual === "enviar-mensaje") {
         if (chatSeleccionado.id === "juan-nieto") {
-            if (subPasoNivel1 === 1 || subPasoNivel1 === 3) {
+            if (subPasoNivel1 === 1 && !burbujasYaExplicadas) {
+                burbujasYaExplicadas = true;
+                enseñarBurbujasDeMensaje(chatSeleccionado);
+            } else if (subPasoNivel1 === 1 || subPasoNivel1 === 3) {
                 actualizarBarraInstrucciones(true);
             }
         } else if (chatSeleccionado.id === "familia-mendoza" && subPasoNivel1 === 5) {
@@ -1754,10 +2153,6 @@ function inicializarListeners() {
     // Retorno al selector de niveles
     const retornarANiveles = () => {
         limpiarTodosLosTimers();
-        if (estaGrabandoAudio) {
-            detenerGrabacionReal().catch(e => console.warn(e));
-            estaGrabandoAudio = false;
-        }
         if (audioActivo) {
             audioActivo.pause();
             audioActivo = null;
@@ -2055,7 +2450,7 @@ function inicializarListeners() {
 
         campoTexto.onkeypress = (evento) => {
             if (evento.key === "Enter") {
-                if (estaGrabandoAudio) return;
+                if (estadoGrabacion !== "inactivo") return;
                 const texto = campoTexto.value.trim();
                 if (texto.length > 0) {
                     enviarMensajeTexto(texto);
@@ -2068,7 +2463,7 @@ function inicializarListeners() {
     const btnEnviar = $("#wsEnviarMensajeBtn");
     if (btnEnviar) {
         btnEnviar.onclick = () => {
-            if (estaGrabandoAudio) {
+            if (estadoGrabacion !== "inactivo") {
                 enviarMensajeVoz();
                 return;
             }
@@ -2084,6 +2479,54 @@ function inicializarListeners() {
                 enviarMensajeVoz();
             }
         };
+    }
+
+    // Botones de la barra de grabación (pausar, continuar, papelera y
+    // vista previa), igual que en WhatsApp real
+    const btnPausarAudio = $("#wsBtnPausarAudio");
+    if (btnPausarAudio) {
+        btnPausarAudio.onclick = () => pausarNotaDeVoz();
+    }
+
+    const btnContinuarAudio = $("#wsBtnContinuarAudio");
+    if (btnContinuarAudio) {
+        btnContinuarAudio.onclick = () => continuarNotaDeVoz();
+    }
+
+    const btnCancelarAudio = $("#wsBtnCancelarAudio");
+    if (btnCancelarAudio) {
+        btnCancelarAudio.onclick = () => cancelarNotaDeVoz();
+    }
+
+    const btnReproducirPreview = $("#wsBtnReproducirPreview");
+    if (btnReproducirPreview) {
+        btnReproducirPreview.onclick = () => alternarPreviewNotaDeVoz();
+    }
+
+    // Tocar o arrastrar sobre la onda de la vista previa: salta a ese punto
+    // y sigue reproduciendo desde ahí, como en cualquier reproductor de audio.
+    const ondaPreviewWrap = $(".ws-grabacion-onda-wrap");
+    if (ondaPreviewWrap) {
+        const calcularFraccionDesdeEvento = (evento) => {
+            const canvasPreview = $("#wsWaveformCanvasPreview");
+            const rect = canvasPreview.getBoundingClientRect();
+            return (evento.clientX - rect.left) / rect.width;
+        };
+
+        ondaPreviewWrap.addEventListener("pointerdown", (evento) => {
+            if (!previewWaveformBars.length) return;
+            arrastrandoPreview = true;
+            buscarEnPreviewNotaDeVoz(calcularFraccionDesdeEvento(evento));
+        });
+
+        ondaPreviewWrap.addEventListener("pointermove", (evento) => {
+            if (!arrastrandoPreview) return;
+            buscarEnPreviewNotaDeVoz(calcularFraccionDesdeEvento(evento));
+        });
+
+        window.addEventListener("pointerup", () => {
+            arrastrandoPreview = false;
+        });
     }
 
     // Botón de Llamada de Voz
@@ -2424,6 +2867,44 @@ function marcarChatComoLeido(chat) {
 const SELECTOR_CHECKMARK_ENVIADO = ".ws-msg-bubble.enviada .ws-msg-checkmark";
 
 /**
+ * Antes de escribir el primer mensaje, enseña a diferenciar de un vistazo
+ * cuál mensaje es de la otra persona y cuál va a ser el propio: primero
+ * resalta el mensaje que Juan ya mandó (a la izquierda, en blanco) y luego
+ * explica que lo que la persona escriba va a aparecer del otro lado, en
+ * verde, para que sepa distinguirlos sin necesidad de leer quién lo mandó.
+ */
+function enseñarBurbujasDeMensaje(chat) {
+    const sigueEnEsteMomento = () =>
+        chatSeleccionado === chat &&
+        subPasoNivel1 === 1 &&
+        $("#wsChatConversation")?.classList.contains("activa");
+
+    if (!sigueEnEsteMomento()) return;
+
+    const textEl = $("#wsInstructionsText");
+    const textoRecibido = "Mira, este mensaje blanco que está a la izquierda es el que te mandó Juan.";
+
+    if (textEl) textEl.textContent = textoRecibido;
+    limpiarResaltados();
+    resaltarElemento(".ws-msg-bubble.recibida", { scroll: true });
+
+    speak(textoRecibido, () => {
+        if (!sigueEnEsteMomento()) return;
+
+        const textoPropio = "Cuando tú le respondas, tu mensaje va a aparecer del otro lado, a la derecha, en color verde. Así, de un vistazo, sabes cuál mensaje es tuyo y cuál es de Juan.";
+        if (textEl) textEl.textContent = textoPropio;
+
+        limpiarResaltados();
+        resaltarElemento("#wsInputMensaje", { scroll: true });
+
+        speak(textoPropio, () => {
+            if (!sigueEnEsteMomento()) return;
+            actualizarBarraInstrucciones(true);
+        });
+    });
+}
+
+/**
  * Explica el primer mensaje que la persona manda en el Nivel 1, un estado
  * a la vez: aparece el relojito y Nico lo explica; en cuanto termina de
  * hablar, pasa al visto y lo explica; y así hasta los dos vistos grises.
@@ -2627,95 +3108,335 @@ async function enviarMensajeVoz() {
     // Detener de inmediato cualquier voz de Nico al empezar a grabar
     stopSpeech();
 
-    const sendBtn = $("#wsEnviarMensajeBtn");
-    const inputField = $("#wsInputMensaje");
-
-    if (!estaGrabandoAudio) {
-        recordingStartTime = Date.now();
-        estaGrabandoAudio = true;
-
-        if (inputField) {
-            inputField.disabled = true;
-            inputField.value = "Grabando... 0:00";
-            let elapsedSecs = 0;
-            recordingDurationInterval = setInterval(() => {
-                elapsedSecs++;
-                const m = Math.floor(elapsedSecs / 60);
-                const s = (elapsedSecs % 60).toString().padStart(2, "0");
-                inputField.value = `Grabando... ${m}:${s}`;
-            }, 1000);
-        }
-
-        const exito = await iniciarGrabacionReal();
-        sendBtn.style.backgroundColor = "#ea0038";
-        sendBtn.innerHTML = `
-            <svg class="ws-action-circle-icon" viewBox="0 0 24 24" style="fill: white; width: 20px; height: 20px;">
-                <rect x="4" y="4" width="16" height="16" rx="2" />
-            </svg>
-        `;
-
-        if (!exito) {
-            console.warn("Simulando grabación de audio...");
-        }
-
-        actualizarBarraInstrucciones(false);
+    if (estadoGrabacion === "inactivo") {
+        await iniciarNotaDeVoz();
     } else {
-        estaGrabandoAudio = false;
-        sendBtn.style.backgroundColor = "";
-        sendBtn.innerHTML = `
-            <svg id="wsMicIcon" class="ws-action-circle-icon" viewBox="0 0 24 24"><path d="M12 14c1.66 0 3-1.34 3-3V5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3zm5.3-3c0 3-2.54 5.1-5.3 5.1S6.7 14 6.7 11H5c0 3.41 2.72 6.23 6 6.72V21h2v-3.28c3.28-.48 6-3.3 6-6.72h-1.7z"/></svg>
-            <svg id="wsSendIcon" class="ws-action-circle-icon" viewBox="0 0 24 24" style="display: none; fill: white;"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/></svg>
-        `;
+        await finalizarYEnviarNotaDeVoz();
+    }
+}
 
-        if (recordingDurationInterval) {
-            clearInterval(recordingDurationInterval);
-            recordingDurationInterval = null;
+/**
+ * Arranca una nota de voz nueva: muestra la barra de grabación (papelera,
+ * onda en vivo y botón de pausar) en lugar del campo de texto.
+ */
+async function iniciarNotaDeVoz() {
+    estadoGrabacion = "grabando";
+    tiempoGrabadoAcumuladoMs = 0;
+    recordingStartTime = Date.now();
+
+    const inputContainer = $("#wsInputContainer");
+    const toolbar = $("#wsGrabacionToolbar");
+    if (inputContainer) inputContainer.style.display = "none";
+    if (toolbar) toolbar.style.display = "flex";
+
+    const filaPreview = $("#wsGrabacionFilaPreview");
+    if (filaPreview) filaPreview.style.display = "none";
+    const pausarBtn = $("#wsBtnPausarAudio");
+    if (pausarBtn) pausarBtn.style.display = "";
+    const continuarBtn = $("#wsBtnContinuarAudio");
+    if (continuarBtn) continuarBtn.style.display = "none";
+
+    actualizarTimerGrabacionEnVivo();
+
+    // A diferencia de antes, el botón se mantiene como la flecha verde de
+    // enviar (no un cuadrado rojo de "detener"): grabando o en pausa,
+    // siempre se puede enviar la nota de voz tocándolo.
+    const micIcon = $("#wsMicIcon");
+    const sendIcon = $("#wsSendIcon");
+    if (micIcon) micIcon.style.display = "none";
+    if (sendIcon) sendIcon.style.display = "block";
+
+    const exito = await iniciarGrabacionReal();
+
+    if (!exito) {
+        console.warn("Simulando grabación de audio...");
+    } else if (nivelActual === "grabar-audio") {
+        iniciarMedidorDeSonido();
+    }
+
+    actualizarBarraInstrucciones(false);
+}
+
+/**
+ * Refresca el número de la píldora de grabación mientras el micrófono
+ * sigue capturando sonido.
+ */
+function actualizarTimerGrabacionEnVivo() {
+    if (recordingDurationInterval) {
+        clearInterval(recordingDurationInterval);
+        recordingDurationInterval = null;
+    }
+    const timerEl = $("#wsGrabacionTimerVivo");
+    if (timerEl) timerEl.textContent = formatoMmSs(tiempoGrabadoAcumuladoMs);
+
+    recordingDurationInterval = setInterval(() => {
+        if (estadoGrabacion !== "grabando") return;
+        const transcurrido = tiempoGrabadoAcumuladoMs + (Date.now() - recordingStartTime);
+        if (timerEl) timerEl.textContent = formatoMmSs(transcurrido);
+    }, 250);
+}
+
+/**
+ * Pausa la grabación para poder escucharla antes de decidir si enviarla
+ * o seguir grabando, igual que en WhatsApp real. Como el micrófono deja
+ * de capturar en este momento, aquí sí es seguro que Nico explique las
+ * opciones con voz: no hay riesgo de que su voz se mezcle en el audio.
+ *
+ * @param {"manual"|"silencio"} motivo "manual" cuando la persona toca el
+ * botón de pausa ella misma; "silencio" cuando se detectan ~3 segundos
+ * sin hablar y se pausa sola, deteniendo la captura automáticamente.
+ */
+async function pausarNotaDeVoz(motivo = "manual") {
+    if (estadoGrabacion !== "grabando") return;
+
+    tiempoGrabadoAcumuladoMs += Date.now() - recordingStartTime;
+    estadoGrabacion = "pausado";
+    detenerMedidorDeSonido();
+    limpiarResaltados();
+
+    if (recordingDurationInterval) {
+        clearInterval(recordingDurationInterval);
+        recordingDurationInterval = null;
+    }
+
+    const pausarBtn = $("#wsBtnPausarAudio");
+    const continuarBtn = $("#wsBtnContinuarAudio");
+    const filaPreview = $("#wsGrabacionFilaPreview");
+    if (pausarBtn) pausarBtn.style.display = "none";
+    if (continuarBtn) continuarBtn.style.display = "";
+    if (filaPreview) filaPreview.style.display = "flex";
+
+    const timerEl = $("#wsGrabacionTimer");
+    if (timerEl) timerEl.textContent = formatoMmSs(tiempoGrabadoAcumuladoMs);
+
+    if (previewBlobUrl) {
+        URL.revokeObjectURL(previewBlobUrl);
+        previewBlobUrl = null;
+    }
+    previewBlobUrl = await pausarGrabacionReal();
+
+    previewWaveformBars = (previewBlobUrl && await calcularFormaDeOndaEstatica(previewBlobUrl)) || [];
+    dibujarFormaDeOndaEstatica(0);
+
+    const textEl = $("#wsInstructionsText");
+    if (!pausaYaExplicada) {
+        pausaYaExplicada = true;
+        const texto = motivo === "silencio"
+            ? "Mira, cuando la onda de tu voz se queda como una línea continua, sin subir ni bajar, quiere decir que dejaste de hablar y que ya es momento de enviar tu audio. Por eso pausé la grabación. Toca el triángulo para escucharla antes de enviarla, o la flecha verde para enviarla directamente. Si quieres seguir hablando, toca 'Continuar'."
+            : "Pausaste la grabación. Toca el triángulo para escuchar lo que llevas grabado. Si quieres seguir hablando, toca 'Continuar'. Si ya terminaste, toca la flecha verde para enviarla.";
+        if (textEl) textEl.textContent = texto;
+        speak(texto);
+    } else if (textEl) {
+        textEl.textContent = "Escucha tu nota de voz, toca 'Continuar' para seguir grabando, o envíala con la flecha verde.";
+    }
+}
+
+/**
+ * Reanuda la grabación después de una pausa.
+ */
+function continuarNotaDeVoz() {
+    if (estadoGrabacion !== "pausado") return;
+
+    stopSpeech();
+
+    if (previewAudioEl) {
+        previewAudioEl.pause();
+        previewAudioEl = null;
+    }
+
+    estadoGrabacion = "grabando";
+    recordingStartTime = Date.now();
+    reanudarGrabacionReal();
+
+    const pausarBtn = $("#wsBtnPausarAudio");
+    const continuarBtn = $("#wsBtnContinuarAudio");
+    const filaPreview = $("#wsGrabacionFilaPreview");
+    if (pausarBtn) pausarBtn.style.display = "";
+    if (continuarBtn) continuarBtn.style.display = "none";
+    if (filaPreview) filaPreview.style.display = "none";
+
+    actualizarTimerGrabacionEnVivo();
+
+    if (nivelActual === "grabar-audio" && audioStream) {
+        iniciarMedidorDeSonido();
+    }
+
+    actualizarBarraInstrucciones(false);
+}
+
+/**
+ * Duración de referencia de la nota de voz en curso, en segundos.
+ */
+function obtenerDuracionPreviewSegs() {
+    return Math.max(1, tiempoGrabadoAcumuladoMs / 1000);
+}
+
+/**
+ * Crea (una sola vez) el elemento de audio para escuchar la vista previa,
+ * con sus eventos de reproducir/pausar/terminar ya conectados.
+ */
+function asegurarPreviewAudioEl() {
+    if (previewAudioEl) return previewAudioEl;
+    if (!previewBlobUrl) return null;
+
+    const playIcon = $("#wsGrabacionPlayIcon");
+    const timerEl = $("#wsGrabacionTimer");
+
+    previewAudioEl = new Audio(previewBlobUrl);
+
+    previewAudioEl.onplay = () => {
+        if (playIcon) playIcon.innerHTML = `<path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/>`;
+        actualizarProgresoPreviewEnVivo();
+    };
+    previewAudioEl.onpause = () => {
+        if (playIcon) playIcon.innerHTML = `<path d="M8 5v14l11-7z"/>`;
+        if (previewAnimationFrame) {
+            cancelAnimationFrame(previewAnimationFrame);
+            previewAnimationFrame = null;
         }
-        if (inputField) {
-            inputField.disabled = false;
-            inputField.value = "";
-        }
+    };
+    previewAudioEl.onended = () => {
+        dibujarFormaDeOndaEstatica(0);
+        if (timerEl) timerEl.textContent = formatoMmSs(tiempoGrabadoAcumuladoMs);
+    };
 
-        let audioUrl = await detenerGrabacionReal();
-        const hora = obtenerHoraActual();
+    return previewAudioEl;
+}
 
-        const recordingDurationSeconds = Math.round((Date.now() - recordingStartTime) / 1000) || 1;
-        const mins = Math.floor(recordingDurationSeconds / 60);
-        const secs = (recordingDurationSeconds % 60).toString().padStart(2, "0");
-        const realDurationText = `${mins}:${secs}`;
+/**
+ * Mientras la vista previa se reproduce, actualiza la onda y el punto verde
+ * en cada cuadro (no solo cuando llega el evento "timeupdate", que es
+ * mucho menos frecuente), para que el avance se vea fluido.
+ */
+function actualizarProgresoPreviewEnVivo() {
+    if (!previewAudioEl || previewAudioEl.paused) {
+        previewAnimationFrame = null;
+        return;
+    }
 
-        const nuevoMensaje = {
-            sender: "enviada",
-            type: "audio",
-            audioUrl: audioUrl,
-            duration: realDurationText,
-            time: hora
-        };
+    const fraccion = previewAudioEl.currentTime / obtenerDuracionPreviewSegs();
+    dibujarFormaDeOndaEstatica(fraccion);
 
-        chatSeleccionado.mensajes.push(nuevoMensaje);
-        chatSeleccionado.preview = `Nota de voz (${realDurationText})`;
-        chatSeleccionado.hora = hora;
+    const timerEl = $("#wsGrabacionTimer");
+    if (timerEl) timerEl.textContent = formatoMmSs(previewAudioEl.currentTime * 1000);
 
-        moverChatAlTop(chatSeleccionado.id);
-        guardar(`gz_whatsapp_chats_${nivelActual}`, listaChatsData);
-        iniciarProgresoEstadoMensaje(nuevoMensaje, chatSeleccionado);
-        renderizarMensajes();
+    previewAnimationFrame = requestAnimationFrame(actualizarProgresoPreviewEnVivo);
+}
 
-        // Control de pasos de Nivel 2
-        if (nivelActual === "grabar-audio") {
-            if (chatSeleccionado.id === "juan-nieto") {
-                if (subPasoNivel2 <= 2) {
-                    subPasoNivel2 = 3;
-                    actualizarBarraInstrucciones(true);
-                } else if (subPasoNivel2 >= 5) {
-                    subPasoNivel2 = 7;
-                    actualizarBarraInstrucciones(true);
-                }
-            } else if (chatSeleccionado.id === "dr-martinez") {
-                if (subPasoNivel2 >= 9) {
-                    marcarChatComoLeido(chatSeleccionado);
-                    completarNivelActual("¡Has grabado, enviado y escuchado notas de voz reales y confirmaste tu consulta médica!");
-                }
+/**
+ * Reproduce o pausa la vista previa de lo grabado hasta ahora, sin enviarla.
+ */
+function alternarPreviewNotaDeVoz() {
+    const audio = asegurarPreviewAudioEl();
+    if (!audio) return;
+
+    if (!audio.paused) {
+        audio.pause();
+        return;
+    }
+    audio.play().catch(e => console.warn("No se pudo reproducir la vista previa:", e));
+}
+
+/**
+ * Salta a un punto concreto de la nota de voz grabada (tocando o
+ * arrastrando sobre la onda) y sigue reproduciendo desde ahí, igual que
+ * en un reproductor de audio normal.
+ */
+function buscarEnPreviewNotaDeVoz(fraccion) {
+    const audio = asegurarPreviewAudioEl();
+    if (!audio) return;
+
+    const fraccionSegura = Math.min(0.999, Math.max(0, fraccion));
+    audio.currentTime = fraccionSegura * obtenerDuracionPreviewSegs();
+    dibujarFormaDeOndaEstatica(fraccionSegura);
+
+    const timerEl = $("#wsGrabacionTimer");
+    if (timerEl) timerEl.textContent = formatoMmSs(audio.currentTime * 1000);
+
+    if (audio.paused) {
+        audio.play().catch(e => console.warn("No se pudo reproducir desde ese punto:", e));
+    }
+}
+
+/**
+ * Descarta la nota de voz en curso sin enviarla (papelera).
+ */
+async function cancelarNotaDeVoz() {
+    if (estadoGrabacion === "inactivo") return;
+
+    stopSpeech();
+
+    if (mediaRecorder && mediaRecorder.state !== "inactive") {
+        await detenerGrabacionReal();
+    }
+
+    restaurarUIGrabacionAInactivo();
+
+    // Como no se avanzó de paso (no se envió nada), se repite la
+    // instrucción de este mismo paso para que la persona sepa que todavía
+    // tiene que grabar y enviar la nota de voz. Se limpia el registro de
+    // "última instrucción hablada" porque, al ser el mismo paso de antes,
+    // el texto es idéntico al que ya se dijo, y si no se limpia,
+    // actualizarBarraInstrucciones() lo da por repetido y se queda muda.
+    ultimaInstruccionHablada = "";
+    actualizarBarraInstrucciones(true);
+}
+
+/**
+ * Detiene la grabación (esté pausada o en curso) y envía la nota de voz.
+ */
+async function finalizarYEnviarNotaDeVoz() {
+    const estabaGrabando = estadoGrabacion === "grabando";
+    if (estabaGrabando) {
+        tiempoGrabadoAcumuladoMs += Date.now() - recordingStartTime;
+    }
+
+    const duracionTotalMs = tiempoGrabadoAcumuladoMs;
+    let audioUrl = await detenerGrabacionReal();
+    if (!audioUrl && previewBlobUrl) {
+        // Si por algún motivo detenerGrabacionReal() no devolvió nada (por
+        // ejemplo, se envía justo después de pausar), se usa la vista
+        // previa ya grabada como nota de voz final.
+        audioUrl = previewBlobUrl;
+        previewBlobUrl = null;
+    }
+
+    restaurarUIGrabacionAInactivo();
+
+    const hora = obtenerHoraActual();
+    const realDurationText = formatoMmSs(duracionTotalMs || 1000);
+
+    const nuevoMensaje = {
+        sender: "enviada",
+        type: "audio",
+        audioUrl: audioUrl,
+        duration: realDurationText,
+        time: hora
+    };
+
+    chatSeleccionado.mensajes.push(nuevoMensaje);
+    chatSeleccionado.preview = `Nota de voz (${realDurationText})`;
+    chatSeleccionado.hora = hora;
+
+    moverChatAlTop(chatSeleccionado.id);
+    guardar(`gz_whatsapp_chats_${nivelActual}`, listaChatsData);
+    iniciarProgresoEstadoMensaje(nuevoMensaje, chatSeleccionado);
+    renderizarMensajes();
+
+    // Control de pasos de Nivel 2
+    if (nivelActual === "grabar-audio") {
+        if (chatSeleccionado.id === "juan-nieto") {
+            if (subPasoNivel2 <= 2) {
+                subPasoNivel2 = 3;
+                actualizarBarraInstrucciones(true);
+            } else if (subPasoNivel2 >= 5) {
+                subPasoNivel2 = 7;
+                actualizarBarraInstrucciones(true);
+            }
+        } else if (chatSeleccionado.id === "dr-martinez") {
+            if (subPasoNivel2 >= 9) {
+                marcarChatComoLeido(chatSeleccionado);
+                completarNivelActual("¡Has grabado, enviado y escuchado notas de voz reales y confirmaste tu consulta médica!");
             }
         }
     }

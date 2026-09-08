@@ -47,10 +47,21 @@ document.addEventListener("DOMContentLoaded", async () => {
     if (cajaBarra) cajaBarra.style.display = "none";
     if (btnComenzar) btnComenzar.style.display = "inline-flex";
 
+    const momentoListo = Date.now();
+    let yaEntro = false;
+
     const entrar = () => {
+        // En Android, la pantalla de carga nativa (splash screen) de Capacitor
+        // puede dejar pasar el toque con el que el usuario abrió la app justo
+        // cuando se oculta, y ese toque cae sobre este botón sin que la persona
+        // lo haya presionado realmente. Un toque genuino tarda más que esto en
+        // llegar, así que se ignora cualquier clic demasiado inmediato.
+        if (Date.now() - momentoListo < 400 || yaEntro) return;
+        yaEntro = true;
+
         // Dentro del toque, y sin nada asíncrono por delante: aquí es donde el
         // navegador autoriza la voz para el resto de la sesión.
-        speak("Hola, soy Nico. Voy a acompañarte en cada paso. Toca un módulo para empezar.");
+    
 
         inicializarRouter();
         precargarEnSegundoPlano();
@@ -62,7 +73,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     };
 
     if (btnComenzar) {
-        btnComenzar.addEventListener("click", entrar, { once: true });
+        btnComenzar.addEventListener("click", entrar);
     } else {
         entrar();
     }
