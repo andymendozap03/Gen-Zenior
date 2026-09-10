@@ -10,6 +10,11 @@ let subPasoNivel1 = 1;
 let rondaNivel1 = 1; // 1 = primera publicación (con foto y etiqueta), 2 = repaso rápido (solo texto)
 let fotoSeleccionadaNivel1 = null;
 let etiquetaSeleccionadaNivel1 = null;
+// Evita repetir las explicaciones de "qué es etiquetar" y "qué es una
+// solicitud de amistad" cada vez que se practica de nuevo dentro del
+// mismo intento de nivel.
+let etiquetadoYaExplicado = false;
+let solicitudYaExplicada = false;
 let subPasoNivel2 = 1;
 let rondaNivel2 = 1; // 1 = primera publicación (María), 2 = repaso en otra publicación (Recetas)
 let postObjetivoNivel2 = 1; // id del post donde se guía la reacción (1 en ronda 1, 3 en ronda 2)
@@ -1321,7 +1326,12 @@ function seleccionarFoto(clave) {
 
     if (nivelActual === "realizar-publicacion" && rondaNivel1 === 1 && subPasoNivel1 === 4) {
         subPasoNivel1 = 5;
-        actualizarBarraInstrucciones(true);
+        if (!etiquetadoYaExplicado) {
+            etiquetadoYaExplicado = true;
+            explicarEtiquetarPersonas();
+        } else {
+            actualizarBarraInstrucciones(true);
+        }
     }
 }
 
@@ -1452,7 +1462,12 @@ function cambiarPestana(tabName) {
 
         if (nivelActual === "agregar-amigo") {
             subPasoNivel4 = 2;
-            actualizarBarraInstrucciones(true);
+            if (rondaNivel4 === 1 && !solicitudYaExplicada) {
+                solicitudYaExplicada = true;
+                explicarSolicitudAmistad();
+            } else {
+                actualizarBarraInstrucciones(true);
+            }
         }
     } else if (tabName === "video") {
         if (feed) feed.style.display = "none";
@@ -2473,6 +2488,74 @@ function ajustarAlturaNico() {
     if (!barra || !pantalla) return;
 
     pantalla.style.setProperty("--fb-nico-h", barra.offsetHeight + "px");
+}
+
+/**
+ * Explica qué es "etiquetar" antes de que la persona lo haga por primera
+ * vez, igual que se explican los estados del mensaje en WhatsApp: un paso
+ * hablado a la vez, resaltando lo que corresponde, y solo al terminar de
+ * hablar se sigue con la instrucción normal del paso.
+ */
+function explicarEtiquetarPersonas() {
+    const sigueEnEsteMomento = () =>
+        Boolean($("#pantallaFacebookSimulador")?.classList.contains("activa")) &&
+        nivelActual === "realizar-publicacion" &&
+        rondaNivel1 === 1 &&
+        subPasoNivel1 === 5;
+
+    if (!sigueEnEsteMomento()) return;
+
+    const textEl = $("#fbInstructionsText");
+    const texto1 = "Mira este ícono azul de personas: sirve para 'etiquetar', que quiere decir escribir el nombre de alguien dentro de tu publicación.";
+
+    if (textEl) textEl.textContent = texto1;
+    limpiarResaltados();
+    resaltarElemento("#fbAddonTagBtn", { scroll: true });
+
+    speak(texto1, () => {
+        if (!sigueEnEsteMomento()) return;
+
+        const texto2 = "Cuando etiquetas a alguien, esa persona recibe un aviso de que apareció en tu publicación, y su nombre queda escrito ahí para que cualquiera lo toque e ir a su perfil.";
+        if (textEl) textEl.textContent = texto2;
+
+        speak(texto2, () => {
+            if (!sigueEnEsteMomento()) return;
+            limpiarResaltados();
+            actualizarBarraInstrucciones(true);
+        });
+    });
+}
+
+/**
+ * Explica qué es una "solicitud de amistad" antes de que la persona envíe
+ * la primera, con el mismo estilo pausado que el resto de explicaciones.
+ */
+function explicarSolicitudAmistad() {
+    const sigueEnEsteMomento = () =>
+        Boolean($("#pantallaFacebookSimulador")?.classList.contains("activa")) &&
+        nivelActual === "agregar-amigo" &&
+        rondaNivel4 === 1 &&
+        subPasoNivel4 === 2;
+
+    if (!sigueEnEsteMomento()) return;
+
+    const textEl = $("#fbInstructionsText");
+    const texto1 = "Antes de agregar a alguien, mira: enviar una 'solicitud de amistad' es como tocar a su puerta. No se hacen amigos al instante.";
+
+    if (textEl) textEl.textContent = texto1;
+    limpiarResaltados();
+
+    speak(texto1, () => {
+        if (!sigueEnEsteMomento()) return;
+
+        const texto2 = "Esa persona recibe un aviso y decide si acepta o no. Solo cuando acepta, ya son amigos de verdad y pueden ver más publicaciones el uno del otro.";
+        if (textEl) textEl.textContent = texto2;
+
+        speak(texto2, () => {
+            if (!sigueEnEsteMomento()) return;
+            actualizarBarraInstrucciones(true);
+        });
+    });
 }
 
 /**
@@ -3645,6 +3728,8 @@ export function iniciarSimulador(idNivel) {
     rondaNivel1 = 1;
     fotoSeleccionadaNivel1 = null;
     etiquetaSeleccionadaNivel1 = null;
+    etiquetadoYaExplicado = false;
+    solicitudYaExplicada = false;
     subPasoNivel2 = 1;
     rondaNivel2 = 1;
     postObjetivoNivel2 = 1;

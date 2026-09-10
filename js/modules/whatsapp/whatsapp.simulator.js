@@ -2867,6 +2867,19 @@ function marcarChatComoLeido(chat) {
 const SELECTOR_CHECKMARK_ENVIADO = ".ws-msg-bubble.enviada .ws-msg-checkmark";
 
 /**
+ * Si al salir del simulador (al menú, a Ajustes, a Trofeos...) solo se
+ * revisara la vista interna (por ejemplo "#wsChatConversation"), esta
+ * seguiría marcada como activa: retornarANiveles() solo le quita la clase
+ * a la pantalla completa de WhatsApp, no a sus vistas internas. Por eso
+ * una narración en curso podía seguir hablando después de salir: su
+ * comprobación de "¿sigo aquí?" daba positivo aunque ya no se viera nada.
+ * Se usa junto a esa comprobación interna, nunca en su lugar.
+ */
+function pantallaWhatsappActiva() {
+    return Boolean($("#pantallaWhatsappSimulador")?.classList.contains("activa"));
+}
+
+/**
  * Antes de escribir el primer mensaje, enseña a diferenciar de un vistazo
  * cuál mensaje es de la otra persona y cuál va a ser el propio: primero
  * resalta el mensaje que Juan ya mandó (a la izquierda, en blanco) y luego
@@ -2875,6 +2888,7 @@ const SELECTOR_CHECKMARK_ENVIADO = ".ws-msg-bubble.enviada .ws-msg-checkmark";
  */
 function enseñarBurbujasDeMensaje(chat) {
     const sigueEnEsteMomento = () =>
+        pantallaWhatsappActiva() &&
         chatSeleccionado === chat &&
         subPasoNivel1 === 1 &&
         $("#wsChatConversation")?.classList.contains("activa");
@@ -2913,6 +2927,7 @@ function enseñarBurbujasDeMensaje(chat) {
  */
 function enseñarEstadosDeMensaje(mensaje, chat) {
     const sigueEnEsteMomento = () =>
+        pantallaWhatsappActiva() &&
         chatSeleccionado === chat &&
         subPasoNivel1 === 2 &&
         $("#wsChatConversation")?.classList.contains("activa");
@@ -2965,7 +2980,7 @@ function iniciarEsperaRespuestaJuan(chat) {
 
     const sigueVigente = () => {
         const conversacionEl = $("#wsChatConversation");
-        return conversacionEl && conversacionEl.classList.contains("activa") &&
+        return pantallaWhatsappActiva() && conversacionEl && conversacionEl.classList.contains("activa") &&
             chatSeleccionado === chat && chatSeleccionado.id === "juan-nieto" && subPasoNivel1 === 2;
     };
 

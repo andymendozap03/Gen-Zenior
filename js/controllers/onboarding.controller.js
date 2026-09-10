@@ -17,14 +17,15 @@ import { speak, stopSpeech } from "../services/speech.service.js";
  */
 
 const CLAVE_VISTA = "gz_intro_vista";
-const TOTAL_PASOS = 3;
+const TOTAL_PASOS = 4;
 
 // Lo que Nico dice en cada paso. Es el mismo mensaje que se lee en pantalla,
 // en frases cortas para que se entienda bien escuchándolo.
 const NARRACION = {
     1: "Hola, soy Nico. Esto es una práctica. Aquí vas a usar copias de WhatsApp, Facebook, YouTube y tus contactos. No son las aplicaciones de verdad: nada de lo que hagas aquí se envía, ni lo ve nadie. Puedes tocar todo sin miedo a equivocarte.",
     2: "Yo te voy a acompañar. Te diré en voz alta qué hacer en cada paso, y te lo señalaré en la pantalla con una mano y un aro de color. Si no me escuchaste, toca el botón verde donde dice NICO y lo repito.",
-    3: "Cada práctica que termines te da un trofeo. Sirven para que veas todo lo que ya aprendiste. No es una competencia y no se pierden nunca: puedes repetir las prácticas las veces que quieras."
+    3: "Cada práctica que termines te da un trofeo. Sirven para que veas todo lo que ya aprendiste. No es una competencia y no se pierden nunca: puedes repetir las prácticas las veces que quieras.",
+    4: "En Ajustes puedes cambiar cosas a tu gusto: qué tan rápido hablo, el tamaño de las letras, y el modo oscuro o de alto contraste. Ahí también puedes volver a ver esta explicación, o reiniciar tu progreso si te equivocas."
 };
 
 let pasoActual = 1;

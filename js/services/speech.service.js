@@ -1,5 +1,4 @@
 let selectedVoice = null;
-let currentAudio = null;
 
 /* ----------------------------------------------------------------------
    VOZ NATIVA (solo dentro del APK de Android/iOS con Capacitor)
@@ -74,7 +73,7 @@ async function elegirVozNativa(tts) {
 async function speakWithNativeTTS(text, onEnd, sigueVigente) {
     const tts = window.Capacitor.Plugins.TextToSpeech;
 
-    let speechRate = 0.95;
+    let speechRate = 1.0;
     if (window.nicoVoiceSpeed === "lenta") {
         speechRate = 0.65;
     } else if (window.nicoVoiceSpeed === "rapida") {
@@ -364,7 +363,7 @@ function speakWithWebSpeech(text, onEnd, sigueVigente) {
 
             const frase = new SpeechSynthesisUtterance(textoFragmento);
 
-            let speechRate = 0.95;
+            let speechRate = 1.0;
             if (window.nicoVoiceSpeed === "lenta") {
                 speechRate = 0.65;
             } else if (window.nicoVoiceSpeed === "rapida") {
@@ -551,107 +550,16 @@ export function prepararVoz() {
    Excepción: las frases protegidas (por ejemplo "¡Nivel completado!") se
    dicen enteras; mientras suenan se descarta cualquier otra.
 
-   Si existe js/data/voz.config.js con una clave de ElevenLabs, se usa esa voz.
-   Si no existe, falla o no hay internet, se usa la voz del navegador.
+   La voz siempre sale de speechSynthesis (en el navegador) o del motor
+   nativo de Android/iOS (dentro del APK, vía Capacitor): nunca se llama a
+   ningún servicio externo, así que no hay que esperar a ninguna descarga
+   ni depender de que haya internet.
    ---------------------------------------------------------------------- */
 let fraseProtegida = false;
 
-// Cada frase nueva sube el turno: lo que llegue tarde (audio descargado
-// después de que el usuario ya avanzó) se descarta.
+// Cada frase nueva sube el turno: lo que llegue tarde (por ejemplo, un
+// intento anterior que recién ahora consigue arrancar) se descarta.
 let turnoVoz = 0;
-
-// ---------- ELEVENLABS (opcional) ----------
-let configEleven;                 // undefined = sin comprobar, null = no disponible
-const audiosEleven = new Map();   // frase -> URL del audio ya descargado
-
-async function obtenerConfigEleven() {
-    if (configEleven !== undefined) return configEleven;
-
-    try {
-        const mod = await import("../data/voz.config.js");
-        const cfg = mod.VOZ_ELEVENLABS || mod.default;
-
-        // Las claves buenas de ElevenLabs empiezan por "sk_". El identificador
-        // de la clave (que es otra cosa) no sirve para autenticarse.
-        configEleven = (cfg && typeof cfg.apiKey === "string" && cfg.apiKey.startsWith("sk_") && cfg.voiceId)
-            ? cfg
-            : null;
-
-        if (cfg && configEleven === null) {
-            console.warn("Voz de ElevenLabs desactivada: la clave debe empezar por 'sk_'. Se usa la voz del navegador.");
-        }
-    } catch (e) {
-        configEleven = null; // no hay archivo de configuración: voz del navegador
-    }
-
-    return configEleven;
-}
-
-async function obtenerAudioEleven(texto, cfg) {
-    if (audiosEleven.has(texto)) return audiosEleven.get(texto);
-
-    const respuesta = await fetch(`https://api.elevenlabs.io/v1/text-to-speech/${cfg.voiceId}`, {
-        method: "POST",
-        headers: {
-            "xi-api-key": cfg.apiKey,
-            "Content-Type": "application/json",
-            "Accept": "audio/mpeg"
-        },
-        body: JSON.stringify({
-            text: texto,
-            model_id: cfg.modelId || "eleven_multilingual_v2",
-            voice_settings: {
-                stability: 0.5,
-                similarity_boost: 0.8,
-                speed: cfg.velocidad || 0.9
-            }
-        })
-    });
-
-    if (!respuesta.ok) throw new Error("ElevenLabs respondió " + respuesta.status);
-
-    // Se guarda la frase ya descargada: la guía repite mucho las mismas y así
-    // no se gastan créditos ni se espera dos veces por lo mismo.
-    const url = URL.createObjectURL(await respuesta.blob());
-    audiosEleven.set(texto, url);
-    return url;
-}
-
-function reproducirAudio(url, texto, onEnd, miTurno) {
-    const audio = new Audio(url);
-    currentAudio = audio;
-
-    if (window.nicoVoiceSpeed === "lenta") {
-        audio.playbackRate = 0.75;
-    } else if (window.nicoVoiceSpeed === "rapida") {
-        audio.playbackRate = 1.35;
-    } else {
-        audio.playbackRate = 1.0;
-    }
-
-    let terminado = false;
-    const terminar = () => {
-        if (terminado) return;
-        terminado = true;
-        if (currentAudio === audio) currentAudio = null;
-        if (typeof onEnd === "function") onEnd();
-    };
-
-    audio.onended = terminar;
-    audio.onerror = terminar;
-
-    audio.play().catch(() => {
-        // El navegador bloqueó el audio (suele pasar si aún no ha habido
-        // ningún toque en la página): se recurre a la voz del sistema
-        if (currentAudio === audio) currentAudio = null;
-        if (turnoVoz === miTurno) {
-            speakConMotorDisponible(texto, onEnd, () => turnoVoz === miTurno);
-        } else {
-            terminar();
-        }
-        terminado = true;
-    });
-}
 
 /**
  * Dice una frase con la mejor voz disponible. Corta la que estuviera sonando.
@@ -738,45 +646,13 @@ function decir(texto, onEnd, protegida) {
 
     /* IMPORTANTE: aquí NO se puede esperar a ninguna promesa.
        Safari en iOS solo deja arrancar la voz si speechSynthesis.speak() se
-       llama dentro del mismo toque del usuario. Antes se esperaba a la lista
-       de voces y a la configuración de ElevenLabs, y para cuando se hablaba el
-       toque ya había pasado: por eso la primera frase nunca se oía y la
-       segunda sí (el intento fallido desbloqueaba el motor). */
-    if (configEleven === undefined) {
-        // Todavía no sabemos si hay ElevenLabs configurado. No se espera: se
-        // habla ya con la voz del navegador y se averigua para las siguientes.
-        obtenerConfigEleven();
-        speakConMotorDisponible(texto, terminar, vigente);
-        return;
-    }
-
-    if (!configEleven) {
-        // Caso normal: voz del navegador (o la nativa dentro del APK)
-        speakConMotorDisponible(texto, terminar, vigente);
-        return;
-    }
-
-    // Con ElevenLabs sí hay que esperar a que baje el audio
-    obtenerAudioEleven(texto, configEleven)
-        .then(url => {
-            if (turnoVoz !== miTurno) return;
-            reproducirAudio(url, texto, terminar, miTurno);
-        })
-        .catch(err => {
-            console.warn("ElevenLabs no disponible, se usa la voz del navegador:", err.message);
-            if (turnoVoz === miTurno) speakConMotorDisponible(texto, terminar, vigente);
-        });
+       llama dentro del mismo toque del usuario. Si se esperara a la lista
+       de voces (o a cualquier otra cosa) antes de hablar, para cuando se
+       llamara el toque ya habría pasado y la frase nunca sonaría. */
+    speakConMotorDisponible(texto, terminar, vigente);
 }
 
 function callar() {
-    if (currentAudio) {
-        currentAudio.onended = null;
-        currentAudio.onerror = null;
-        currentAudio.pause();
-        currentAudio.currentTime = 0;
-        currentAudio = null;
-    }
-
     // Solo se cancela si hay algo sonando o en cola: pedir cancel() y speak()
     // seguidos hace que Chrome descarte la frase nueva.
     if ("speechSynthesis" in window && (speechSynthesis.speaking || speechSynthesis.pending)) {
@@ -793,7 +669,20 @@ function callar() {
 export async function stopSpeech() {
     // Salir de la pantalla o pulsar a Nico siempre puede callarlo
     fraseProtegida = false;
-    turnoVoz++;
+    const miTurno = ++turnoVoz;
     callar();
     avisarVoz(false);
+
+    // Red de seguridad: si se salió justo cuando una frase recién empezaba
+    // a sonar (por ejemplo, tocando "Siguiente" varias veces seguidas muy
+    // rápido en la introducción), a veces el primer cancel() no alcanza a
+    // cortarla del todo y se queda oyéndose la última frase ya en la
+    // pantalla siguiente. Un segundo cancel() un instante después la
+    // termina de silenciar. Solo se hace si nadie pidió hablar de nuevo
+    // mientras tanto (el turno seguiría siendo el mismo): si la pantalla
+    // nueva ya lanzó su propia frase legítima, no hay que cortarla a ella.
+    setTimeout(() => {
+        if (turnoVoz !== miTurno) return;
+        try { callar(); } catch (e) { /* nada que cortar */ }
+    }, 150);
 }

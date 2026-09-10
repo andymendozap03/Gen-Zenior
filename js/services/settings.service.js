@@ -7,7 +7,7 @@ const STORAGE_KEY = "gz_settings_accessibility";
 
 export const DEFAULT_SETTINGS = {
     voiceEnabled: true,
-    voiceSpeed: "normal", // 'lenta' (0.8), 'normal' (0.95), 'rapida' (1.15)
+    voiceSpeed: "normal", // 'lenta' (0.65x), 'normal' (1.0x), 'rapida' (1.4x)
     fontSize: "mediano",   // 'pequeno', 'mediano', 'grande'
     darkMode: false,
     highContrast: false,
